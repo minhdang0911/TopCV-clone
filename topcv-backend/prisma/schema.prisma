@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  CANDIDATE
+  EMPLOYER
+  ADMIN
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String?  @map("password_hash")
+  phone        String?  @unique
+  role         Role     @default(CANDIDATE)
+  isVerified   Boolean  @default(false) @map("is_verified")
+  isActive     Boolean  @default(true) @map("is_active")
+  provider     String   @default("local") 
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  candidateProfile CandidateProfile?
+  employerProfile  EmployerProfile?
+
+  @@map("users")
+}
+
+model CandidateProfile {
+  id                  String   @id @default(uuid())
+  userId              String   @unique @map("user_id")
+  fullName            String   @map("full_name")
+  avatarUrl           String?  @map("avatar_url")
+  isLookingForJob     Boolean  @default(true) @map("is_looking_for_job")
+  allowEmployerSearch Boolean  @default(true) @map("allow_employer_search")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("candidate_profiles")
+}
+
+model EmployerProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  companyName String   @map("company_name")
+  logoUrl     String?  @map("logo_url")
+  companySize String?  @map("company_size")
+  industry    String?
+  website     String?
+  address     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("employer_profiles")
+}

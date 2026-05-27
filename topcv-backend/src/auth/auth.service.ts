@@ -77,7 +77,7 @@ export class AuthService {
   }
 
   // ─── VERIFY OTP ──────────────────────────────────────
-  async verifyOtp(email: string, code: string, type: string) {
+ async verifyOtp(email: string, code: string, type: string) {
     const user = await this.usersService.findByEmail(email)
     if (!user) throw new BadRequestException('Email không tồn tại')
 
@@ -85,17 +85,18 @@ export class AuthService {
     const stored = await this.redis.get<string>(key)
 
     if (!stored || String(stored) !== String(code))
-      throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn')
+        throw new BadRequestException('OTP không hợp lệ hoặc đã hết hạn')
 
     await this.redis.del(key)
 
     if (type === 'verify_email') {
-      await this.usersService.updateVerified(user.id)
-      return { message: 'Xác thực email thành công' }
+        await this.usersService.updateVerified(user.id)
+        // Trả về token luôn
+        return this.generateToken(user.id, user.email, user.role)
     }
 
     return { message: 'Xác thực OTP thành công' }
-  }
+}
 
   // ─── RESEND OTP ──────────────────────────────────────
   async resendOtp(email: string) {
@@ -114,11 +115,11 @@ export class AuthService {
     const token = uuidv4()
     await this.redis.set(`reset:${token}`, user.id, { ex: 300 })
 
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}&role=${user.role}`
     await this.mailService.sendResetPassword(user.email, resetUrl)
 
     return { message: 'Link đặt lại mật khẩu đã được gửi đến email' }
-  }
+}
 
   // ─── RESET PASSWORD ──────────────────────────────────
   async resetPassword(token: string, newPassword: string) {

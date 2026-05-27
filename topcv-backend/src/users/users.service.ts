@@ -51,4 +51,36 @@ export class UsersService {
     })
   }
 }
+ async updateEmployerProfile(userId: string, data: {
+  companyName?: string
+  companySize?: string
+  industry?: string
+  website?: string
+  address?: string
+  logoUrl?: string
+}) {
+  return this.prisma.employerProfile.upsert({
+    where: { userId },
+    update: data,
+    create: {
+      userId,
+      companyName: data.companyName || '',
+      ...data,
+    },
+  })
+}
+
+async getEmployerProfile(userId: string) {
+  return this.prisma.employerProfile.findUnique({
+    where: { userId },
+  })
+}
+
+async getCandidateProfile(userId: string) {
+  return this.prisma.candidateProfile.findUnique({
+    where: { userId },
+  })
+}
+
+
 }

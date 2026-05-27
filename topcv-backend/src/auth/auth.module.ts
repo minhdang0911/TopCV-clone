@@ -8,6 +8,7 @@ import { MailModule } from '../mail/mail.module'
 import { GoogleStrategy } from './strategies/google.strategy'
 import { FacebookStrategy } from './strategies/facebook.strategy'
 import { LinkedinStrategy } from './strategies/linkedin.strategy'
+import { JwtStrategy } from './strategies/jwt.strategy'
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { LinkedinStrategy } from './strategies/linkedin.strategy'
       }),
     }),
   ],
-  providers: [AuthService, GoogleStrategy, FacebookStrategy, LinkedinStrategy],
+ providers: [AuthService, GoogleStrategy, FacebookStrategy, LinkedinStrategy, JwtStrategy],
   controllers: [AuthController],
 })
 export class AuthModule {}

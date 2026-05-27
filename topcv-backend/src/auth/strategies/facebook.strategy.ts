@@ -9,14 +9,17 @@ export class FacebookStrategy extends PassportStrategy(Strategy, 'facebook') {
   clientID: process.env.FACEBOOK_APP_ID!,
   clientSecret: process.env.FACEBOOK_APP_SECRET!,
   callbackURL: process.env.FACEBOOK_CALLBACK_URL!,
-  scope: ['public_profile'],  // bỏ 'email'
-  profileFields: ['id', 'displayName', 'photos'],   
+ scope: ['email', 'public_profile'],
+profileFields: ['id', 'displayName', 'photos', 'emails'] 
 })
   }
 
- async validate(accessToken: string, refreshToken: string, profile: Profile, done: Function) {
+async validate(accessToken: string, refreshToken: string, profile: Profile, done: Function) {
+  const email = profile.emails?.[0]?.value 
+    ?? `fb_${profile.id}@noemail.com`
+
   done(null, {
-    email: `fb_${profile.id}@facebook.com`, // fake email vì không lấy được
+    email,
     fullName: profile.displayName,
     avatar: profile.photos?.[0]?.value,
     provider: 'facebook',

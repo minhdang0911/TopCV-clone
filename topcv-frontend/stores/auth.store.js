@@ -5,10 +5,11 @@ const useAuthStore = create((set) => ({
     role: null,
     isAuthenticated: false,
 
-    setAuth: (accessToken, role) => {
+    setAuth: (accessToken, refreshToken, role) => {
         localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
         localStorage.setItem('role', role);
-        set({ accessToken, role, isAuthenticated: true });
+        set({ accessToken, refreshToken, role, isAuthenticated: true });
     },
 
     clearAuth: () => {

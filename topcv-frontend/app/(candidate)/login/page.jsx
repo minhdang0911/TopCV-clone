@@ -25,12 +25,34 @@ export default function CandidateLoginPage() {
         e.preventDefault();
         setError('');
         setLoading(true);
+
         try {
             const res = await authService.login(email, password);
-            setAuth(res.data.accessToken, res.data.role);
+
+            if (res.data.require2FA) {
+                router.push(`/verify-otp?email=${res.data.email}&type=two_factor_login&role=${res.data.role}`);
+                return;
+            }
+
+            setAuth(res.data.accessToken, res.data.refreshToken, res.data.role);
             router.push('/');
         } catch (err) {
-            setError(err.response?.data?.message || 'Đăng nhập thất bại');
+            const message = err.response?.data?.message;
+            console.log('Error message:', message); // ← thêm dòng này
+
+            if (message?.includes('chưa xác thực')) {
+                console.log('Redirecting to verify-otp...'); // ← và dòng này
+
+                router.push(`/verify-otp?email=${email}&type=verify_email&role=CANDIDATE`);
+                return;
+            }
+
+            if (message?.includes('bị khóa')) {
+                setError('Tài khoản của bạn đã bị khóa');
+                return;
+            }
+
+            setError(message || 'Đăng nhập thất bại');
         } finally {
             setLoading(false);
         }

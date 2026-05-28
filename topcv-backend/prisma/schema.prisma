@@ -13,19 +13,21 @@ enum Role {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
-  passwordHash String?  @map("password_hash")
-  phone        String?  @unique
-  role         Role     @default(CANDIDATE)
-  isVerified   Boolean  @default(false) @map("is_verified")
-  isActive     Boolean  @default(true) @map("is_active")
-  provider     String   @default("local") 
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  email            String   @unique
+  passwordHash     String?  @map("password_hash")
+  phone            String?  @unique
+  role             Role     @default(CANDIDATE)
+  isVerified       Boolean  @default(false) @map("is_verified")
+  isActive         Boolean  @default(true) @map("is_active")
+  twoFactorEnabled Boolean  @default(false) @map("two_factor_enabled")
+  provider         String   @default("local")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   candidateProfile CandidateProfile?
   employerProfile  EmployerProfile?
+  refreshTokens    RefreshToken[]
 
   @@map("users")
 }
@@ -58,4 +60,16 @@ model EmployerProfile {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("employer_profiles")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
 }

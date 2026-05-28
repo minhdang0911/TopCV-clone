@@ -24,16 +24,36 @@ export default function EmployerLoginPage() {
         e.preventDefault();
         setError('');
         setLoading(true);
+
         try {
             const res = await authService.login(email, password);
-            setAuth(res.data.accessToken, res.data.role);
+
+            if (res.data.require2FA) {
+                router.push(`/verify-otp?email=${res.data.email}&type=two_factor_login&role=${res.data.role}`);
+                return;
+            }
+
             if (res.data.role !== 'EMPLOYER') {
                 setError('Tài khoản này không phải nhà tuyển dụng');
                 return;
             }
+
+            setAuth(res.data.accessToken, res.data.refreshToken, res.data.role);
             router.push('/employer/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'Đăng nhập thất bại');
+            const message = err.response?.data?.message;
+
+            if (message?.includes('chưa xác thực')) {
+                router.push(`/verify-otp?email=${email}&type=verify_email&role=EMPLOYER`);
+                return;
+            }
+
+            if (message?.includes('bị khóa')) {
+                setError('Tài khoản của bạn đã bị khóa');
+                return;
+            }
+
+            setError(message || 'Đăng nhập thất bại');
         } finally {
             setLoading(false);
         }

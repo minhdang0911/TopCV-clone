@@ -24,10 +24,16 @@ api.interceptors.response.use(
         if (error.response?.status === 401) {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('role');
-            window.location.href = '/login';
+
+            // Chỉ redirect nếu KHÔNG phải đang ở trang auth
+            const authRoutes = ['/login', '/register', '/employer-login'];
+            const isAuthRoute = authRoutes.some((route) => window.location.pathname.startsWith(route));
+
+            if (!isAuthRoute) {
+                window.location.href = '/login';
+            }
         }
         return Promise.reject(error);
     },
 );
-
 export default api;

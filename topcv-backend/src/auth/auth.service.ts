@@ -275,6 +275,7 @@ export class AuthService {
     let user = await this.usersService.findByEmail(profile.email);
 
     if (!user) {
+      // Tạo mới
       user = await this.usersService.create({
         email: profile.email,
         role: Role.CANDIDATE,
@@ -287,6 +288,12 @@ export class AuthService {
         Role.CANDIDATE,
       );
     }
+
+    // Update avatar + fullName mỗi lần login
+    await this.usersService.updateCandidateProfile(user.id, {
+      ...(profile.avatar && { avatarUrl: profile.avatar }),
+      ...(profile.fullName && { fullName: profile.fullName }),
+    });
 
     if (!user.isActive) throw new UnauthorizedException('Tài khoản đã bị khóa');
 

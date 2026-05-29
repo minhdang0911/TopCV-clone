@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff, Lock } from 'lucide-react';
@@ -14,8 +14,8 @@ export default function ResetPasswordPage() {
     const token = searchParams.get('token') || '';
     const role = searchParams.get('role') || 'CANDIDATE';
 
-    // 'loading' | 'valid' | 'expired'
-    const [status, setStatus] = useState('loading');
+    const initialStatus = token ? 'loading' : 'expired';
+    const [status, setStatus] = useState(initialStatus);
 
     const [form, setForm] = useState({ newPassword: '', confirmPassword: '' });
     const [showNew, setShowNew] = useState(false);
@@ -24,17 +24,17 @@ export default function ResetPasswordPage() {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
-    // Resend state (dùng khi expired)
     const [resendEmail, setResendEmail] = useState('');
     const [resendLoading, setResendLoading] = useState(false);
     const [resendSent, setResendSent] = useState(false);
     const [resendError, setResendError] = useState('');
 
+    const hasFetched = useRef(false);
+
     useEffect(() => {
-        if (!token) {
-            setStatus('expired');
-            return;
-        }
+        if (!token || hasFetched.current) return;
+        hasFetched.current = true;
+
         authService
             .verifyResetToken(token)
             .then(() => setStatus('valid'))
@@ -171,7 +171,6 @@ export default function ResetPasswordPage() {
                 </div>
 
                 <div className="exp-card" style={cardStyle}>
-                    {/* Icon */}
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                         <div
                             className="exp-icon"
@@ -222,7 +221,6 @@ export default function ResetPasswordPage() {
                         </div>
                     </div>
 
-                    {/* Badge */}
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px' }}>
                         <span
                             style={{
@@ -238,14 +236,7 @@ export default function ResetPasswordPage() {
                                 border: '1px solid #fed7aa',
                             }}
                         >
-                            <svg
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                            >
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <circle cx="12" cy="12" r="10" />
                                 <polyline points="12 6 12 12 16 14" />
                             </svg>
@@ -253,90 +244,32 @@ export default function ResetPasswordPage() {
                         </span>
                     </div>
 
-                    <h1
-                        style={{
-                            fontSize: '20px',
-                            fontWeight: '700',
-                            color: '#111827',
-                            textAlign: 'center',
-                            marginBottom: '10px',
-                            lineHeight: '1.4',
-                        }}
-                    >
+                    <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', textAlign: 'center', marginBottom: '10px', lineHeight: '1.4' }}>
                         Liên kết không còn hiệu lực
                     </h1>
-                    <p
-                        style={{
-                            fontSize: '13px',
-                            color: '#6b7280',
-                            textAlign: 'center',
-                            lineHeight: '1.7',
-                            marginBottom: '24px',
-                        }}
-                    >
+                    <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', lineHeight: '1.7', marginBottom: '24px' }}>
                         Link chỉ có hiệu lực trong <span style={{ color: '#111827', fontWeight: '600' }}>5 phút</span>{' '}
-                        và chỉ dùng được <span style={{ color: '#111827', fontWeight: '600' }}>một lần</span>. Nhập
-                        email để nhận link mới.
+                        và chỉ dùng được <span style={{ color: '#111827', fontWeight: '600' }}>một lần</span>. Nhập email để nhận link mới.
                     </p>
 
                     {!resendSent ? (
                         <>
                             {resendError && (
-                                <div
-                                    style={{
-                                        background: '#fef2f2',
-                                        border: '1px solid #fecaca',
-                                        color: '#dc2626',
-                                        fontSize: '13px',
-                                        padding: '10px 14px',
-                                        borderRadius: '10px',
-                                        marginBottom: '14px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '8px',
-                                    }}
-                                >
+                                <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '13px', padding: '10px 14px', borderRadius: '10px', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                     <svg width="14" height="14" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                            clipRule="evenodd"
-                                        />
+                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                                     </svg>
                                     {resendError}
                                 </div>
                             )}
                             <form onSubmit={handleResend}>
                                 <div style={{ marginBottom: '14px' }}>
-                                    <label
-                                        style={{
-                                            display: 'block',
-                                            fontSize: '13px',
-                                            fontWeight: '500',
-                                            color: '#374151',
-                                            marginBottom: '6px',
-                                        }}
-                                    >
+                                    <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                                         Email của bạn
                                     </label>
                                     <div style={{ position: 'relative' }}>
-                                        <span
-                                            style={{
-                                                position: 'absolute',
-                                                left: '12px',
-                                                top: '50%',
-                                                transform: 'translateY(-50%)',
-                                                color: '#00b14f',
-                                            }}
-                                        >
-                                            <svg
-                                                width="17"
-                                                height="17"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                            >
+                                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#00b14f' }}>
+                                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
                                                 <polyline points="22,6 12,13 2,6" />
                                             </svg>
@@ -348,19 +281,7 @@ export default function ResetPasswordPage() {
                                             value={resendEmail}
                                             onChange={(e) => setResendEmail(e.target.value)}
                                             required
-                                            style={{
-                                                width: '100%',
-                                                paddingLeft: '40px',
-                                                paddingRight: '16px',
-                                                paddingTop: '12px',
-                                                paddingBottom: '12px',
-                                                border: '1px solid #d1d5db',
-                                                borderRadius: '10px',
-                                                fontSize: '13px',
-                                                background: 'white',
-                                                boxSizing: 'border-box',
-                                                transition: 'border-color 0.15s, box-shadow 0.15s',
-                                            }}
+                                            style={{ width: '100%', paddingLeft: '40px', paddingRight: '16px', paddingTop: '12px', paddingBottom: '12px', border: '1px solid #d1d5db', borderRadius: '10px', fontSize: '13px', background: 'white', boxSizing: 'border-box', transition: 'border-color 0.15s, box-shadow 0.15s' }}
                                         />
                                     </div>
                                 </div>
@@ -368,62 +289,19 @@ export default function ResetPasswordPage() {
                                     type="submit"
                                     disabled={resendLoading}
                                     className="resend-btn"
-                                    style={{
-                                        width: '100%',
-                                        padding: '13px',
-                                        borderRadius: '10px',
-                                        background: resendLoading ? '#86efac' : '#00b14f',
-                                        color: 'white',
-                                        fontWeight: '600',
-                                        fontSize: '14px',
-                                        border: 'none',
-                                        cursor: resendLoading ? 'not-allowed' : 'pointer',
-                                        transition: 'background 0.15s',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px',
-                                        marginBottom: '10px',
-                                        fontFamily: 'inherit',
-                                    }}
+                                    style={{ width: '100%', padding: '13px', borderRadius: '10px', background: resendLoading ? '#86efac' : '#00b14f', color: 'white', fontWeight: '600', fontSize: '14px', border: 'none', cursor: resendLoading ? 'not-allowed' : 'pointer', transition: 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '10px', fontFamily: 'inherit' }}
                                 >
                                     {resendLoading ? (
                                         <>
-                                            <svg
-                                                style={{
-                                                    animation: 'spin 1s linear infinite',
-                                                    width: '16px',
-                                                    height: '16px',
-                                                }}
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    style={{ opacity: 0.25 }}
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                />
-                                                <path
-                                                    style={{ opacity: 0.75 }}
-                                                    fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                                                />
+                                            <svg style={{ animation: 'spin 1s linear infinite', width: '16px', height: '16px' }} fill="none" viewBox="0 0 24 24">
+                                                <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                             </svg>
                                             Đang gửi...
                                         </>
                                     ) : (
                                         <>
-                                            <svg
-                                                width="16"
-                                                height="16"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                strokeWidth="2"
-                                            >
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <polyline points="1 4 1 10 7 10" />
                                                 <path d="M3.51 15a9 9 0 1 0 .49-3.5" />
                                             </svg>
@@ -434,45 +312,14 @@ export default function ResetPasswordPage() {
                             </form>
                         </>
                     ) : (
-                        <div
-                            style={{
-                                background: '#f0fdf4',
-                                border: '1px solid #bbf7d0',
-                                borderRadius: '12px',
-                                padding: '20px',
-                                textAlign: 'center',
-                                marginBottom: '12px',
-                            }}
-                        >
-                            <div
-                                style={{
-                                    width: '44px',
-                                    height: '44px',
-                                    borderRadius: '50%',
-                                    background: '#dcfce7',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    margin: '0 auto 12px',
-                                }}
-                            >
-                                <svg
-                                    width="22"
-                                    height="22"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="#16a34a"
-                                    strokeWidth="2.5"
-                                >
+                        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '20px', textAlign: 'center', marginBottom: '12px' }}>
+                            <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="2.5">
                                     <polyline points="20 6 9 17 4 12" />
                                 </svg>
                             </div>
-                            <p style={{ fontSize: '14px', fontWeight: '600', color: '#15803d', marginBottom: '4px' }}>
-                                Đã gửi link mới!
-                            </p>
-                            <p style={{ fontSize: '13px', color: '#16a34a' }}>
-                                Vui lòng kiểm tra hộp thư email của bạn
-                            </p>
+                            <p style={{ fontSize: '14px', fontWeight: '600', color: '#15803d', marginBottom: '4px' }}>Đã gửi link mới!</p>
+                            <p style={{ fontSize: '13px', color: '#16a34a' }}>Vui lòng kiểm tra hộp thư email của bạn</p>
                         </div>
                     )}
 
@@ -480,46 +327,16 @@ export default function ResetPasswordPage() {
                         type="button"
                         className="back-btn"
                         onClick={() => router.push(role === 'EMPLOYER' ? '/employer-login' : '/login')}
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            borderRadius: '10px',
-                            background: 'transparent',
-                            color: '#6b7280',
-                            fontWeight: '500',
-                            fontSize: '14px',
-                            border: '1px solid #e5e7eb',
-                            cursor: 'pointer',
-                            transition: 'background 0.15s',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '8px',
-                            fontFamily: 'inherit',
-                        }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '10px', background: 'transparent', color: '#6b7280', fontWeight: '500', fontSize: '14px', border: '1px solid #e5e7eb', cursor: 'pointer', transition: 'background 0.15s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontFamily: 'inherit' }}
                     >
-                        <svg
-                            width="16"
-                            height="16"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <line x1="19" y1="12" x2="5" y2="12" />
                             <polyline points="12 19 5 12 12 5" />
                         </svg>
                         Quay lại đăng nhập
                     </button>
 
-                    <div
-                        style={{
-                            borderTop: '1px solid #f3f4f6',
-                            paddingTop: '18px',
-                            textAlign: 'center',
-                            marginTop: '20px',
-                        }}
-                    >
+                    <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '18px', textAlign: 'center', marginTop: '20px' }}>
                         <p style={{ fontSize: '12px', color: '#9ca3af' }}>
                             Gặp khó khăn? Gọi <span style={{ color: '#00b14f', fontWeight: '600' }}>1900 068 889</span>{' '}
                             | <span style={{ color: '#00b14f', fontWeight: '600' }}>Nhánh 2</span> (giờ hành chính)
@@ -543,84 +360,31 @@ export default function ResetPasswordPage() {
                     <Image src={logo} alt="TopCV" height={36} />
                 </div>
 
-                <h1
-                    style={{
-                        fontSize: '22px',
-                        fontWeight: '700',
-                        color: '#00b14f',
-                        textAlign: 'center',
-                        marginBottom: '8px',
-                    }}
-                >
+                <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#00b14f', textAlign: 'center', marginBottom: '8px' }}>
                     Tạo lại mật khẩu của bạn
                 </h1>
-                <p
-                    style={{
-                        fontSize: '13px',
-                        color: '#6b7280',
-                        textAlign: 'center',
-                        marginBottom: '28px',
-                        lineHeight: '1.6',
-                    }}
-                >
-                    Đăng nhập ngay để bắt đầu xây dựng một hồ sơ nổi bật cho bạn và nhận được các cơ hội sự nghiệp lý
-                    tưởng
+                <p style={{ fontSize: '13px', color: '#6b7280', textAlign: 'center', marginBottom: '28px', lineHeight: '1.6' }}>
+                    Đăng nhập ngay để bắt đầu xây dựng một hồ sơ nổi bật cho bạn và nhận được các cơ hội sự nghiệp lý tưởng
                 </p>
 
                 {error && (
-                    <div
-                        style={{
-                            background: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            color: '#dc2626',
-                            fontSize: '13px',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            marginBottom: '16px',
-                        }}
-                    >
+                    <div style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#dc2626', fontSize: '13px', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px' }}>
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div
-                        style={{
-                            background: '#f0fdf4',
-                            border: '1px solid #bbf7d0',
-                            color: '#16a34a',
-                            fontSize: '13px',
-                            padding: '12px 16px',
-                            borderRadius: '8px',
-                            marginBottom: '16px',
-                        }}
-                    >
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#16a34a', fontSize: '13px', padding: '12px 16px', borderRadius: '8px', marginBottom: '16px' }}>
                         {success}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit}>
                     <div style={{ marginBottom: '16px' }}>
-                        <label
-                            style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '6px',
-                            }}
-                        >
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                             Mật khẩu mới
                         </label>
                         <div style={{ position: 'relative' }}>
-                            <span
-                                style={{
-                                    position: 'absolute',
-                                    left: '12px',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    color: '#00b14f',
-                                }}
-                            >
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#00b14f' }}>
                                 <Lock size={17} />
                             </span>
                             <input
@@ -630,61 +394,20 @@ export default function ResetPasswordPage() {
                                 value={form.newPassword}
                                 onChange={handleChange}
                                 required
-                                style={{
-                                    width: '100%',
-                                    paddingLeft: '40px',
-                                    paddingRight: '40px',
-                                    paddingTop: '12px',
-                                    paddingBottom: '12px',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    fontSize: '13px',
-                                    outline: 'none',
-                                    background: 'white',
-                                    boxSizing: 'border-box',
-                                }}
+                                style={{ width: '100%', paddingLeft: '40px', paddingRight: '40px', paddingTop: '12px', paddingBottom: '12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', outline: 'none', background: 'white', boxSizing: 'border-box' }}
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowNew(!showNew)}
-                                style={{
-                                    position: 'absolute',
-                                    right: '12px',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#9ca3af',
-                                    cursor: 'pointer',
-                                }}
-                            >
+                            <button type="button" onClick={() => setShowNew(!showNew)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
                                 {showNew ? <EyeOff size={17} /> : <Eye size={17} />}
                             </button>
                         </div>
                     </div>
 
                     <div style={{ marginBottom: '24px' }}>
-                        <label
-                            style={{
-                                display: 'block',
-                                fontSize: '13px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                marginBottom: '6px',
-                            }}
-                        >
+                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '500', color: '#374151', marginBottom: '6px' }}>
                             Xác nhận mật khẩu
                         </label>
                         <div style={{ position: 'relative' }}>
-                            <span
-                                style={{
-                                    position: 'absolute',
-                                    left: '12px',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    color: '#00b14f',
-                                }}
-                            >
+                            <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#00b14f' }}>
                                 <Lock size={17} />
                             </span>
                             <input
@@ -694,34 +417,9 @@ export default function ResetPasswordPage() {
                                 value={form.confirmPassword}
                                 onChange={handleChange}
                                 required
-                                style={{
-                                    width: '100%',
-                                    paddingLeft: '40px',
-                                    paddingRight: '40px',
-                                    paddingTop: '12px',
-                                    paddingBottom: '12px',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '6px',
-                                    fontSize: '13px',
-                                    outline: 'none',
-                                    background: 'white',
-                                    boxSizing: 'border-box',
-                                }}
+                                style={{ width: '100%', paddingLeft: '40px', paddingRight: '40px', paddingTop: '12px', paddingBottom: '12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', outline: 'none', background: 'white', boxSizing: 'border-box' }}
                             />
-                            <button
-                                type="button"
-                                onClick={() => setShowConfirm(!showConfirm)}
-                                style={{
-                                    position: 'absolute',
-                                    right: '12px',
-                                    top: '50%',
-                                    transform: 'translateY(-50%)',
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#9ca3af',
-                                    cursor: 'pointer',
-                                }}
-                            >
+                            <button type="button" onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer' }}>
                                 {showConfirm ? <EyeOff size={17} /> : <Eye size={17} />}
                             </button>
                         </div>
@@ -730,35 +428,17 @@ export default function ResetPasswordPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        style={{
-                            width: '100%',
-                            padding: '12px',
-                            borderRadius: '6px',
-                            background: loading ? '#86efac' : '#00b14f',
-                            color: 'white',
-                            fontWeight: '600',
-                            fontSize: '14px',
-                            border: 'none',
-                            marginBottom: '16px',
-                            cursor: loading ? 'not-allowed' : 'pointer',
-                            fontFamily: 'inherit',
-                        }}
+                        style={{ width: '100%', padding: '12px', borderRadius: '6px', background: loading ? '#86efac' : '#00b14f', color: 'white', fontWeight: '600', fontSize: '14px', border: 'none', marginBottom: '16px', cursor: loading ? 'not-allowed' : 'pointer', fontFamily: 'inherit' }}
                     >
                         {loading ? 'Đang xử lý...' : 'Tạo mật khẩu mới'}
                     </button>
                 </form>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px' }}>
-                    <Link
-                        href={role === 'EMPLOYER' ? '/employer-login' : '/login'}
-                        style={{ fontSize: '13px', color: '#00b14f' }}
-                    >
+                    <Link href={role === 'EMPLOYER' ? '/employer-login' : '/login'} style={{ fontSize: '13px', color: '#00b14f' }}>
                         Quay lại đăng nhập
                     </Link>
-                    <Link
-                        href={role === 'EMPLOYER' ? '/employer-register' : '/register'}
-                        style={{ fontSize: '13px', color: '#00b14f' }}
-                    >
+                    <Link href={role === 'EMPLOYER' ? '/employer-register' : '/register'} style={{ fontSize: '13px', color: '#00b14f' }}>
                         Đăng ký tài khoản mới
                     </Link>
                 </div>

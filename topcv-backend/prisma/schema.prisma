@@ -47,21 +47,70 @@ model CandidateProfile {
 }
 
 model EmployerProfile {
-  id          String   @id @default(uuid())
-  userId      String   @unique @map("user_id")
-  companyName String   @map("company_name")
-  logoUrl     String?  @map("logo_url")
-  companySize String?  @map("company_size")
-  industry    String?
+  id          String    @id @default(uuid())
+  userId      String    @unique @map("user_id")
+  companyName String    @map("company_name")
+  logoUrl     String?   @map("logo_url")
+  companySize String?   @map("company_size")
+  industryId  Int?      @map("industry_id")
   website     String?
   address     String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  description String?
+  createdAt   DateTime  @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  industry Industry? @relation(fields: [industryId], references: [id])
+  jobs     Job[]
 
   @@map("employer_profiles")
 }
 
+model Industry {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
+
+  employerProfiles EmployerProfile[]
+  jobs             Job[]
+
+  @@map("industries")
+}
+
+model JobPosition {
+  id   Int    @id @default(autoincrement())
+  name String
+  slug String @unique
+
+  jobs Job[]
+
+  @@map("job_positions")
+}
+
+model Job {
+  id            String    @id @default(uuid())
+  employerId    String    @map("employer_id")
+  title         String
+  description   String
+  salaryMin     Int?      @map("salary_min")
+  salaryMax     Int?      @map("salary_max")
+  salaryType    String    @default("range") @map("salary_type") // "range" | "negotiable" | "upto"
+  address       String?
+  jobType       String?   @map("job_type")   // "fulltime" | "parttime" | "remote" | "internship"
+  experience    String?   // "0-1" | "1-2" | "2-3" | "3-5" | "5+"
+  quantity      Int       @default(1)
+  deadline      DateTime?
+  isActive      Boolean   @default(true) @map("is_active")
+  industryId    Int?      @map("industry_id")
+  jobPositionId Int?      @map("job_position_id")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  employer    EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  industry    Industry?       @relation(fields: [industryId], references: [id])
+  jobPosition JobPosition?    @relation(fields: [jobPositionId], references: [id])
+
+  @@map("jobs")
+}
 model RefreshToken {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")

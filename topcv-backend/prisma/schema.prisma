@@ -28,6 +28,7 @@ model User {
   candidateProfile CandidateProfile?
   employerProfile  EmployerProfile?
   refreshTokens    RefreshToken[]
+  auditLogs        AuditLog[]
 
   @@map("users")
 }
@@ -47,16 +48,16 @@ model CandidateProfile {
 }
 
 model EmployerProfile {
-  id          String    @id @default(uuid())
-  userId      String    @unique @map("user_id")
-  companyName String    @map("company_name")
-  logoUrl     String?   @map("logo_url")
-  companySize String?   @map("company_size")
-  industryId  Int?      @map("industry_id")
+  id          String   @id @default(uuid())
+  userId      String   @unique @map("user_id")
+  companyName String   @map("company_name")
+  logoUrl     String?  @map("logo_url")
+  companySize String?  @map("company_size")
+  industryId  Int?     @map("industry_id")
   website     String?
   address     String?
   description String?
-  createdAt   DateTime  @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   industry Industry? @relation(fields: [industryId], references: [id])
@@ -93,10 +94,10 @@ model Job {
   description   String
   salaryMin     Int?      @map("salary_min")
   salaryMax     Int?      @map("salary_max")
-  salaryType    String    @default("range") @map("salary_type") // "range" | "negotiable" | "upto"
+  salaryType    String    @default("range") @map("salary_type")
   address       String?
-  jobType       String?   @map("job_type")   // "fulltime" | "parttime" | "remote" | "internship"
-  experience    String?   // "0-1" | "1-2" | "2-3" | "3-5" | "5+"
+  jobType       String?   @map("job_type")
+  experience    String?
   quantity      Int       @default(1)
   deadline      DateTime?
   isActive      Boolean   @default(true) @map("is_active")
@@ -111,6 +112,7 @@ model Job {
 
   @@map("jobs")
 }
+
 model RefreshToken {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
@@ -121,4 +123,20 @@ model RefreshToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("refresh_tokens")
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  action    String   // CREATE, UPDATE, DELETE
+  entity    String   // "Industry", "JobPosition", "Job",...
+  entityId  String   @map("entity_id")
+  oldData   Json?    @map("old_data")
+  newData   Json?    @map("new_data")
+  ipAddress String?  @map("ip_address")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
 }

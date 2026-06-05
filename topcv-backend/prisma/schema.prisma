@@ -12,6 +12,25 @@ enum Role {
   ADMIN
 }
 
+enum JobLevel {
+  NHAN_VIEN
+  TRUONG_NHOM
+  TRUONG_PHO_PHONG
+  QUAN_LY_GIAM_SAT
+  TRUONG_CHI_NHANH
+  PHO_GIAM_DOC
+  GIAM_DOC
+  THUC_TAP_SINH
+}
+
+enum WorkingType {
+  TOAN_THOI_GIAN
+  BAN_THOI_GIAN
+  FREELANCE
+  THUC_TAP
+  REMOTE
+}
+
 model User {
   id               String   @id @default(uuid())
   email            String   @unique
@@ -29,6 +48,7 @@ model User {
   employerProfile  EmployerProfile?
   refreshTokens    RefreshToken[]
   auditLogs        AuditLog[]
+  resumes          Resume[]
 
   @@map("users")
 }
@@ -88,29 +108,55 @@ model JobPosition {
 }
 
 model Job {
-  id            String    @id @default(uuid())
-  employerId    String    @map("employer_id")
+  id            String       @id @default(uuid())
+  employerId    String       @map("employer_id")
   title         String
   description   String
-  salaryMin     Int?      @map("salary_min")
-  salaryMax     Int?      @map("salary_max")
-  salaryType    String    @default("range") @map("salary_type")
+  salaryMin     Int?         @map("salary_min")
+  salaryMax     Int?         @map("salary_max")
+  salaryType    String       @default("range") @map("salary_type")
   address       String?
-  jobType       String?   @map("job_type")
+  provinceCode  String?      @map("province_code")
+  provinceName  String?      @map("province_name")
+  districtCode  String?      @map("district_code")
+  districtName  String?      @map("district_name")
+  jobType       String?      @map("job_type")
   experience    String?
-  quantity      Int       @default(1)
+  level         JobLevel?
+  workingType   WorkingType? @map("working_type")
+  isSaturday    Boolean      @default(false) @map("is_saturday")
+  quantity      Int          @default(1)
   deadline      DateTime?
-  isActive      Boolean   @default(true) @map("is_active")
-  industryId    Int?      @map("industry_id")
-  jobPositionId Int?      @map("job_position_id")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  isActive      Boolean      @default(true) @map("is_active")
+  industryId    Int?         @map("industry_id")
+  jobPositionId Int?         @map("job_position_id")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
 
   employer    EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
   industry    Industry?       @relation(fields: [industryId], references: [id])
   jobPosition JobPosition?    @relation(fields: [jobPositionId], references: [id])
 
   @@map("jobs")
+}
+
+model Resume {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  title       String   @default("CV chưa đặt tên")
+  template    String   @default("default_v2")
+  color       String   @default("#00b14f")
+  fontSize    String   @default("medium")
+  lineSpacing Float    @default(1.5) @map("line_spacing")
+  background  String   @default("white")
+  content     Json
+  isPublic    Boolean  @default(false) @map("is_public")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("resumes")
 }
 
 model RefreshToken {
@@ -128,8 +174,8 @@ model RefreshToken {
 model AuditLog {
   id        String   @id @default(uuid())
   userId    String   @map("user_id")
-  action    String   // CREATE, UPDATE, DELETE
-  entity    String   // "Industry", "JobPosition", "Job",...
+  action    String
+  entity    String
   entityId  String   @map("entity_id")
   oldData   Json?    @map("old_data")
   newData   Json?    @map("new_data")

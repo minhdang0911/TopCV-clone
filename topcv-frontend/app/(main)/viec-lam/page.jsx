@@ -1,0 +1,1043 @@
+'use client';
+
+import { useState, useEffect, useRef, useCallback } from 'react';
+import Link from 'next/link';
+import {
+    ChevronLeft,
+    ChevronRight,
+    Bookmark,
+    MapPin,
+    DollarSign,
+    Briefcase,
+    X,
+    Search,
+    SlidersHorizontal,
+    Lightbulb,
+    Filter,
+} from 'lucide-react';
+import { jobService } from '@/services/job.service';
+import { provinceService } from '@/services/province.service';
+import api from '@/lib/axios';
+
+const GREEN = '#00b14f';
+
+/* ─── HCM mặc định ─── */
+const HCM_PROVINCE_CODE = '79'; // Mã tỉnh Hồ Chí Minh theo API Vietnam Provinces
+const HCM_PROVINCE_NAME = 'Hồ Chí Minh';
+
+/* ─── Constants ─── */
+const SALARY_OPTIONS = [
+    { label: 'Tất cả', value: '' },
+    { label: 'Dưới 10 triệu', value: 'duoi-10', min: 0, max: 10000000 },
+    { label: 'Từ 10-15 triệu', value: '10-15', min: 10000000, max: 15000000 },
+    { label: 'Từ 15-20 triệu', value: '15-20', min: 15000000, max: 20000000 },
+    { label: 'Từ 20-25 triệu', value: '20-25', min: 20000000, max: 25000000 },
+    { label: 'Từ 25-30 triệu', value: '25-30', min: 25000000, max: 30000000 },
+    { label: 'Từ 30-50 triệu', value: '30-50', min: 30000000, max: 50000000 },
+    { label: 'Trên 50 triệu', value: 'tren-50', min: 50000000, max: undefined },
+    { label: 'Thỏa thuận', value: 'thoa-thuan', salaryType: 'negotiable' },
+];
+
+const EXPERIENCE_OPTIONS = [
+    { label: 'Tất cả', value: '' },
+    { label: 'Chưa có kinh nghiệm', value: 'chua-co' },
+    { label: '1 năm trở xuống', value: '1-nam-tro-xuong' },
+    { label: '1 năm', value: '1-nam' },
+    { label: '2 năm', value: '2-nam' },
+    { label: '3 năm', value: '3-nam' },
+    { label: 'Từ 4-5 năm', value: '4-5-nam' },
+    { label: 'Trên 5 năm', value: 'tren-5-nam' },
+];
+
+const FILTER_TYPES = [
+    { key: 'location', label: 'Địa điểm' },
+    { key: 'salary', label: 'Mức lương' },
+    { key: 'experience', label: 'Kinh nghiệm' },
+    { key: 'industry', label: 'Ngành nghề' },
+];
+
+/* ─── Helpers ─── */
+const formatSalary = (min, max, type) => {
+    if (type === 'negotiable' || (!min && !max)) return 'Thỏa thuận';
+    if (min && max) return `${min / 1000000} - ${max / 1000000} triệu`;
+    if (min) return `Từ ${min / 1000000} triệu`;
+    if (max) return `Đến ${max / 1000000} triệu`;
+    return 'Thỏa thuận';
+};
+
+const isNew = (dateStr) => Date.now() - new Date(dateStr).getTime() < 7 * 86400000;
+
+/* ─── JobCard — giống TopCV ─── */
+function JobCard({ job }) {
+    const [saved, setSaved] = useState(false);
+    const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryType);
+    const location = job.districtName
+        ? `${job.districtName}, ${job.provinceName || ''}`
+        : job.provinceName || job.address || 'Toàn quốc';
+
+    const isHot = job.isHot || job.featured;
+    const isTop = job.isPremium || job.isTop;
+    const isPro = job.isPro;
+    const isOutstanding = job.isOutstanding || job.isNoBat;
+
+    return (
+        <div
+            style={{
+                background: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+                cursor: 'pointer',
+                transition: 'box-shadow 0.18s, border-color 0.18s',
+                position: 'relative',
+                overflow: 'hidden',
+            }}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,177,79,0.15)';
+                e.currentTarget.style.borderColor = '#86efac';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.borderColor = '#e5e7eb';
+            }}
+        >
+            {/* Left accent nếu là TOP */}
+            {isTop && (
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: '3px',
+                        background: GREEN,
+                    }}
+                />
+            )}
+
+            {/* Top row */}
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                {/* Logo */}
+                <div
+                    style={{
+                        width: '52px',
+                        height: '52px',
+                        borderRadius: '8px',
+                        border: '1px solid #e5e7eb',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#f9fafb',
+                    }}
+                >
+                    {job.employer?.logoUrl ? (
+                        <img
+                            src={job.employer.logoUrl}
+                            alt={job.employer.companyName}
+                            style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        />
+                    ) : (
+                        <span style={{ fontSize: '20px', fontWeight: '700', color: GREEN }}>
+                            {job.employer?.companyName?.[0] || 'C'}
+                        </span>
+                    )}
+                </div>
+
+                {/* Title + company */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Badges row */}
+                    <div style={{ display: 'flex', gap: '4px', marginBottom: '4px', flexWrap: 'wrap' }}>
+                        {isOutstanding && (
+                            <span
+                                style={{
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    color: '#f97316',
+                                    background: '#fff7ed',
+                                    border: '1px solid #fdba74',
+                                    borderRadius: '3px',
+                                    padding: '1px 5px',
+                                }}
+                            >
+                                NỔI BẬT
+                            </span>
+                        )}
+                        {isHot && (
+                            <span
+                                style={{
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    color: 'white',
+                                    background: '#ef4444',
+                                    borderRadius: '3px',
+                                    padding: '1px 5px',
+                                }}
+                            >
+                                HOT
+                            </span>
+                        )}
+                        {isTop && (
+                            <span
+                                style={{
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    color: 'white',
+                                    background: GREEN,
+                                    borderRadius: '3px',
+                                    padding: '1px 5px',
+                                }}
+                            >
+                                TOP
+                            </span>
+                        )}
+                        {isNew(job.createdAt) && !isHot && !isTop && (
+                            <span
+                                style={{
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    color: 'white',
+                                    background: GREEN,
+                                    borderRadius: '3px',
+                                    padding: '1px 5px',
+                                }}
+                            >
+                                Mới
+                            </span>
+                        )}
+                    </div>
+
+                    <Link
+                        href={`/viec-lam/${job.id}`}
+                        style={{
+                            fontSize: '14px',
+                            fontWeight: '600',
+                            color: '#111827',
+                            textDecoration: 'none',
+                            lineHeight: '1.4',
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            overflow: 'hidden',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = GREEN)}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = '#111827')}
+                    >
+                        {job.title}
+                    </Link>
+
+                    {/* Company name — với Pro badge nếu có */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+                        {isPro && (
+                            <span
+                                style={{
+                                    fontSize: '10px',
+                                    fontWeight: '700',
+                                    color: '#513101',
+                                    background: 'linear-gradient(135deg,#f59e0b,#d97706)',
+                                    borderRadius: '111px',
+                                    padding: '1px 6px',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                Pro
+                            </span>
+                        )}
+                        <p
+                            style={{
+                                fontSize: '12px',
+                                color: '#6b7280',
+                                margin: 0,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            {job.employer?.companyName}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Bookmark */}
+                <button
+                    onClick={(e) => {
+                        e.preventDefault();
+                        setSaved(!saved);
+                    }}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        color: saved ? GREEN : '#9ca3af',
+                        padding: '2px',
+                        flexShrink: 0,
+                    }}
+                >
+                    <Bookmark size={18} fill={saved ? GREEN : 'none'} />
+                </button>
+            </div>
+
+            {/* Bottom row — salary + location */}
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <span
+                    style={{
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        color: GREEN,
+                        background: '#f0fdf4',
+                        borderRadius: '4px',
+                        padding: '3px 8px',
+                    }}
+                >
+                    {salary}
+                </span>
+                <span
+                    style={{
+                        fontSize: '12px',
+                        color: '#6b7280',
+                        background: '#f9fafb',
+                        borderRadius: '4px',
+                        padding: '3px 8px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                    }}
+                >
+                    <MapPin size={11} />
+                    {location}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+/* ─── FilterBar — giống TopCV: Lọc theo dropdown + pills scroll ─── */
+function FilterBar({
+    filterType,
+    setFilterType,
+    filters,
+    setFilters,
+    industries,
+    provinces,
+    districts,
+    loadingDistricts,
+}) {
+    const scrollRef = useRef(null);
+    const [canScrollLeft, setCanScrollLeft] = useState(false);
+    const [canScrollRight, setCanScrollRight] = useState(false);
+
+    const checkScroll = useCallback(() => {
+        if (!scrollRef.current) return;
+        const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+        setCanScrollLeft(scrollLeft > 4);
+        setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 4);
+    }, []);
+
+    useEffect(() => {
+        const el = scrollRef.current;
+        if (!el) return;
+        checkScroll();
+        el.addEventListener('scroll', checkScroll, { passive: true });
+        const ro = new ResizeObserver(checkScroll);
+        ro.observe(el);
+        return () => {
+            el.removeEventListener('scroll', checkScroll);
+            ro.disconnect();
+        };
+    }, [checkScroll, filterType, districts, provinces, industries]);
+
+    const scroll = (dir) => scrollRef.current?.scrollBy({ left: dir * 220, behavior: 'smooth' });
+
+    /* Build options */
+    const options = (() => {
+        if (filterType === 'location') {
+            if (filters.provinceCode && districts.length > 0) {
+                return [
+                    { label: 'Tất cả', value: '__all_district__' },
+                    ...districts.map((d) => ({
+                        label: d.name,
+                        value: String(d.code),
+                        code: d.code,
+                        name: d.name,
+                    })),
+                ];
+            }
+            return [
+                { label: 'Tất cả', value: '__all_province__' },
+                ...provinces.map((p) => ({
+                    label: p.name,
+                    value: String(p.code),
+                    code: p.code,
+                    name: p.name,
+                })),
+            ];
+        }
+        if (filterType === 'salary') return SALARY_OPTIONS;
+        if (filterType === 'experience') return EXPERIENCE_OPTIONS;
+        if (filterType === 'industry')
+            return [{ label: 'Tất cả', value: '' }, ...industries.map((i) => ({ label: i.name, value: String(i.id) }))];
+        return [];
+    })();
+
+    const activeValue = (() => {
+        if (filterType === 'location') return filters.districtCode || filters.provinceCode || '__all_province__';
+        if (filterType === 'salary') return filters.salary || '';
+        if (filterType === 'experience') return filters.experience || '';
+        if (filterType === 'industry') return filters.industryId || '';
+        return '';
+    })();
+
+    const handleSelect = (opt) => {
+        if (filterType === 'location') {
+            if (opt.value === '__all_province__') {
+                setFilters((f) => ({ ...f, provinceCode: '', provinceName: '', districtCode: '', districtName: '' }));
+            } else if (opt.value === '__all_district__') {
+                // Quay về hiện quận, bỏ chọn quận
+                setFilters((f) => ({ ...f, districtCode: '', districtName: '' }));
+            } else if (!filters.provinceCode) {
+                // Chọn tỉnh → load quận
+                setFilters((f) => ({
+                    ...f,
+                    provinceCode: String(opt.code),
+                    provinceName: opt.name,
+                    districtCode: '',
+                    districtName: '',
+                }));
+            } else {
+                // Chọn quận
+                setFilters((f) => ({ ...f, districtCode: String(opt.code), districtName: opt.name }));
+            }
+        } else if (filterType === 'salary') {
+            if (!opt.value) {
+                setFilters((f) => ({ ...f, salary: '', salaryMin: undefined, salaryMax: undefined, salaryType: '' }));
+            } else if (opt.salaryType) {
+                setFilters((f) => ({
+                    ...f,
+                    salary: opt.value,
+                    salaryMin: undefined,
+                    salaryMax: undefined,
+                    salaryType: opt.salaryType,
+                }));
+            } else {
+                setFilters((f) => ({
+                    ...f,
+                    salary: opt.value,
+                    salaryMin: opt.min,
+                    salaryMax: opt.max,
+                    salaryType: '',
+                }));
+            }
+        } else if (filterType === 'experience') {
+            setFilters((f) => ({ ...f, experience: opt.value }));
+        } else if (filterType === 'industry') {
+            setFilters((f) => ({ ...f, industryId: opt.value }));
+        }
+    };
+
+    /* Label hiển thị trong select dropdown */
+    const filterLabel = (() => {
+        if (filterType === 'location') {
+            if (filters.districtName) return `${filters.districtName}`;
+            if (filters.provinceName) return filters.provinceName;
+            return 'Địa điểm';
+        }
+        if (filterType === 'salary')
+            return filters.salary ? SALARY_OPTIONS.find((s) => s.value === filters.salary)?.label : 'Mức lương';
+        if (filterType === 'experience')
+            return filters.experience
+                ? EXPERIENCE_OPTIONS.find((e) => e.value === filters.experience)?.label
+                : 'Kinh nghiệm';
+        return 'Ngành nghề';
+    })();
+
+    return (
+        <div style={{ background: 'white', padding: '10px 0' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {/* "Lọc theo: Địa điểm ▼" dropdown */}
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '6px',
+                            padding: '7px 10px 7px 12px',
+                            background: 'white',
+                            flexShrink: 0,
+                            cursor: 'pointer',
+                            minWidth: '160px',
+                        }}
+                    >
+                        <Filter size={13} color="#6b7280" />
+                        <span style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'nowrap' }}>Lọc theo:</span>
+                        <select
+                            value={filterType}
+                            onChange={(e) => setFilterType(e.target.value)}
+                            style={{
+                                border: 'none',
+                                background: 'none',
+                                outline: 'none',
+                                fontSize: '13px',
+                                fontWeight: '600',
+                                color: '#111827',
+                                cursor: 'pointer',
+                                flex: 1,
+                            }}
+                        >
+                            {FILTER_TYPES.map((f) => (
+                                <option key={f.key} value={f.key}>
+                                    {f.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Scroll left */}
+                    <button
+                        onClick={() => scroll(-1)}
+                        disabled={!canScrollLeft}
+                        style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '50%',
+                            border: '1px solid #e5e7eb',
+                            background: canScrollLeft ? 'white' : '#f9fafb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: canScrollLeft ? 'pointer' : 'default',
+                            flexShrink: 0,
+                            color: canScrollLeft ? '#374151' : '#d1d5db',
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        <ChevronLeft size={15} />
+                    </button>
+
+                    {/* Pills scroll */}
+                    <div
+                        ref={scrollRef}
+                        style={{
+                            display: 'flex',
+                            gap: '8px',
+                            overflowX: 'auto',
+                            scrollbarWidth: 'none',
+                            flex: 1,
+                            alignItems: 'center',
+                            padding: '2px 0',
+                        }}
+                    >
+                        {loadingDistricts ? (
+                            <span style={{ fontSize: '13px', color: '#9ca3af', padding: '6px 14px' }}>Đang tải...</span>
+                        ) : (
+                            options.map((opt) => {
+                                const isActive = activeValue === opt.value;
+                                return (
+                                    <button
+                                        key={opt.value}
+                                        onClick={() => handleSelect(opt)}
+                                        style={{
+                                            flexShrink: 0,
+                                            padding: '6px 16px',
+                                            borderRadius: '20px',
+                                            border: isActive ? `1.5px solid ${GREEN}` : '1.5px solid #e5e7eb',
+                                            background: isActive ? GREEN : 'white',
+                                            color: isActive ? 'white' : '#374151',
+                                            fontSize: '13px',
+                                            fontWeight: isActive ? '600' : '400',
+                                            cursor: 'pointer',
+                                            whiteSpace: 'nowrap',
+                                            transition: 'all 0.15s',
+                                            lineHeight: '1.5',
+                                        }}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                );
+                            })
+                        )}
+                    </div>
+
+                    {/* Scroll right */}
+                    <button
+                        onClick={() => scroll(1)}
+                        disabled={!canScrollRight}
+                        style={{
+                            width: '30px',
+                            height: '30px',
+                            borderRadius: '50%',
+                            border: '1px solid #e5e7eb',
+                            background: canScrollRight ? GREEN : '#f9fafb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: canScrollRight ? 'pointer' : 'default',
+                            flexShrink: 0,
+                            color: canScrollRight ? 'white' : '#d1d5db',
+                            transition: 'all 0.15s',
+                        }}
+                    >
+                        <ChevronRight size={15} />
+                    </button>
+                </div>
+
+                {/* Active filter tags */}
+                {(filters.provinceName || filters.salary || filters.experience || filters.industryId) && (
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                        {filters.provinceName && (
+                            <ActiveTag
+                                label={
+                                    filters.districtName
+                                        ? `${filters.districtName}, ${filters.provinceName}`
+                                        : filters.provinceName
+                                }
+                                onRemove={() =>
+                                    setFilters((f) => ({
+                                        ...f,
+                                        provinceCode: '',
+                                        provinceName: '',
+                                        districtCode: '',
+                                        districtName: '',
+                                    }))
+                                }
+                            />
+                        )}
+                        {filters.salary && (
+                            <ActiveTag
+                                label={SALARY_OPTIONS.find((s) => s.value === filters.salary)?.label}
+                                onRemove={() =>
+                                    setFilters((f) => ({
+                                        ...f,
+                                        salary: '',
+                                        salaryMin: undefined,
+                                        salaryMax: undefined,
+                                        salaryType: '',
+                                    }))
+                                }
+                            />
+                        )}
+                        {filters.experience && (
+                            <ActiveTag
+                                label={EXPERIENCE_OPTIONS.find((e) => e.value === filters.experience)?.label}
+                                onRemove={() => setFilters((f) => ({ ...f, experience: '' }))}
+                            />
+                        )}
+                        {filters.industryId && (
+                            <ActiveTag
+                                label={industries.find((i) => String(i.id) === filters.industryId)?.name}
+                                onRemove={() => setFilters((f) => ({ ...f, industryId: '' }))}
+                            />
+                        )}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function ActiveTag({ label, onRemove }) {
+    return (
+        <span
+            style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '3px 10px',
+                borderRadius: '20px',
+                background: '#f0fdf4',
+                border: `1px solid #86efac`,
+                fontSize: '12px',
+                color: GREEN,
+                fontWeight: '500',
+            }}
+        >
+            {label}
+            <button
+                onClick={onRemove}
+                style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: GREEN,
+                    padding: 0,
+                    display: 'flex',
+                }}
+            >
+                <X size={12} />
+            </button>
+        </span>
+    );
+}
+
+/* ─── Pagination — giống "1 / 60 trang" của TopCV ─── */
+function Pagination({ page, totalPages, onChange }) {
+    if (totalPages <= 1) return null;
+    return (
+        <div
+            style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '8px',
+                margin: '28px 0',
+            }}
+        >
+            <button
+                onClick={() => onChange(page - 1)}
+                disabled={page === 1}
+                style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: '1px solid #e5e7eb',
+                    background: page === 1 ? '#f9fafb' : 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: page === 1 ? 'default' : 'pointer',
+                    color: page === 1 ? '#d1d5db' : '#374151',
+                }}
+            >
+                <ChevronLeft size={16} />
+            </button>
+
+            <span
+                style={{
+                    fontSize: '14px',
+                    color: '#374151',
+                    fontWeight: '500',
+                    padding: '0 8px',
+                }}
+            >
+                <strong style={{ color: '#111827' }}>{page}</strong>
+                <span style={{ color: '#9ca3af' }}> / {totalPages} trang</span>
+            </span>
+
+            <button
+                onClick={() => onChange(page + 1)}
+                disabled={page === totalPages}
+                style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '50%',
+                    border: '1px solid #e5e7eb',
+                    background: page === totalPages ? '#f9fafb' : 'white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: page === totalPages ? 'default' : 'pointer',
+                    color: page === totalPages ? '#d1d5db' : '#374151',
+                }}
+            >
+                <ChevronRight size={16} />
+            </button>
+        </div>
+    );
+}
+
+/* ─── Skeleton ─── */
+function JobCardSkeleton() {
+    return (
+        <div
+            style={{
+                background: 'white',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                padding: '16px',
+            }}
+        >
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                <div
+                    style={{ width: '52px', height: '52px', borderRadius: '8px', background: '#f3f4f6', flexShrink: 0 }}
+                />
+                <div style={{ flex: 1 }}>
+                    <div
+                        style={{
+                            height: '14px',
+                            background: '#f3f4f6',
+                            borderRadius: '4px',
+                            marginBottom: '8px',
+                            width: '75%',
+                        }}
+                    />
+                    <div style={{ height: '12px', background: '#f3f4f6', borderRadius: '4px', width: '45%' }} />
+                </div>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+                <div style={{ height: '26px', background: '#f3f4f6', borderRadius: '4px', width: '95px' }} />
+                <div style={{ height: '26px', background: '#f3f4f6', borderRadius: '4px', width: '115px' }} />
+            </div>
+        </div>
+    );
+}
+
+/* ══════════════════════════════════════════
+   MAIN PAGE
+══════════════════════════════════════════ */
+export default function ViecLamPage() {
+    const [jobs, setJobs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
+    const [page, setPage] = useState(1);
+    const [showTip, setShowTip] = useState(true);
+
+    const [filterType, setFilterType] = useState('location');
+
+    /* ── Mặc định TPHCM ── */
+    const [filters, setFilters] = useState({
+        provinceCode: HCM_PROVINCE_CODE,
+        provinceName: HCM_PROVINCE_NAME,
+        districtCode: '',
+        districtName: '',
+        salary: '',
+        salaryMin: undefined,
+        salaryMax: undefined,
+        salaryType: '',
+        experience: '',
+        industryId: '',
+    });
+
+    const [provinces, setProvinces] = useState([]);
+    const [districts, setDistricts] = useState([]);
+    const [loadingDistricts, setLoadingDistricts] = useState(false);
+    const [industries, setIndustries] = useState([]);
+
+    /* Load provinces + industries once */
+    useEffect(() => {
+        provinceService.getAll().then(setProvinces).catch(console.error);
+        api.get('/industries?limit=100')
+            .then((r) => setIndustries(r.data.data || []))
+            .catch(console.error);
+    }, []);
+
+    /* Load districts của TPHCM ngay khi mount */
+    useEffect(() => {
+        if (!filters.provinceCode) {
+            setDistricts([]);
+            return;
+        }
+        setLoadingDistricts(true);
+        provinceService
+            .getDistricts(filters.provinceCode)
+            .then((data) => setDistricts(data.districts || data || []))
+            .catch(console.error)
+            .finally(() => setLoadingDistricts(false));
+    }, [filters.provinceCode]);
+
+    /* Fetch jobs */
+    const fetchJobs = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = { page, limit: 12 };
+            if (filters.provinceCode) params.provinceCode = filters.provinceCode;
+            if (filters.districtCode) params.districtCode = filters.districtCode;
+            if (filters.salaryMin !== undefined) params.salaryMin = filters.salaryMin;
+            if (filters.salaryMax !== undefined) params.salaryMax = filters.salaryMax;
+            if (filters.salaryType) params.salaryType = filters.salaryType;
+            if (filters.experience) params.experience = filters.experience;
+            if (filters.industryId) params.industryId = filters.industryId;
+
+            const res = await jobService.getAll(params);
+            setJobs(res.data.data || []);
+            setMeta(res.data.meta || { total: 0, totalPages: 1, page: 1 });
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }, [page, filters]);
+
+    useEffect(() => {
+        fetchJobs();
+    }, [fetchJobs]);
+    useEffect(() => {
+        setPage(1);
+    }, [filters]);
+
+    /* Title hiển thị — ví dụ "Hồ Chí Minh (mới)" */
+    const locationTitle = filters.districtName
+        ? `${filters.districtName}, ${filters.provinceName}`
+        : filters.provinceName || 'Toàn quốc';
+
+    return (
+        <div style={{ background: '#f5f5f5', minHeight: '100vh' }}>
+            {/* ── Filter bar sticky ── */}
+            <div
+                style={{
+                    background: 'white',
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+                    position: 'sticky',
+                    top: '72px',
+                    zIndex: 50,
+                    borderBottom: '1px solid #f0f0f0',
+                }}
+            >
+                <FilterBar
+                    filterType={filterType}
+                    setFilterType={setFilterType}
+                    filters={filters}
+                    setFilters={setFilters}
+                    industries={industries}
+                    provinces={provinces}
+                    districts={districts}
+                    loadingDistricts={loadingDistricts}
+                />
+            </div>
+
+            {/* ── Main content ── */}
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px' }}>
+                {/* Tip bar */}
+                {showTip && (
+                    <div
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            background: '#fffbeb',
+                            border: '1px solid #fde68a',
+                            borderRadius: '8px',
+                            padding: '10px 14px',
+                            marginBottom: '16px',
+                            fontSize: '13px',
+                            color: '#92400e',
+                        }}
+                    >
+                        <Lightbulb size={16} color="#d97706" style={{ flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>
+                            <strong>Gợi ý:</strong> Di chuột vào tiêu đề việc làm để xem thêm thông tin chi tiết
+                        </span>
+                        <button
+                            onClick={() => setShowTip(false)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#9ca3af',
+                                padding: 0,
+                                display: 'flex',
+                            }}
+                        >
+                            <X size={16} />
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Section header — giống TopCV với ToppyAI badge ── */}
+                <div
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '16px',
+                    }}
+                >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <h2 style={{ fontSize: '20px', fontWeight: '700', color: GREEN, margin: 0 }}>
+                            Việc làm tốt nhất
+                        </h2>
+                        {/* ToppyAI badge giống TopCV */}
+                        <div
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                background: 'white',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '6px',
+                                padding: '4px 10px',
+                            }}
+                        >
+                            <span style={{ fontSize: '10px', color: '#6b7280' }}>Đề xuất bởi</span>
+                            <span
+                                style={{
+                                    fontSize: '12px',
+                                    fontWeight: '700',
+                                    background: 'linear-gradient(135deg, #00b14f, #007a35)',
+                                    WebkitBackgroundClip: 'text',
+                                    WebkitTextFillColor: 'transparent',
+                                }}
+                            >
+                                ToppyAI
+                            </span>
+                        </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {!loading && (
+                            <span style={{ fontSize: '13px', color: '#6b7280' }}>
+                                Tìm thấy <strong style={{ color: '#111827' }}>{meta.total.toLocaleString()}</strong>{' '}
+                                việc làm
+                            </span>
+                        )}
+                        <Link
+                            href="/viec-lam-tot-nhat"
+                            style={{
+                                fontSize: '13px',
+                                color: GREEN,
+                                textDecoration: 'none',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '2px',
+                            }}
+                        >
+                            Xem tất cả <ChevronRight size={15} />
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Job grid — 3 cột giống TopCV */}
+                <div
+                    className="job-grid"
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '12px',
+                    }}
+                >
+                    {loading ? (
+                        Array.from({ length: 12 }).map((_, i) => <JobCardSkeleton key={i} />)
+                    ) : jobs.length > 0 ? (
+                        jobs.map((job) => <JobCard key={job.id} job={job} />)
+                    ) : (
+                        <div
+                            style={{
+                                gridColumn: '1 / -1',
+                                textAlign: 'center',
+                                padding: '60px 0',
+                                color: '#6b7280',
+                            }}
+                        >
+                            <Briefcase size={52} color="#d1d5db" style={{ margin: '0 auto 16px' }} />
+                            <p style={{ fontSize: '16px', fontWeight: '600', color: '#374151', margin: '0 0 4px' }}>
+                                Không tìm thấy việc làm phù hợp
+                            </p>
+                            <p style={{ fontSize: '14px', margin: 0 }}>
+                                Thử thay đổi bộ lọc hoặc tìm kiếm với từ khóa khác
+                            </p>
+                        </div>
+                    )}
+                </div>
+
+                {/* Pagination */}
+                <Pagination page={page} totalPages={meta.totalPages} onChange={setPage} />
+            </div>
+
+            <style>{`
+                @media (max-width: 1024px) {
+                    .job-grid { grid-template-columns: repeat(2, 1fr) !important; }
+                }
+                @media (max-width: 640px) {
+                    .job-grid { grid-template-columns: 1fr !important; }
+                }
+                *::-webkit-scrollbar { display: none; }
+                * { -ms-overflow-style: none; scrollbar-width: none; }
+            `}</style>
+        </div>
+    );
+}

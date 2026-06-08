@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Redis } from '@upstash/redis';
-import { Prisma, JobLevel, WorkingType } from '@prisma/client';
+import { Prisma, JobLevel, WorkingType, WorkingDays } from '@prisma/client';
 
 @Injectable()
 export class JobsService {
@@ -51,6 +51,161 @@ export class JobsService {
     }
   }
 
+  // ─── STATS ───────────────────────────────────────────
+  // GET /jobs/stats
+  // Trả về: tổng job đang tuyển, job mới hôm nay, trend so hôm qua
+
+  async getStats() {
+    const cacheKey = 'jobs:stats';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const now = new Date();
+
+    // Đầu ngày hôm nay (00:00:00 giờ local UTC+7 → dùng UTC thẳng cho đơn giản)
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+
+    // Đầu ngày hôm qua
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+    const [totalActive, newToday, newYesterday, totalCompanies] = await Promise.all([
+      // Tổng job đang active
+      this.prisma.job.count({
+        where: { isActive: true },
+      }),
+
+      // Job mới tạo hôm nay
+      this.prisma.job.count({
+        where: {
+          isActive: true,
+          createdAt: { gte: todayStart },
+        },
+      }),
+
+      // Job mới tạo hôm qua (để tính trend)
+      this.prisma.job.count({
+        where: {
+          isActive: true,
+          createdAt: {
+            gte: yesterdayStart,
+            lt: todayStart,
+          },
+        },
+      }),
+
+      // Số công ty đang có job tuyển dụng
+      this.prisma.employerProfile.count({
+        where: { jobs: { some: { isActive: true } } },
+      }),
+    ]);
+
+    // trend: 'up' | 'down' | 'stable'
+    const trend =
+      newToday > newYesterday
+        ? 'up'
+        : newToday < newYesterday
+          ? 'down'
+          : 'stable';
+
+    const result = {
+      totalActive,
+      newToday,
+      newYesterday,
+      totalCompanies,
+      trend,
+      date: now.toISOString(),
+    };
+
+    // Cache 10 phút (stats không cần realtime)
+    await this.redis.set(cacheKey, result, { ex: 600 });
+    return result;
+  }
+
+  // ─── GROWTH CHART ────────────────────────────────────
+  // GET /jobs/growth?days=30
+  // Trả về mảng { date, total } — cumulative active jobs mỗi ngày
+
+  async getGrowth(days = 30) {
+    const cacheKey = `jobs:growth:${days}`;
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const [jobsInRange, totalBefore] = await Promise.all([
+      this.prisma.job.findMany({
+        where: { isActive: true, createdAt: { gte: startDate } },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      }),
+      this.prisma.job.count({
+        where: { isActive: true, createdAt: { lt: startDate } },
+      }),
+    ]);
+
+    // Build day map
+    const dayMap = new Map<string, number>();
+    for (let i = 0; i <= days; i++) {
+      const d = new Date(startDate);
+      d.setDate(d.getDate() + i);
+      dayMap.set(d.toISOString().slice(0, 10), 0);
+    }
+
+    for (const job of jobsInRange) {
+      const key = job.createdAt.toISOString().slice(0, 10);
+      if (dayMap.has(key)) dayMap.set(key, dayMap.get(key)! + 1);
+    }
+
+    let cumulative = totalBefore;
+    const result = Array.from(dayMap.entries()).map(([date, newCount]) => {
+      cumulative += newCount;
+      return { date, total: cumulative };
+    });
+
+    await this.redis.set(cacheKey, result, { ex: 600 });
+    return result;
+  }
+
+  // ─── INDUSTRY DEMAND ─────────────────────────────────
+  // GET /jobs/industry-demand
+  // Trả về top 6 ngành theo số job đang tuyển
+
+  async getIndustryDemand() {
+    const cacheKey = 'jobs:industry-demand';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return cached;
+
+    const grouped = await this.prisma.job.groupBy({
+      by: ['industryId'],
+      where: { isActive: true, industryId: { not: null } },
+      _count: { industryId: true },
+      orderBy: { _count: { industryId: 'desc' } },
+      take: 6,
+    });
+
+    const industryIds = grouped
+      .map((g) => g.industryId)
+      .filter((id): id is number => id !== null);
+
+    const industries = await this.prisma.industry.findMany({
+      where: { id: { in: industryIds } },
+    });
+
+    const nameMap = new Map(industries.map((i) => [i.id, i.name]));
+
+    const result = grouped.map((g) => ({
+      name: nameMap.get(g.industryId!) ?? 'Khác',
+      count: g._count.industryId,
+    }));
+
+    await this.redis.set(cacheKey, result, { ex: 600 });
+    return result;
+  }
+
   // ─── CREATE ──────────────────────────────────────────
 
   async create(
@@ -70,7 +225,8 @@ export class JobsService {
       experience?: string;
       level?: JobLevel;
       workingType?: WorkingType;
-      isSaturday?: boolean;
+      workingDays?: WorkingDays;
+      workingDaysNote?: string;
       quantity?: number;
       deadline?: Date | string;
       industryId?: number;
@@ -148,13 +304,14 @@ export class JobsService {
     districtCode?: string;
     level?: JobLevel;
     workingType?: WorkingType;
-    isSaturday?: string;
+    workingDays?: WorkingDays;
+    sort?: string;
   }) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const cacheKey = `jobs:${JSON.stringify(query)}`;
+    const cacheKey = `jobs:list:${JSON.stringify(query)}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) return cached;
 
@@ -174,34 +331,48 @@ export class JobsService {
     if (query.experience) where.experience = query.experience;
     if (query.level) where.level = query.level;
     if (query.workingType) where.workingType = query.workingType;
-    if (query.isSaturday === 'true') where.isSaturday = true;
+    if (query.workingDays) where.workingDays = query.workingDays;
 
-    // Filter địa điểm
     if (query.provinceCode) where.provinceCode = query.provinceCode;
     if (query.districtCode) where.districtCode = query.districtCode;
 
-    // Fallback: filter address nếu không có provinceCode
     if (query.address && !query.provinceCode) {
       where.address = { contains: query.address, mode: 'insensitive' };
     }
 
-    // Filter khoảng lương
     if (query.salaryMin || query.salaryMax) {
       where.AND = where.AND || [];
       if (query.salaryMin) {
-        where.AND.push({ salaryMin: { gte: Number(query.salaryMin) } });
+        where.AND.push({
+          OR: [
+            { salaryMax: { gte: Number(query.salaryMin) } },
+            { salaryMax: null },
+          ],
+        });
       }
       if (query.salaryMax) {
-        where.AND.push({ salaryMax: { lte: Number(query.salaryMax) } });
+        where.AND.push({
+          OR: [
+            { salaryMin: { lte: Number(query.salaryMax) } },
+            { salaryMin: null },
+          ],
+        });
       }
     }
+
+    const orderBy: any =
+      query.sort === 'salary'
+        ? [{ salaryMax: 'desc' }, { createdAt: 'desc' }]
+        : query.sort === 'relevant' && query.search
+          ? [{ createdAt: 'desc' }]
+          : { createdAt: 'desc' };
 
     const [data, total] = await Promise.all([
       this.prisma.job.findMany({
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           employer: {
             select: {

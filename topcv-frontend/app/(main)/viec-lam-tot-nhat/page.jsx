@@ -13,10 +13,13 @@ import {
     Briefcase,
     ChevronDown,
     Check,
+    Rocket,
 } from 'lucide-react';
 import { jobService } from '@/services/job.service';
 import { provinceService } from '@/services/province.service';
 import api from '@/lib/axios';
+import arrownDesktop from '@/app/assests/img/arrow_desktop.png';
+import bannerRight from '@/app/assests/img/banner_right.webp';
 
 const GREEN = '#00b14f';
 
@@ -51,165 +54,7 @@ const daysLeft = (deadline) => {
 
 const isNew = (dateStr) => Date.now() - new Date(dateStr).getTime() < 7 * 86400000;
 
-/* ─── SearchableDropdown ─── */
-function SearchableDropdown({ value, onChange, options, placeholder, icon: Icon }) {
-    const [open, setOpen] = useState(false);
-    const [search, setSearch] = useState('');
-    const ref = useRef(null);
-
-    useEffect(() => {
-        const handler = (e) => {
-            if (ref.current && !ref.current.contains(e.target)) setOpen(false);
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
-
-    const filtered = options.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()));
-
-    const selected = options.find((o) => o.value === value);
-
-    return (
-        <div ref={ref} style={{ position: 'relative', flex: 1 }}>
-            <button
-                onClick={() => {
-                    setOpen(!open);
-                    setSearch('');
-                }}
-                style={{
-                    width: '100%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 14px',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    background: 'white',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    color: selected?.value ? '#111827' : '#9ca3af',
-                    justifyContent: 'space-between',
-                }}
-            >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                    {Icon && <Icon size={16} color="#9ca3af" style={{ flexShrink: 0 }} />}
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {selected?.label || placeholder}
-                    </span>
-                </div>
-                <ChevronDown
-                    size={16}
-                    color="#9ca3af"
-                    style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: '0.2s' }}
-                />
-            </button>
-
-            {open && (
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: 'calc(100% + 4px)',
-                        left: 0,
-                        right: 0,
-                        background: 'white',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: '8px',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                        zIndex: 100,
-                        maxHeight: '280px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                    }}
-                >
-                    <div style={{ padding: '8px', borderBottom: '1px solid #f3f4f6' }}>
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                background: '#f9fafb',
-                                borderRadius: '6px',
-                                padding: '6px 10px',
-                            }}
-                        >
-                            <Search size={14} color="#9ca3af" />
-                            <input
-                                autoFocus
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                placeholder="Tìm kiếm..."
-                                style={{
-                                    border: 'none',
-                                    background: 'none',
-                                    outline: 'none',
-                                    fontSize: '13px',
-                                    flex: 1,
-                                    color: '#111827',
-                                }}
-                            />
-                            {search && (
-                                <button
-                                    onClick={() => setSearch('')}
-                                    style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        color: '#9ca3af',
-                                        padding: 0,
-                                        display: 'flex',
-                                    }}
-                                >
-                                    <X size={12} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                    <div style={{ overflowY: 'auto', flex: 1 }}>
-                        {filtered.map((opt) => (
-                            <button
-                                key={opt.value}
-                                onClick={() => {
-                                    onChange(opt.value);
-                                    setOpen(false);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    textAlign: 'left',
-                                    padding: '9px 14px',
-                                    border: 'none',
-                                    background: opt.value === value ? '#f0fdf4' : 'white',
-                                    cursor: 'pointer',
-                                    fontSize: '13px',
-                                    color: opt.value === value ? GREEN : '#374151',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    gap: '8px',
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (opt.value !== value) e.currentTarget.style.background = '#f9fafb';
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (opt.value !== value) e.currentTarget.style.background = 'white';
-                                }}
-                            >
-                                {opt.label}
-                                {opt.value === value && <Check size={14} color={GREEN} />}
-                            </button>
-                        ))}
-                        {filtered.length === 0 && (
-                            <div style={{ padding: '16px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
-                                Không tìm thấy
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
-
-/* ─── JobCard — list layout ngang giống TopCV ─── */
+/* ─── JobCard ─── */
 function JobCard({ job }) {
     const [saved, setSaved] = useState(false);
     const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryType);
@@ -221,13 +66,14 @@ function JobCard({ job }) {
     const isPro = job.isPro;
     const isHot = job.isHot;
     const isOutstanding = job.isOutstanding;
+    const showNew = isNew(job.createdAt) && !isHot;
 
     return (
         <div
             style={{
                 background: 'white',
                 border: '1px solid #e5e7eb',
-                borderRadius: '10px',
+                borderRadius: '5px',
                 padding: '16px 20px',
                 display: 'flex',
                 gap: '16px',
@@ -238,8 +84,8 @@ function JobCard({ job }) {
                 overflow: 'hidden',
             }}
             onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,177,79,0.12)';
-                e.currentTarget.style.borderColor = '#86efac';
+                e.currentTarget.style.boxShadow = '0 2px 12px rgba(0,177,79,0.12)';
+                e.currentTarget.style.borderColor = GREEN;
             }}
             onMouseLeave={(e) => {
                 e.currentTarget.style.boxShadow = 'none';
@@ -249,23 +95,23 @@ function JobCard({ job }) {
             {/* Logo */}
             <div
                 style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '10px',
+                    width: '72px',
+                    height: '72px',
+                    borderRadius: '4px',
                     border: '1px solid #e5e7eb',
                     overflow: 'hidden',
                     flexShrink: 0,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    background: '#f9fafb',
+                    background: '#fafafa',
                 }}
             >
                 {job.employer?.logoUrl ? (
                     <img
                         src={job.employer.logoUrl}
                         alt={job.employer.companyName}
-                        style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                        style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '6px' }}
                     />
                 ) : (
                     <span style={{ fontSize: '22px', fontWeight: '700', color: GREEN }}>
@@ -283,13 +129,13 @@ function JobCard({ job }) {
                     {isOutstanding && (
                         <span
                             style={{
-                                fontSize: '10px',
-                                fontWeight: '700',
+                                fontSize: '11px',
+                                fontWeight: '600',
                                 color: '#f97316',
                                 background: '#fff7ed',
                                 border: '1px solid #fdba74',
                                 borderRadius: '3px',
-                                padding: '1px 5px',
+                                padding: '1px 6px',
                                 flexShrink: 0,
                             }}
                         >
@@ -299,31 +145,32 @@ function JobCard({ job }) {
                     {isHot && (
                         <span
                             style={{
-                                fontSize: '10px',
-                                fontWeight: '700',
+                                fontSize: '11px',
+                                fontWeight: '600',
                                 color: 'white',
                                 background: '#ef4444',
                                 borderRadius: '3px',
-                                padding: '1px 5px',
+                                padding: '1px 6px',
                                 flexShrink: 0,
                             }}
                         >
                             HOT
                         </span>
                     )}
-                    {isNew(job.createdAt) && !isHot && (
+                    {showNew && (
                         <span
                             style={{
-                                fontSize: '10px',
-                                fontWeight: '700',
-                                color: 'white',
-                                background: GREEN,
+                                fontSize: '11px',
+                                fontWeight: '600',
+                                color: GREEN,
+                                background: 'white',
+                                border: `1px solid ${GREEN}`,
                                 borderRadius: '3px',
-                                padding: '1px 5px',
+                                padding: '1px 6px',
                                 flexShrink: 0,
                             }}
                         >
-                            Mới
+                            Tin mới
                         </span>
                     )}
                     <Link
@@ -331,7 +178,7 @@ function JobCard({ job }) {
                         style={{
                             fontSize: '15px',
                             fontWeight: '600',
-                            color: '#111827',
+                            color: '#212f3f',
                             textDecoration: 'none',
                             lineHeight: '1.4',
                             overflow: 'hidden',
@@ -339,7 +186,7 @@ function JobCard({ job }) {
                             whiteSpace: 'nowrap',
                         }}
                         onMouseEnter={(e) => (e.currentTarget.style.color = GREEN)}
-                        onMouseLeave={(e) => (e.currentTarget.style.color = '#111827')}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = '#212f3f')}
                     >
                         {job.title}
                     </Link>
@@ -376,10 +223,10 @@ function JobCard({ job }) {
                 </div>
 
                 {/* Meta row */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
                     <span
                         style={{
-                            fontSize: '13px',
+                            fontSize: '12px',
                             color: '#6b7280',
                             display: 'flex',
                             alignItems: 'center',
@@ -389,26 +236,28 @@ function JobCard({ job }) {
                         <MapPin size={12} color="#9ca3af" /> {location}
                     </span>
                     {remaining !== null && (
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>
-                            · Còn <strong style={{ color: remaining <= 3 ? '#ef4444' : '#374151' }}>{remaining}</strong>{' '}
+                        <span
+                            style={{
+                                fontSize: '12px',
+                                color: '#6b7280',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                            }}
+                        >
+                            <Clock size={12} color="#9ca3af" />
+                            Còn{' '}
+                            <strong style={{ color: remaining <= 3 ? '#ef4444' : '#374151', margin: '0 2px' }}>
+                                {remaining}
+                            </strong>{' '}
                             ngày để ứng tuyển
                         </span>
                     )}
-                    <span
-                        style={{
-                            fontSize: '12px',
-                            color: '#9ca3af',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '3px',
-                        }}
-                    >
-                        <Clock size={11} /> Cập nhật {updated}
-                    </span>
+                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>Cập nhật {updated}</span>
                 </div>
             </div>
 
-            {/* Right side — salary + actions */}
+            {/* Right — salary + actions */}
             <div
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px', flexShrink: 0 }}
             >
@@ -440,8 +289,8 @@ function JobCard({ job }) {
                     <Link
                         href={`/viec-lam/${job.id}`}
                         style={{
-                            padding: '8px 18px',
-                            borderRadius: '6px',
+                            padding: '8px 20px',
+                            borderRadius: '4px',
                             background: GREEN,
                             color: 'white',
                             fontSize: '13px',
@@ -468,23 +317,21 @@ function JobCardSkeleton() {
             style={{
                 background: 'white',
                 border: '1px solid #e5e7eb',
-                borderRadius: '10px',
+                borderRadius: '5px',
                 padding: '16px 20px',
                 display: 'flex',
                 gap: '16px',
                 alignItems: 'center',
             }}
         >
-            <div
-                style={{ width: '64px', height: '64px', borderRadius: '10px', background: '#f3f4f6', flexShrink: 0 }}
-            />
+            <div style={{ width: '72px', height: '72px', borderRadius: '4px', background: '#f3f4f6', flexShrink: 0 }} />
             <div style={{ flex: 1 }}>
                 <div
                     style={{
                         height: '15px',
                         background: '#f3f4f6',
-                        borderRadius: '4px',
-                        width: '60%',
+                        borderRadius: '3px',
+                        width: '55%',
                         marginBottom: '8px',
                     }}
                 />
@@ -492,19 +339,19 @@ function JobCardSkeleton() {
                     style={{
                         height: '13px',
                         background: '#f3f4f6',
-                        borderRadius: '4px',
-                        width: '35%',
+                        borderRadius: '3px',
+                        width: '30%',
                         marginBottom: '10px',
                     }}
                 />
                 <div style={{ display: 'flex', gap: '8px' }}>
-                    <div style={{ height: '12px', background: '#f3f4f6', borderRadius: '4px', width: '100px' }} />
-                    <div style={{ height: '12px', background: '#f3f4f6', borderRadius: '4px', width: '130px' }} />
+                    <div style={{ height: '12px', background: '#f3f4f6', borderRadius: '3px', width: '90px' }} />
+                    <div style={{ height: '12px', background: '#f3f4f6', borderRadius: '3px', width: '130px' }} />
                 </div>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '10px' }}>
-                <div style={{ height: '14px', background: '#f3f4f6', borderRadius: '4px', width: '80px' }} />
-                <div style={{ height: '34px', background: '#f3f4f6', borderRadius: '6px', width: '90px' }} />
+                <div style={{ height: '14px', background: '#f3f4f6', borderRadius: '3px', width: '80px' }} />
+                <div style={{ height: '34px', background: '#f3f4f6', borderRadius: '4px', width: '90px' }} />
             </div>
         </div>
     );
@@ -513,7 +360,6 @@ function JobCardSkeleton() {
 /* ─── Pagination ─── */
 function Pagination({ page, totalPages, onChange }) {
     if (totalPages <= 1) return null;
-
     const pages = [];
     const delta = 2;
     const start = Math.max(1, page - delta);
@@ -522,13 +368,13 @@ function Pagination({ page, totalPages, onChange }) {
 
     const btn = (content, onClick, active = false, disabled = false) => (
         <button
-            key={content}
+            key={String(content)}
             onClick={onClick}
             disabled={disabled}
             style={{
                 minWidth: '36px',
                 height: '36px',
-                borderRadius: '6px',
+                borderRadius: '4px',
                 border: active ? `1.5px solid ${GREEN}` : '1.5px solid #e5e7eb',
                 background: active ? GREEN : disabled ? '#f9fafb' : 'white',
                 color: active ? 'white' : disabled ? '#d1d5db' : '#374151',
@@ -552,13 +398,13 @@ function Pagination({ page, totalPages, onChange }) {
             {start > 1 && (
                 <>
                     {btn(1, () => onChange(1))}
-                    {start > 2 && <span style={{ color: '#9ca3af', padding: '0 4px' }}>…</span>}
+                    {start > 2 && <span style={{ color: '#9ca3af', padding: '0 2px' }}>…</span>}
                 </>
             )}
             {pages.map((p) => btn(p, () => onChange(p), p === page))}
             {end < totalPages && (
                 <>
-                    {end < totalPages - 1 && <span style={{ color: '#9ca3af', padding: '0 4px' }}>…</span>}
+                    {end < totalPages - 1 && <span style={{ color: '#9ca3af', padding: '0 2px' }}>…</span>}
                     {btn(totalPages, () => onChange(totalPages))}
                 </>
             )}
@@ -584,7 +430,6 @@ export default function ViecLamTotNhatPage() {
     const [provinces, setProvinces] = useState([]);
     const [industries, setIndustries] = useState([]);
 
-    /* Load provinces + industries */
     useEffect(() => {
         provinceService
             .getAll()
@@ -595,7 +440,6 @@ export default function ViecLamTotNhatPage() {
             .catch(console.error);
     }, []);
 
-    /* Fetch jobs */
     const fetchJobs = useCallback(async () => {
         setLoading(true);
         try {
@@ -603,7 +447,6 @@ export default function ViecLamTotNhatPage() {
             if (search) params.search = search;
             if (provinceCode) params.provinceCode = provinceCode;
             if (industryId) params.industryId = industryId;
-
             const res = await jobService.getAll(params);
             setJobs(res.data.data || []);
             setMeta(res.data.meta || { total: 0, totalPages: 1, page: 1 });
@@ -623,7 +466,6 @@ export default function ViecLamTotNhatPage() {
 
     const handleSearch = () => setSearch(searchInput);
 
-    /* Options */
     const provinceOptions = [
         { label: 'Tất cả tỉnh/thành phố', value: '' },
         ...provinces.map((p) => ({ label: p.name, value: String(p.code) })),
@@ -634,64 +476,90 @@ export default function ViecLamTotNhatPage() {
     ];
 
     return (
-        <div style={{ background: '#f5f5f5', minHeight: '100vh' }}>
-            {/* ── Hero banner ── */}
+        <div style={{ background: '#f4f5f5', minHeight: '100vh' }}>
+            {/* ══ BANNER ══ */}
             <div
                 style={{
-                    background: 'linear-gradient(135deg, #00b14f 0%, #007a35 100%)',
-                    padding: '28px 16px 32px',
+                    background: 'linear-gradient(90deg, #263238, #00b14f 105.53%)',
+                    borderRadius: '5px 5px 0 0',
+                    minHeight: '180px',
+                    padding: '28px 0 32px',
+                    position: 'relative',
+                    overflow: 'hidden',
                 }}
             >
-                <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-                    <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'white', margin: '0 0 6px' }}>
+                {/* Arrow decoration */}
+                <img
+                    src={arrownDesktop.src || arrownDesktop}
+                    alt=""
+                    aria-hidden="true"
+                    style={{
+                        position: 'absolute',
+                        right: '320px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        height: '130px',
+                        opacity: 0.9,
+                        pointerEvents: 'none',
+                    }}
+                />
+
+                <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px', position: 'relative' }}>
+                    <h1 style={{ fontSize: '26px', fontWeight: '700', color: 'white', margin: '0 0 6px' }}>
                         Việc làm tốt nhất
                     </h1>
-                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', margin: '0 0 20px' }}>
+                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.85)', margin: '0 0 18px' }}>
                         Tìm kiếm công việc mơ ước từ những cơ hội việc làm tốt nhất trên TopCV
                     </p>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
-                        {['✓ Lương cao', '✓ Phúc lợi hấp dẫn', '✓ Môi trường chuyên nghiệp'].map((t) => (
+
+                    {/* Feature pills */}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        {['Lương cao', 'Phúc lợi hấp dẫn', 'Môi trường chuyên nghiệp'].map((tag) => (
                             <span
-                                key={t}
+                                key={tag}
                                 style={{
-                                    fontSize: '12px',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    fontSize: '13px',
                                     color: 'white',
-                                    background: 'rgba(255,255,255,0.2)',
+                                    border: '1px solid rgba(255,255,255,0.45)',
                                     borderRadius: '20px',
-                                    padding: '4px 12px',
-                                    border: '1px solid rgba(255,255,255,0.3)',
+                                    padding: '4px 14px',
                                 }}
                             >
-                                {t}
+                                <Check size={13} color="#4ade80" strokeWidth={3} />
+                                {tag}
                             </span>
                         ))}
                     </div>
+                </div>
+            </div>
 
-                    {/* Search bar */}
+            {/* ══ SEARCH BAR — dưới banner, ngoài banner ══ */}
+            <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '12px 0' }}>
+                <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
                     <div
                         style={{
-                            background: 'white',
-                            borderRadius: '10px',
-                            padding: '8px',
                             display: 'flex',
-                            gap: '8px',
-                            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-                            flexWrap: 'wrap',
+                            border: '1px solid #e5e7eb',
+                            borderRadius: '5px',
+                            overflow: 'hidden',
+                            background: 'white',
                         }}
                     >
                         {/* Keyword */}
                         <div
                             style={{
                                 flex: 2,
-                                minWidth: '200px',
                                 display: 'flex',
                                 alignItems: 'center',
+                                padding: '0 14px',
                                 gap: '8px',
-                                padding: '0 8px',
                                 borderRight: '1px solid #e5e7eb',
                             }}
                         >
-                            <Search size={18} color="#9ca3af" style={{ flexShrink: 0 }} />
+                            <Search size={16} color="#9ca3af" style={{ flexShrink: 0 }} />
                             <input
                                 value={searchInput}
                                 onChange={(e) => setSearchInput(e.target.value)}
@@ -701,9 +569,11 @@ export default function ViecLamTotNhatPage() {
                                     border: 'none',
                                     outline: 'none',
                                     fontSize: '14px',
-                                    color: '#111827',
+                                    color: '#212f3f',
                                     width: '100%',
                                     background: 'transparent',
+                                    fontFamily: 'inherit',
+                                    padding: '10px 0',
                                 }}
                             />
                             {searchInput && (
@@ -726,24 +596,88 @@ export default function ViecLamTotNhatPage() {
                             )}
                         </div>
 
-                        {/* Industry dropdown */}
-                        <div style={{ flex: 1, minWidth: '160px' }}>
-                            <SearchableDropdown
+                        {/* Industry */}
+                        <div
+                            style={{
+                                width: '220px',
+                                borderRight: '1px solid #e5e7eb',
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <select
                                 value={industryId}
-                                onChange={setIndustryId}
-                                options={industryOptions}
-                                placeholder="Tất cả lĩnh vực"
+                                onChange={(e) => setIndustryId(e.target.value)}
+                                style={{
+                                    appearance: 'none',
+                                    WebkitAppearance: 'none',
+                                    border: 'none',
+                                    outline: 'none',
+                                    padding: '10px 32px 10px 14px',
+                                    fontSize: '14px',
+                                    color: industryId ? '#212f3f' : '#9ca3af',
+                                    background: 'transparent',
+                                    width: '100%',
+                                    cursor: 'pointer',
+                                    fontFamily: 'inherit',
+                                }}
+                            >
+                                {industryOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown
+                                size={14}
+                                color="#9ca3af"
+                                style={{ position: 'absolute', right: '10px', pointerEvents: 'none' }}
                             />
                         </div>
 
-                        {/* Province dropdown */}
-                        <div style={{ flex: 1, minWidth: '160px' }}>
-                            <SearchableDropdown
+                        {/* Province */}
+                        <div
+                            style={{
+                                width: '220px',
+                                borderRight: '1px solid #e5e7eb',
+                                position: 'relative',
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <MapPin
+                                size={14}
+                                color="#9ca3af"
+                                style={{ position: 'absolute', left: '12px', pointerEvents: 'none' }}
+                            />
+                            <select
                                 value={provinceCode}
-                                onChange={setProvinceCode}
-                                options={provinceOptions}
-                                placeholder="Tất cả tỉnh/thành phố"
-                                icon={MapPin}
+                                onChange={(e) => setProvinceCode(e.target.value)}
+                                style={{
+                                    appearance: 'none',
+                                    WebkitAppearance: 'none',
+                                    border: 'none',
+                                    outline: 'none',
+                                    padding: '10px 32px 10px 32px',
+                                    fontSize: '14px',
+                                    color: provinceCode ? '#212f3f' : '#9ca3af',
+                                    background: 'transparent',
+                                    width: '100%',
+                                    cursor: 'pointer',
+                                    fontFamily: 'inherit',
+                                }}
+                            >
+                                {provinceOptions.map((opt) => (
+                                    <option key={opt.value} value={opt.value}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <ChevronDown
+                                size={14}
+                                color="#9ca3af"
+                                style={{ position: 'absolute', right: '10px', pointerEvents: 'none' }}
                             />
                         </div>
 
@@ -754,52 +688,47 @@ export default function ViecLamTotNhatPage() {
                                 background: GREEN,
                                 color: 'white',
                                 border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '14px',
+                                fontSize: '15px',
                                 fontWeight: '600',
                                 cursor: 'pointer',
                                 whiteSpace: 'nowrap',
-                                flexShrink: 0,
+                                fontFamily: 'inherit',
+                                transition: 'background 0.15s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
                             }}
                             onMouseEnter={(e) => (e.currentTarget.style.background = '#009940')}
                             onMouseLeave={(e) => (e.currentTarget.style.background = GREEN)}
                         >
+                            <Search size={16} />
                             Tìm kiếm
                         </button>
                     </div>
                 </div>
             </div>
 
-            {/* ── Main layout ── */}
+            {/* ══ CONTENT ══ */}
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '24px 16px' }}>
                 <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }}>
                     {/* ── Job list ── */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                         {/* Header */}
-                        <div
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                marginBottom: '16px',
-                            }}
-                        >
-                            <div>
-                                <h2
-                                    style={{ fontSize: '18px', fontWeight: '700', color: '#111827', margin: '0 0 2px' }}
-                                >
-                                    Việc làm tốt nhất
-                                </h2>
-                                {!loading && (
-                                    <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
-                                        Tìm thấy{' '}
-                                        <strong style={{ color: '#111827' }}>{meta.total.toLocaleString()}</strong> việc
-                                        làm phù hợp với yêu cầu của bạn
-                                    </p>
-                                )}
-                            </div>
-                            {/* Active filters */}
-                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                        <div style={{ marginBottom: '14px' }}>
+                            <h2 style={{ fontSize: '18px', fontWeight: '700', color: '#212f3f', margin: '0 0 4px' }}>
+                                Việc làm tốt nhất
+                            </h2>
+                            {!loading && (
+                                <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>
+                                    Tìm thấy <strong style={{ color: '#212f3f' }}>{meta.total.toLocaleString()}</strong>{' '}
+                                    việc làm phù hợp với yêu cầu của bạn
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Active filter tags */}
+                        {(provinceCode || industryId) && (
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
                                 {provinceCode && (
                                     <span
                                         style={{
@@ -861,10 +790,10 @@ export default function ViecLamTotNhatPage() {
                                     </span>
                                 )}
                             </div>
-                        </div>
+                        )}
 
-                        {/* Job list */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {/* List */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {loading ? (
                                 Array.from({ length: 8 }).map((_, i) => <JobCardSkeleton key={i} />)
                             ) : jobs.length > 0 ? (
@@ -875,12 +804,12 @@ export default function ViecLamTotNhatPage() {
                                         textAlign: 'center',
                                         padding: '80px 0',
                                         background: 'white',
-                                        borderRadius: '10px',
+                                        borderRadius: '5px',
                                         border: '1px solid #e5e7eb',
                                     }}
                                 >
                                     <Briefcase
-                                        size={52}
+                                        size={48}
                                         color="#d1d5db"
                                         style={{ margin: '0 auto 16px', display: 'block' }}
                                     />
@@ -889,7 +818,7 @@ export default function ViecLamTotNhatPage() {
                                             fontSize: '16px',
                                             fontWeight: '600',
                                             color: '#374151',
-                                            margin: '0 0 4px',
+                                            margin: '0 0 6px',
                                         }}
                                     >
                                         Không tìm thấy việc làm phù hợp
@@ -904,100 +833,21 @@ export default function ViecLamTotNhatPage() {
                         <Pagination page={page} totalPages={meta.totalPages} onChange={setPage} />
                     </div>
 
-                    {/* ── Sidebar ── */}
-                    <div
-                        style={{ width: '300px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px' }}
-                        className="sidebar"
-                    >
-                        {/* Banner placeholder */}
-                        <div
-                            style={{
-                                background: 'linear-gradient(135deg, #00b14f, #007a35)',
-                                borderRadius: '10px',
-                                padding: '24px 20px',
-                                color: 'white',
-                                textAlign: 'center',
-                            }}
-                        >
-                            <div style={{ fontSize: '28px', marginBottom: '8px' }}>🚀</div>
-                            <p style={{ fontSize: '14px', fontWeight: '700', margin: '0 0 6px' }}>
-                                Tăng cơ hội ứng tuyển
-                            </p>
-                            <p style={{ fontSize: '12px', opacity: 0.85, margin: '0 0 14px' }}>
-                                Tạo CV chuyên nghiệp với TopCV để nổi bật hơn
-                            </p>
-                            <Link
-                                href="/tao-cv"
-                                style={{
-                                    display: 'inline-block',
-                                    padding: '8px 20px',
-                                    background: 'white',
-                                    color: GREEN,
-                                    borderRadius: '6px',
-                                    fontSize: '13px',
-                                    fontWeight: '700',
-                                    textDecoration: 'none',
-                                }}
-                            >
-                                Tạo CV ngay →
-                            </Link>
-                        </div>
-
-                        {/* Lĩnh vực nổi bật */}
-                        <div
-                            style={{
-                                background: 'white',
-                                borderRadius: '10px',
-                                border: '1px solid #e5e7eb',
-                                padding: '16px',
-                            }}
-                        >
-                            <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#111827', margin: '0 0 12px' }}>
-                                Lĩnh vực nổi bật
-                            </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                {industries.slice(0, 8).map((ind) => (
-                                    <button
-                                        key={ind.id}
-                                        onClick={() =>
-                                            setIndustryId(String(ind.id) === industryId ? '' : String(ind.id))
-                                        }
-                                        style={{
-                                            textAlign: 'left',
-                                            padding: '7px 10px',
-                                            borderRadius: '6px',
-                                            border: 'none',
-                                            cursor: 'pointer',
-                                            fontSize: '13px',
-                                            background: String(ind.id) === industryId ? '#f0fdf4' : 'transparent',
-                                            color: String(ind.id) === industryId ? GREEN : '#374151',
-                                            fontWeight: String(ind.id) === industryId ? '600' : '400',
-                                            transition: 'all 0.15s',
-                                        }}
-                                        onMouseEnter={(e) => {
-                                            if (String(ind.id) !== industryId)
-                                                e.currentTarget.style.background = '#f9fafb';
-                                        }}
-                                        onMouseLeave={(e) => {
-                                            if (String(ind.id) !== industryId)
-                                                e.currentTarget.style.background = 'transparent';
-                                        }}
-                                    >
-                                        {ind.name}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
+                    {/* ── Sidebar — chỉ CV banner card, đúng như TopCV ── */}
+                    <div className="sidebar" style={{ width: '300px', flexShrink: 0 }}>
+                        <img
+                            src={bannerRight.src || bannerRight}
+                            alt="Tăng cơ hội ứng tuyển"
+                            style={{ width: '100%', borderRadius: '8px', display: 'block' }}
+                        />
                     </div>
                 </div>
             </div>
 
             <style>{`
-                @media (max-width: 768px) {
-                    .sidebar { display: none !important; }
-                }
+                @media (max-width: 900px) { .sidebar { display: none !important; } }
+                * { box-sizing: border-box; -ms-overflow-style: none; scrollbar-width: none; }
                 *::-webkit-scrollbar { display: none; }
-                * { -ms-overflow-style: none; scrollbar-width: none; }
             `}</style>
         </div>
     );

@@ -20,6 +20,14 @@ export class JobsController {
   constructor(private jobsService: JobsService) {}
 
   // PUBLIC
+
+  // QUAN TRỌNG: /stats phải đặt TRƯỚC /:id
+  // Nếu đặt sau, NestJS sẽ match 'stats' như một :id param
+  @Get('stats')
+  getStats() {
+    return this.jobsService.getStats();
+  }
+
   @Get()
   findAll(@Query() query: any) {
     return this.jobsService.findAll(query);
@@ -32,12 +40,23 @@ export class JobsController {
     return this.jobsService.findMyJobs(req.user.sub, query);
   }
 
+  @Get('growth')
+  getGrowth(@Query('days') days?: string) {
+    return this.jobsService.getGrowth(days ? parseInt(days, 10) : 30);
+  }
+
+  @Get('industry-demand')
+  getIndustryDemand() {
+    return this.jobsService.getIndustryDemand();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.jobsService.findOne(id);
   }
 
   // EMPLOYER
+
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('EMPLOYER')

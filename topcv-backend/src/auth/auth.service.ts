@@ -307,6 +307,67 @@ export class AuthService {
     return { valid: true };
   }
 
+  // ─── DEV ONLY ────────────────────────────────────────
+  async devSeedEmployers(
+    employers: Array<{
+      email: string;
+      password: string;
+      fullName: string;
+      companyName: string;
+      industryId: number;
+      companySize?: string;
+      address?: string;
+      website?: string;
+    }>,
+  ) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new BadRequestException('Not available in production');
+    }
+
+    const results: any[] = [];
+
+    for (const e of employers) {
+      const existing = await this.usersService.findByEmail(e.email);
+      if (existing) {
+        results.push({ email: e.email, status: 'skipped (already exists)' });
+        continue;
+      }
+
+      const passwordHash = await argon2.hash(e.password);
+
+      const user = await this.prisma.user.create({
+        data: {
+          email: e.email,
+          passwordHash,
+          role: Role.EMPLOYER,
+          isVerified: true,
+          isActive: true,
+        },
+      });
+
+      await this.prisma.employerProfile.create({
+        data: {
+          userId: user.id,
+          companyName: e.companyName,
+          industryId: e.industryId,
+          companySize: e.companySize,
+          address: e.address,
+          website: e.website,
+        },
+      });
+
+      const tokens = await this.generateTokens(user.id, user.email, user.role);
+      results.push({
+        email: e.email,
+        companyName: e.companyName,
+        status: 'created',
+        accessToken: tokens.data.accessToken,
+      });
+    }
+
+    return { success: true, data: results };
+  }
+
   // ─── HELPERS ─────────────────────────────────────────
   private async sendOtp(userId: string, email: string, type: string) {
     const code = Math.floor(100000 + Math.random() * 900000).toString();

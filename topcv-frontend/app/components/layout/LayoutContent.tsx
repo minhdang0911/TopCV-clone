@@ -4,6 +4,7 @@
 
 import { usePathname } from 'next/navigation';
 import Header from './Header';
+import SeoKeywords from '@/app/components/SeoKeywords';
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -19,12 +20,15 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         '/employer-complete-profile',
     ];
 
+    const hiddenRoutesSeo = ['/'];
+
     const hideHeader = hiddenRoutes.includes(pathname);
 
     return (
         <>
             {!hideHeader && <Header />}
             {children}
+            {!hiddenRoutesSeo.includes(pathname) && <SeoKeywords />}
         </>
     );
 }

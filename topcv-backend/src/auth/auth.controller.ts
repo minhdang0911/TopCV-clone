@@ -47,6 +47,11 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @Post('dev/seed-employers')
+  devSeedEmployers(@Body() body: { employers: any[] }) {
+    return this.authService.devSeedEmployers(body.employers);
+  }
+
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);

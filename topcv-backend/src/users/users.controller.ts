@@ -34,15 +34,15 @@ export class UsersController {
   updateProfile(@Req() req: any, @Body() body: any) {
     const { role } = req.user;
     if (role === 'EMPLOYER') {
-      const { companyName, companySize, industry, website, address, logoUrl } =
-        body;
+      const { companyName, companySize, industryId, website, address, logoUrl, description } = body;
       return this.usersService.updateEmployerProfile(req.user.sub, {
         companyName,
         companySize,
-        industry,
+        industryId,
         website,
         address,
         logoUrl,
+        description,
       });
     }
     const { avatarUrl, isLookingForJob, allowEmployerSearch } = body;

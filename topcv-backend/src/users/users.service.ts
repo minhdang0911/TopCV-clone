@@ -131,15 +131,20 @@ export class UsersService {
     data: {
       companyName?: string;
       companySize?: string;
-      industry?: string;
+      industryId?: number;
       website?: string;
       address?: string;
       logoUrl?: string;
+      description?: string;
     },
   ) {
     const cleanData = Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined),
     );
+
+    if (cleanData.industryId !== undefined) {
+      cleanData.industryId = Number(cleanData.industryId);
+    }
 
     const existing = await this.prisma.employerProfile.findUnique({
       where: { userId },
@@ -150,7 +155,7 @@ export class UsersService {
       update: cleanData,
       create: {
         userId,
-        companyName: cleanData.companyName || existing?.companyName || '',
+        companyName: String(cleanData.companyName ?? existing?.companyName ?? ''),
         ...cleanData,
       },
     });

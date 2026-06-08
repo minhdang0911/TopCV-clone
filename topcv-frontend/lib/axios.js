@@ -16,17 +16,46 @@ const processQueue = (error, token = null) => {
     failedQueue = [];
 };
 
-// Request interceptor
+// ─── Helpers đọc/ghi token từ Zustand persist (key: 'auth-storage') ───
+const getStoredToken = (key) => {
+    try {
+        const raw = localStorage.getItem('auth-storage');
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        return parsed?.state?.[key] ?? null;
+    } catch {
+        return null;
+    }
+};
+
+const setStoredTokens = (accessToken, refreshToken) => {
+    try {
+        const raw = localStorage.getItem('auth-storage');
+        const parsed = raw ? JSON.parse(raw) : { state: {} };
+        parsed.state.accessToken = accessToken;
+        parsed.state.refreshToken = refreshToken;
+        parsed.state.isAuthenticated = true;
+        localStorage.setItem('auth-storage', JSON.stringify(parsed));
+    } catch {}
+};
+
+const clearStoredAuth = () => {
+    try {
+        localStorage.removeItem('auth-storage');
+    } catch {}
+};
+
+// ─── Request interceptor ───
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('accessToken');
+        const token = getStoredToken('accessToken');
         if (token) config.headers.Authorization = `Bearer ${token}`;
         return config;
     },
     (error) => Promise.reject(error),
 );
 
-// Response interceptor
+// ─── Response interceptor ───
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
@@ -47,11 +76,11 @@ api.interceptors.response.use(
             originalRequest._retry = true;
             isRefreshing = true;
 
-            const refreshToken = localStorage.getItem('refreshToken');
+            const refreshToken = getStoredToken('refreshToken');
 
             if (!refreshToken) {
                 isRefreshing = false;
-                localStorage.clear();
+                clearStoredAuth();
                 window.location.href = '/login';
                 return Promise.reject(error);
             }
@@ -61,8 +90,7 @@ api.interceptors.response.use(
 
                 const { accessToken, refreshToken: newRefreshToken } = res.data.data;
 
-                localStorage.setItem('accessToken', accessToken);
-                localStorage.setItem('refreshToken', newRefreshToken);
+                setStoredTokens(accessToken, newRefreshToken);
 
                 api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
                 originalRequest.headers.Authorization = `Bearer ${accessToken}`;
@@ -71,7 +99,7 @@ api.interceptors.response.use(
                 return api(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError, null);
-                localStorage.clear();
+                clearStoredAuth();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             } finally {

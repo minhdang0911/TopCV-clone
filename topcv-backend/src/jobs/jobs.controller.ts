@@ -46,8 +46,8 @@ export class JobsController {
   }
 
   @Get('industry-demand')
-  getIndustryDemand() {
-    return this.jobsService.getIndustryDemand();
+  getIndustryDemand(@Query('limit') limit?: string) {
+    return this.jobsService.getIndustryDemand(limit ? parseInt(limit, 10) : 6);
   }
 
   @Get(':id')

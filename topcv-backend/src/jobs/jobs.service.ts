@@ -174,8 +174,8 @@ export class JobsService {
   // GET /jobs/industry-demand
   // Trả về top 6 ngành theo số job đang tuyển
 
-  async getIndustryDemand() {
-    const cacheKey = 'jobs:industry-demand';
+  async getIndustryDemand(limit = 6) {
+    const cacheKey = `jobs:industry-demand:${limit}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) return cached;
 
@@ -184,7 +184,7 @@ export class JobsService {
       where: { isActive: true, industryId: { not: null } },
       _count: { industryId: true },
       orderBy: { _count: { industryId: 'desc' } },
-      take: 6,
+      take: limit,
     });
 
     const industryIds = grouped
@@ -195,10 +195,12 @@ export class JobsService {
       where: { id: { in: industryIds } },
     });
 
-    const nameMap = new Map(industries.map((i) => [i.id, i.name]));
+    const infoMap = new Map(industries.map((i) => [i.id, i]));
 
     const result = grouped.map((g) => ({
-      name: nameMap.get(g.industryId!) ?? 'Khác',
+      id: g.industryId,
+      name: infoMap.get(g.industryId!)?.name ?? 'Khác',
+      slug: infoMap.get(g.industryId!)?.slug ?? '',
       count: g._count.industryId,
     }));
 

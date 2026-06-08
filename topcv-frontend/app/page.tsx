@@ -2,6 +2,7 @@ import BestJobsSection from '@/app/components/BestJobsSection';
 import HomeSearch from './components/Homesearch';
 import JobMarket from './components/JobMarket';
 import FeaturedEmployers from './components/FeaturedEmployers';
+import TopIndustries from './components/TopIndustries';
 
 export default function Home() {
     return (
@@ -15,6 +16,7 @@ export default function Home() {
             <FeaturedEmployers />
 
             <JobMarket />
+            <TopIndustries />
         </div>
     );
 }

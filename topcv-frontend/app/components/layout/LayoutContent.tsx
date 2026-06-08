@@ -4,6 +4,7 @@
 
 import { usePathname } from 'next/navigation';
 import Header from './Header';
+import Footer from './Footer';
 import SeoKeywords from '@/app/components/SeoKeywords';
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -29,6 +30,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             {!hideHeader && <Header />}
             {children}
             {!hiddenRoutesSeo.includes(pathname) && <SeoKeywords />}
+            {!hideHeader && <Footer />}
         </>
     );
 }

@@ -40,22 +40,44 @@ const useAuthStore = create(
 
                 try {
                     const res = await api.get('/users/me');
+
+                    // The interceptor may have refreshed tokens and written new values
+                    // directly to localStorage. Re-read them so we don't overwrite
+                    // the refreshed tokens when Zustand persist writes state.
+                    let latestAccess = get().accessToken;
+                    let latestRefresh = get().refreshToken;
+                    try {
+                        const raw = localStorage.getItem('auth-storage');
+                        const stored = raw ? JSON.parse(raw).state : null;
+                        if (stored?.accessToken) latestAccess = stored.accessToken;
+                        if (stored?.refreshToken) latestRefresh = stored.refreshToken;
+                    } catch {}
+
                     set({
                         user: res.data,
+                        accessToken: latestAccess,
+                        refreshToken: latestRefresh,
                         isAuthenticated: true,
                         isLoading: false,
                         hydrated: true,
                     });
                 } catch (err) {
-                    set({
-                        user: null,
-                        accessToken: null,
-                        refreshToken: null,
-                        role: null,
-                        isAuthenticated: false,
-                        isLoading: false,
-                        hydrated: true,
-                    });
+                    const status = err?.response?.status;
+                    if (status === 401) {
+                        // Interceptor already cleared localStorage and will redirect.
+                        set({
+                            user: null,
+                            accessToken: null,
+                            refreshToken: null,
+                            role: null,
+                            isAuthenticated: false,
+                            isLoading: false,
+                            hydrated: true,
+                        });
+                    } else {
+                        // Server/network error — keep tokens, just mark hydrated.
+                        set({ user: null, isLoading: false, hydrated: true });
+                    }
                 }
             },
         }),

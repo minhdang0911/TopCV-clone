@@ -34,10 +34,12 @@ import {
     GraduationCap,
     Compass,
     BarChart2,
+    LogOut,
 } from 'lucide-react';
 import logo from '@/app/assests/img/logo-home.png';
 import api from '@/lib/axios';
 import useAuthStore from '@/stores/auth.store';
+import { useRouter } from 'next/navigation';
 
 /* ─── Icon map for mobile menus ─── */
 const VIEC_LAM_ITEMS = [
@@ -124,6 +126,55 @@ const navLinkStyle = {
 const hoverGreen = (e) => (e.currentTarget.style.color = GREEN);
 const hoverGray = (e) => (e.currentTarget.style.color = '#374151');
 
+const USER_MENU_SECTIONS = [
+    {
+        key: 'tim-viec',
+        label: 'Quản lý tìm việc',
+        items: [
+            { label: 'Việc làm đã lưu', href: '/viec-lam/da-luu' },
+            { label: 'Việc làm đã ứng tuyển', href: '/viec-lam/da-ung-tuyen' },
+            { label: 'Việc làm phù hợp với bạn', href: '/viec-lam/phu-hop' },
+            { label: 'Cài đặt gợi ý việc làm', href: '#' },
+        ],
+    },
+    {
+        key: 'cv',
+        label: 'Quản lý CV & Cover letter',
+        items: [
+            { label: 'CV của tôi', href: '#' },
+            { label: 'Cover Letter của tôi', href: '#' },
+            { label: 'Nhà tuyển dụng muốn kết nối với bạn', href: '#' },
+            { label: 'Nhà tuyển dụng xem hồ sơ', href: '#' },
+        ],
+    },
+    {
+        key: 'thong-bao',
+        label: 'Cài đặt email & thông báo',
+        items: [
+            { label: 'Cài đặt thông báo việc làm', href: '#' },
+            { label: 'Cài đặt nhận email', href: '#' },
+        ],
+    },
+    {
+        key: 'ca-nhan',
+        label: 'Cá nhân & Bảo mật',
+        items: [
+            { label: 'Cài đặt thông tin cá nhân', href: '/cai-dat-thong-tin-ca-nhan' },
+            { label: 'Cài đặt bảo mật', href: '/tai-khoan/bao-mat' },
+            { label: 'Đổi mật khẩu', href: '/tai-khoan/mat-khau' },
+            { label: 'Xác minh 2 bước', href: '/tai-khoan/bao-mat', badgeFn: (u) => u?.twoFactorEnabled ? null : 'Chưa kích hoạt' },
+        ],
+    },
+    {
+        key: 'nang-cap',
+        label: 'Nâng cấp tài khoản',
+        items: [
+            { label: 'Nâng cấp tài khoản VIP', href: '#' },
+            { label: 'Kích hoạt quà tặng', href: '#' },
+        ],
+    },
+];
+
 const ProBadge = () => (
     <span
         style={{
@@ -174,7 +225,11 @@ export default function Header() {
     const [mobileView, setMobileView] = useState(null);
     const [isMobile, setIsMobile] = useState(false);
     const dropdownRef = useRef(null);
-    const { user, isAuthenticated, hydrated } = useAuthStore();
+    const userMenuRef = useRef(null);
+    const { user, isAuthenticated, hydrated, clearAuth } = useAuthStore();
+    const router = useRouter();
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const [openSections, setOpenSections] = useState(new Set());
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth <= 768);
@@ -204,10 +259,28 @@ export default function Header() {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
                 setActiveMenu(null);
             }
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+                setUserMenuOpen(false);
+            }
         };
         document.addEventListener('click', handleClick);
         return () => document.removeEventListener('click', handleClick);
     }, []);
+
+    const handleLogout = async () => {
+        setUserMenuOpen(false);
+        try { await api.post('/auth/logout'); } catch {}
+        clearAuth();
+        router.push('/login');
+    };
+
+    const toggleSection = (key) =>
+        setOpenSections((prev) => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
 
     useEffect(() => {
         document.body.style.overflow = mobileOpen ? 'hidden' : '';
@@ -229,34 +302,256 @@ export default function Header() {
         if (!hydrated)
             return <div style={{ width: '130px', height: '32px', borderRadius: '6px', background: '#f3f4f6' }} />;
         if (isAuthenticated && user) {
+            const avatarSrc =
+                user.candidateProfile?.avatarUrl ||
+                user.employerProfile?.logoUrl ||
+                '/default-avatar.png';
+            const displayName =
+                user.candidateProfile?.fullName ||
+                user.employerProfile?.companyName ||
+                user.email ||
+                '';
+
             return (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <img
-                        src={user.candidateProfile?.avatarUrl || user.employerProfile?.logoUrl || '/default-avatar.png'}
-                        alt="avatar"
+                <div ref={userMenuRef} style={{ position: 'relative' }}>
+                    <button
+                        onClick={() => setUserMenuOpen((o) => !o)}
                         style={{
-                            width: '36px',
-                            height: '36px',
-                            borderRadius: '50%',
-                            objectFit: 'cover',
-                            border: '2px solid #e5e7eb',
-                            flexShrink: 0,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '4px',
                         }}
-                    />
-                    {!isMobile && (
-                        <span
+                    >
+                        <img
+                            src={avatarSrc}
+                            alt="avatar"
                             style={{
-                                fontSize: '13px',
-                                fontWeight: '500',
-                                color: '#374151',
-                                maxWidth: '100px',
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '2px solid #e5e7eb',
+                                flexShrink: 0,
+                            }}
+                        />
+                        {!isMobile && (
+                            <>
+                                <span
+                                    style={{
+                                        fontSize: '13px',
+                                        fontWeight: '500',
+                                        color: '#374151',
+                                        maxWidth: '90px',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                    }}
+                                >
+                                    {displayName}
+                                </span>
+                                <ChevronDown
+                                    size={13}
+                                    style={{
+                                        color: '#9ca3af',
+                                        transform: userMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                                        transition: 'transform 0.2s',
+                                        flexShrink: 0,
+                                    }}
+                                />
+                            </>
+                        )}
+                    </button>
+
+                    {userMenuOpen && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 'calc(100% + 10px)',
+                                right: 0,
+                                width: '280px',
+                                background: 'white',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+                                border: '1px solid #e5e7eb',
+                                zIndex: 300,
                                 overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
                             }}
                         >
-                            {user.candidateProfile?.fullName || user.employerProfile?.companyName}
-                        </span>
+                            {/* User info */}
+                            <div
+                                style={{
+                                    padding: '14px 16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    borderBottom: '1px solid #f3f4f6',
+                                    background: '#fafafa',
+                                }}
+                            >
+                                <img
+                                    src={avatarSrc}
+                                    alt="avatar"
+                                    style={{
+                                        width: '44px',
+                                        height: '44px',
+                                        borderRadius: '50%',
+                                        objectFit: 'cover',
+                                        border: '2px solid #e5e7eb',
+                                        flexShrink: 0,
+                                    }}
+                                />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div
+                                        style={{
+                                            fontWeight: '700',
+                                            fontSize: '13px',
+                                            color: '#111827',
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                        }}
+                                    >
+                                        {displayName}
+                                    </div>
+                                    {user.isVerified && (
+                                        <span
+                                            style={{
+                                                display: 'inline-block',
+                                                marginTop: '3px',
+                                                fontSize: '10px',
+                                                color: '#059669',
+                                                background: '#d1fae5',
+                                                padding: '1px 7px',
+                                                borderRadius: '4px',
+                                                fontWeight: '600',
+                                            }}
+                                        >
+                                            Tài khoản đã xác thực
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Accordion sections */}
+                            <div style={{ maxHeight: '380px', overflowY: 'auto' }}>
+                                {USER_MENU_SECTIONS.map((section) => {
+                                    const isOpen = openSections.has(section.key);
+                                    return (
+                                        <div
+                                            key={section.key}
+                                            style={{ borderBottom: '1px solid #f3f4f6' }}
+                                        >
+                                            <button
+                                                onClick={() => toggleSection(section.key)}
+                                                style={{
+                                                    width: '100%',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    padding: '11px 16px',
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    fontSize: '13px',
+                                                    fontWeight: '600',
+                                                    color: '#374151',
+                                                    textAlign: 'left',
+                                                }}
+                                            >
+                                                {section.label}
+                                                <ChevronDown
+                                                    size={13}
+                                                    style={{
+                                                        color: '#9ca3af',
+                                                        transform: isOpen
+                                                            ? 'rotate(180deg)'
+                                                            : 'rotate(0deg)',
+                                                        transition: 'transform 0.18s',
+                                                        flexShrink: 0,
+                                                    }}
+                                                />
+                                            </button>
+                                            {isOpen && (
+                                                <div style={{ paddingBottom: '6px' }}>
+                                                    {section.items.map((item) => (
+                                                        <Link
+                                                            key={item.label}
+                                                            href={item.href}
+                                                            onClick={() => setUserMenuOpen(false)}
+                                                            style={{
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'space-between',
+                                                                padding: '7px 16px 7px 20px',
+                                                                fontSize: '13px',
+                                                                color: '#4b5563',
+                                                                textDecoration: 'none',
+                                                                transition: 'background 0.12s',
+                                                            }}
+                                                            onMouseEnter={(e) =>
+                                                                (e.currentTarget.style.background =
+                                                                    '#f9fafb')
+                                                            }
+                                                            onMouseLeave={(e) =>
+                                                                (e.currentTarget.style.background =
+                                                                    'transparent')
+                                                            }
+                                                        >
+                                                            {item.label}
+                                                            {(() => {
+                                                                const badgeText = item.badge || (item.badgeFn ? item.badgeFn(user) : null);
+                                                                return badgeText ? (
+                                                                    <span
+                                                                        style={{
+                                                                            fontSize: '10px',
+                                                                            color: '#ef4444',
+                                                                            border: '1px solid #ef4444',
+                                                                            padding: '0 4px',
+                                                                            borderRadius: '3px',
+                                                                            fontWeight: '500',
+                                                                            flexShrink: 0,
+                                                                            marginLeft: '6px',
+                                                                        }}
+                                                                    >
+                                                                        {badgeText}
+                                                                    </span>
+                                                                ) : null;
+                                                            })()}
+                                                        </Link>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Logout */}
+                            <button
+                                onClick={handleLogout}
+                                style={{
+                                    width: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    padding: '13px 16px',
+                                    background: 'none',
+                                    border: 'none',
+                                    borderTop: '1px solid #f3f4f6',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    color: '#ef4444',
+                                }}
+                            >
+                                <LogOut size={15} />
+                                Đăng xuất
+                            </button>
+                        </div>
                     )}
                 </div>
             );
@@ -1036,6 +1331,150 @@ export default function Header() {
                         >
                             TopCV <ProBadge />
                         </Link>
+
+                        {/* Mobile user account section */}
+                        {hydrated && isAuthenticated && user && (
+                            <>
+                                <div
+                                    style={{
+                                        padding: '12px 16px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        borderBottom: '1px solid #f3f4f6',
+                                        background: '#fafafa',
+                                    }}
+                                >
+                                    <img
+                                        src={
+                                            user.candidateProfile?.avatarUrl ||
+                                            user.employerProfile?.logoUrl ||
+                                            '/default-avatar.png'
+                                        }
+                                        alt="avatar"
+                                        style={{
+                                            width: '40px',
+                                            height: '40px',
+                                            borderRadius: '50%',
+                                            objectFit: 'cover',
+                                            border: '2px solid #e5e7eb',
+                                            flexShrink: 0,
+                                        }}
+                                    />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div
+                                            style={{
+                                                fontWeight: '700',
+                                                fontSize: '14px',
+                                                color: '#111827',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {user.candidateProfile?.fullName ||
+                                                user.employerProfile?.companyName ||
+                                                user.email}
+                                        </div>
+                                        {user.isVerified && (
+                                            <span
+                                                style={{
+                                                    fontSize: '10px',
+                                                    color: '#059669',
+                                                    background: '#d1fae5',
+                                                    padding: '1px 6px',
+                                                    borderRadius: '4px',
+                                                    fontWeight: '600',
+                                                }}
+                                            >
+                                                Tài khoản đã xác thực
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                {[
+                                    { label: 'Cài đặt thông tin cá nhân', href: '/cai-dat-thong-tin-ca-nhan' },
+                                    { label: 'Đổi mật khẩu', href: '/tai-khoan/mat-khau' },
+                                    { label: 'Cài đặt bảo mật', href: '/tai-khoan/bao-mat' },
+                                ].map((item) => (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setMobileOpen(false)}
+                                        style={{
+                                            display: 'block',
+                                            padding: '14px 16px',
+                                            fontSize: '14px',
+                                            color: '#374151',
+                                            textDecoration: 'none',
+                                            borderBottom: '1px solid #f3f4f6',
+                                        }}
+                                    >
+                                        {item.label}
+                                    </Link>
+                                ))}
+                                <button
+                                    onClick={() => { setMobileOpen(false); handleLogout(); }}
+                                    style={{
+                                        width: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '8px',
+                                        padding: '14px 16px',
+                                        background: 'none',
+                                        border: 'none',
+                                        borderBottom: '1px solid #f3f4f6',
+                                        cursor: 'pointer',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        color: '#ef4444',
+                                        textAlign: 'left',
+                                    }}
+                                >
+                                    <LogOut size={15} />
+                                    Đăng xuất
+                                </button>
+                            </>
+                        )}
+
+                        {hydrated && !isAuthenticated && (
+                            <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', borderBottom: '1px solid #f3f4f6' }}>
+                                <Link
+                                    href="/login"
+                                    onClick={() => setMobileOpen(false)}
+                                    style={{
+                                        flex: 1,
+                                        textAlign: 'center',
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        border: `1px solid ${GREEN}`,
+                                        color: GREEN,
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    Đăng nhập
+                                </Link>
+                                <Link
+                                    href="/register"
+                                    onClick={() => setMobileOpen(false)}
+                                    style={{
+                                        flex: 1,
+                                        textAlign: 'center',
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        background: GREEN,
+                                        color: 'white',
+                                        fontSize: '14px',
+                                        fontWeight: '600',
+                                        textDecoration: 'none',
+                                    }}
+                                >
+                                    Đăng ký
+                                </Link>
+                            </div>
+                        )}
                     </div>
 
                     {/* Submenu */}

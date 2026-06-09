@@ -15,4 +15,9 @@ export const authService = {
 
     resetPassword: (token, newPassword, confirmPassword) =>
         api.post('/auth/reset-password', { token, newPassword, confirmPassword }),
+
+    twoFaEnable: () => api.post('/auth/2fa/enable'),
+    twoFaConfirm: (code) => api.post('/auth/2fa/confirm', { code }),
+    twoFaDisable: () => api.post('/auth/2fa/disable'),
+    twoFaDisableConfirm: (code) => api.post('/auth/2fa/disable/confirm', { code }),
 };

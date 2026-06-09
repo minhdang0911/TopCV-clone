@@ -11,6 +11,7 @@ export default function AuthCallbackPage() {
 
     useEffect(() => {
         const token = searchParams.get('token');
+        const refreshToken = searchParams.get('refreshToken');
         const role = searchParams.get('role');
 
         if (!token || !role) {
@@ -19,7 +20,7 @@ export default function AuthCallbackPage() {
         }
 
         // Lưu vào store + localStorage
-        setAuth(token, role);
+        setAuth(token, refreshToken, role);
 
         // Redirect theo role
         if (role === 'CANDIDATE') {

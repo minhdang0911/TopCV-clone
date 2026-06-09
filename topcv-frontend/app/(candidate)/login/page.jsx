@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -14,12 +14,18 @@ import AuthBanner from '../../components/auth/AuthBanner';
 
 export default function CandidateLoginPage() {
     const router = useRouter();
-    const { setAuth } = useAuthStore();
+    const { setAuth, isAuthenticated, hydrated } = useAuthStore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (hydrated && isAuthenticated) {
+            router.replace('/');
+        }
+    }, [hydrated, isAuthenticated, router]);
 
     const handleLogin = async (e) => {
         e.preventDefault();

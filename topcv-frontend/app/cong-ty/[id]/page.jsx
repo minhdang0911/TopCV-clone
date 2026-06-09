@@ -1,22 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import Lottie from 'lottie-react';
-import {
-    Building2,
-    Users,
-    Hash,
-    MapPin,
-    Globe,
-    Heart,
-    Search,
-    Copy,
-    Check,
-    Briefcase,
-} from 'lucide-react';
+import { Building2, Users, Hash, MapPin, Globe, Heart, Search, Copy, Check, Briefcase } from 'lucide-react';
 import api from '@/lib/axios';
 
 import veryBadAnim from '../../../public/verry_bad.json';
@@ -81,10 +70,16 @@ function timeAgo(dateStr) {
 /* ── Breadcrumb ── */
 function Breadcrumb({ name }) {
     return (
-        <div style={{ fontSize: 13, color: '#767676', display: 'flex', gap: 6, alignItems: 'center', padding: '12px 0' }}>
-            <Link href="/" style={{ color: '#767676', textDecoration: 'none' }}>Trang chủ</Link>
+        <div
+            style={{ fontSize: 13, color: '#767676', display: 'flex', gap: 6, alignItems: 'center', padding: '12px 0' }}
+        >
+            <Link href="/" style={{ color: '#767676', textDecoration: 'none' }}>
+                Trang chủ
+            </Link>
             <span>›</span>
-            <Link href="/cong-ty" style={{ color: '#767676', textDecoration: 'none' }}>Danh sách công ty</Link>
+            <Link href="/cong-ty" style={{ color: '#767676', textDecoration: 'none' }}>
+                Danh sách công ty
+            </Link>
             <span>›</span>
             <span style={{ color: '#333' }}>{name}</span>
         </div>
@@ -95,20 +90,36 @@ function Breadcrumb({ name }) {
 function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLoading }) {
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', marginBottom: 16 }}>
-            <div className="company-header-inner company-header-actions" style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
+            <div
+                className="company-header-inner company-header-actions"
+                style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}
+            >
                 {/* Logo */}
-                <div style={{
-                    width: 90, height: 90, border: '1px solid #e8e8e8', borderRadius: 8,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    flexShrink: 0, overflow: 'hidden', background: '#f8f8f8',
-                }}>
+                <div
+                    style={{
+                        width: 90,
+                        height: 90,
+                        border: '1px solid #e8e8e8',
+                        borderRadius: 8,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0,
+                        overflow: 'hidden',
+                        background: '#f8f8f8',
+                    }}
+                >
                     {company.logoUrl ? (
-                        <Image src={company.logoUrl} alt={company.companyName} width={90} height={90}
-                            style={{ objectFit: 'contain' }} unoptimized />
+                        <Image
+                            src={company.logoUrl}
+                            alt={company.companyName}
+                            width={90}
+                            height={90}
+                            style={{ objectFit: 'contain' }}
+                            unoptimized
+                        />
                     ) : (
-                        <div style={{ fontSize: 28, fontWeight: 700, color: GREEN }}>
-                            {company.companyName?.[0]}
-                        </div>
+                        <div style={{ fontSize: 28, fontWeight: 700, color: GREEN }}>{company.companyName?.[0]}</div>
                     )}
                 </div>
 
@@ -118,8 +129,19 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
                         {company.companyName}
                     </h1>
                     {company.website && (
-                        <a href={company.website} target="_blank" rel="noopener noreferrer"
-                            style={{ fontSize: 13, color: '#767676', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                        <a
+                            href={company.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                                fontSize: 13,
+                                color: '#767676',
+                                textDecoration: 'none',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                            }}
+                        >
                             <Globe size={13} />
                             {company.website.replace(/^https?:\/\//, '')}
                         </a>
@@ -132,11 +154,18 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
                     onClick={onFollow}
                     disabled={followLoading}
                     style={{
-                        padding: '8px 20px', borderRadius: 6, cursor: followLoading ? 'wait' : 'pointer',
-                        fontSize: 14, fontWeight: 600, border: `1px solid ${GREEN}`,
+                        padding: '8px 20px',
+                        borderRadius: 6,
+                        cursor: followLoading ? 'wait' : 'pointer',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        border: `1px solid ${GREEN}`,
                         background: followed ? GREEN : '#fff',
                         color: followed ? '#fff' : GREEN,
-                        display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        flexShrink: 0,
                         transition: 'all 0.2s',
                     }}
                 >
@@ -150,14 +179,22 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
                 {[
                     { key: 'home', label: 'Trang chủ' },
                     { key: 'jobs', label: `Tin tuyển dụng${company.jobCount ? ` (${company.jobCount})` : ''}` },
-                ].map(t => (
-                    <button key={t.key} onClick={() => onTabChange(t.key)} style={{
-                        padding: '10px 20px', background: 'none', border: 'none', cursor: 'pointer',
-                        fontSize: 14, fontWeight: tab === t.key ? 600 : 400,
-                        color: tab === t.key ? GREEN : '#555',
-                        borderBottom: tab === t.key ? `2px solid ${GREEN}` : '2px solid transparent',
-                        marginBottom: -1,
-                    }}>
+                ].map((t) => (
+                    <button
+                        key={t.key}
+                        onClick={() => onTabChange(t.key)}
+                        style={{
+                            padding: '10px 20px',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: 14,
+                            fontWeight: tab === t.key ? 600 : 400,
+                            color: tab === t.key ? GREEN : '#555',
+                            borderBottom: tab === t.key ? `2px solid ${GREEN}` : '2px solid transparent',
+                            marginBottom: -1,
+                        }}
+                    >
                         {t.label}
                     </button>
                 ))}
@@ -172,7 +209,7 @@ function InfoCard({ company }) {
         { icon: <Users size={16} color="#767676" />, label: 'Quy mô', value: company.companySize },
         { icon: <Building2 size={16} color="#767676" />, label: 'Lĩnh vực', value: company.industryName },
         { icon: <Hash size={16} color="#767676" />, label: 'Mã số thuế', value: company.taxCode },
-    ].filter(r => r.value);
+    ].filter((r) => r.value);
 
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px', marginBottom: 16 }}>
@@ -187,9 +224,7 @@ function InfoCard({ company }) {
                         </div>
                     </div>
                 ))}
-                {rows.length === 0 && (
-                    <p style={{ color: '#999', fontSize: 13, margin: 0 }}>Chưa có thông tin</p>
-                )}
+                {rows.length === 0 && <p style={{ color: '#999', fontSize: 13, margin: 0 }}>Chưa có thông tin</p>}
             </div>
         </div>
     );
@@ -204,7 +239,16 @@ function MapCard({ address }) {
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px', marginBottom: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: '0 0 8px' }}>Địa điểm công ty</h3>
-            <p style={{ fontSize: 13, color: '#555', margin: '0 0 12px', display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+            <p
+                style={{
+                    fontSize: 13,
+                    color: '#555',
+                    margin: '0 0 12px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 5,
+                }}
+            >
                 <MapPin size={14} color="#767676" style={{ flexShrink: 0, marginTop: 2 }} />
                 {address}
             </p>
@@ -220,8 +264,20 @@ function MapCard({ address }) {
                     title="Địa điểm công ty"
                 />
             </div>
-            <a href={`https://maps.google.com/?q=${query}`} target="_blank" rel="noopener noreferrer"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: GREEN, textDecoration: 'none', marginTop: 8 }}>
+            <a
+                href={`https://maps.google.com/?q=${query}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    fontSize: 12,
+                    color: GREEN,
+                    textDecoration: 'none',
+                    marginTop: 8,
+                }}
+            >
                 <MapPin size={12} />
                 Mở trong Google Maps
             </a>
@@ -244,15 +300,21 @@ function ShareCard({ company }) {
     const shareLinks = [
         {
             href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
-            bg: '#1877f2', icon: <FacebookIcon size={16} />, title: 'Facebook',
+            bg: '#1877f2',
+            icon: <FacebookIcon size={16} />,
+            title: 'Facebook',
         },
         {
             href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(company.companyName)}`,
-            bg: '#000', icon: <XIcon size={16} />, title: 'X',
+            bg: '#000',
+            icon: <XIcon size={16} />,
+            title: 'X',
         },
         {
             href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
-            bg: '#0a66c2', icon: <LinkedinIcon size={16} />, title: 'LinkedIn',
+            bg: '#0a66c2',
+            icon: <LinkedinIcon size={16} />,
+            title: 'LinkedIn',
         },
     ];
 
@@ -261,28 +323,62 @@ function ShareCard({ company }) {
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px' }}>Chia sẻ công ty</h3>
             <p style={{ fontSize: 13, color: '#767676', margin: '0 0 8px' }}>Sao chép đường dẫn</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-                <input readOnly value={url} style={{
-                    flex: 1, padding: '7px 10px', borderRadius: 6, border: '1px solid #e8e8e8',
-                    fontSize: 12, color: '#555', background: '#f8f8f8', minWidth: 0,
-                }} />
-                <button onClick={copy} style={{
-                    padding: '7px 12px', background: copied ? GREEN : '#f0faf4', border: `1px solid ${GREEN}`,
-                    borderRadius: 6, cursor: 'pointer', color: copied ? '#fff' : GREEN, flexShrink: 0,
-                    display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
-                }}>
+                <input
+                    readOnly
+                    value={url}
+                    style={{
+                        flex: 1,
+                        padding: '7px 10px',
+                        borderRadius: 6,
+                        border: '1px solid #e8e8e8',
+                        fontSize: 12,
+                        color: '#555',
+                        background: '#f8f8f8',
+                        minWidth: 0,
+                    }}
+                />
+                <button
+                    onClick={copy}
+                    style={{
+                        padding: '7px 12px',
+                        background: copied ? GREEN : '#f0faf4',
+                        border: `1px solid ${GREEN}`,
+                        borderRadius: 6,
+                        cursor: 'pointer',
+                        color: copied ? '#fff' : GREEN,
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 12,
+                        fontWeight: 600,
+                    }}
+                >
                     {copied ? <Check size={14} /> : <Copy size={14} />}
                     {copied ? 'Đã chép!' : 'Sao chép'}
                 </button>
             </div>
             <p style={{ fontSize: 13, color: '#767676', margin: '0 0 10px' }}>Chia sẻ qua mạng xã hội</p>
             <div style={{ display: 'flex', gap: 10 }}>
-                {shareLinks.map(s => (
-                    <a key={s.title} href={s.href} target="_blank" rel="noopener noreferrer" title={s.title}
+                {shareLinks.map((s) => (
+                    <a
+                        key={s.title}
+                        href={s.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={s.title}
                         style={{
-                            width: 36, height: 36, borderRadius: '50%', background: s.bg,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', textDecoration: 'none',
-                        }}>
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            background: s.bg,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            textDecoration: 'none',
+                        }}
+                    >
                         {s.icon}
                     </a>
                 ))}
@@ -295,31 +391,79 @@ function ShareCard({ company }) {
 function JobCard({ job, company }) {
     return (
         <Link href={`/viec-lam/${job.id}`} style={{ textDecoration: 'none' }}>
-            <div style={{
-                border: '1px solid #e8e8e8', borderRadius: 8, padding: '14px 16px',
-                display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer',
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-            }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = GREEN; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,177,79,.12)'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.boxShadow = 'none'; }}
+            <div
+                style={{
+                    border: '1px solid #e8e8e8',
+                    borderRadius: 8,
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 14,
+                    cursor: 'pointer',
+                    transition: 'border-color 0.2s, box-shadow 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = GREEN;
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,177,79,.12)';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = '#e8e8e8';
+                    e.currentTarget.style.boxShadow = 'none';
+                }}
             >
-                <div style={{
-                    width: 48, height: 48, border: '1px solid #e8e8e8', borderRadius: 6,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    background: '#f8f8f8', flexShrink: 0,
-                }}>
+                <div
+                    style={{
+                        width: 48,
+                        height: 48,
+                        border: '1px solid #e8e8e8',
+                        borderRadius: 6,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#f8f8f8',
+                        flexShrink: 0,
+                    }}
+                >
                     {company?.logoUrl ? (
-                        <Image src={company.logoUrl} alt="" width={48} height={48} style={{ objectFit: 'contain' }} unoptimized />
+                        <Image
+                            src={company.logoUrl}
+                            alt=""
+                            width={48}
+                            height={48}
+                            style={{ objectFit: 'contain' }}
+                            unoptimized
+                        />
                     ) : (
                         <span style={{ fontSize: 20, fontWeight: 700, color: GREEN }}>{company?.companyName?.[0]}</span>
                     )}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div
+                        style={{
+                            fontSize: 14,
+                            fontWeight: 600,
+                            color: '#1a1a1a',
+                            marginBottom: 4,
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                        }}
+                    >
                         {job.title}
                     </div>
-                    <div style={{ fontSize: 13, color: '#767676', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span style={{ color: GREEN, fontWeight: 500 }}>{formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}</span>
+                    <div
+                        style={{
+                            fontSize: 13,
+                            color: '#767676',
+                            display: 'flex',
+                            gap: 12,
+                            alignItems: 'center',
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <span style={{ color: GREEN, fontWeight: 500 }}>
+                            {formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}
+                        </span>
                         {job.provinceName && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                                 <MapPin size={12} />
@@ -331,6 +475,28 @@ function JobCard({ job, company }) {
                 <div style={{ fontSize: 12, color: '#999', flexShrink: 0 }}>{timeAgo(job.createdAt)}</div>
             </div>
         </Link>
+    );
+}
+
+/* ── Lottie face: static by default, plays on hover ── */
+function RatingFace({ anim, isHovered }) {
+    const lottieRef = useRef(null);
+    useEffect(() => {
+        if (!lottieRef.current) return;
+        if (isHovered) {
+            lottieRef.current.play();
+        } else {
+            lottieRef.current.stop();
+        }
+    }, [isHovered]);
+    return (
+        <Lottie
+            lottieRef={lottieRef}
+            animationData={anim}
+            loop={true}
+            autoplay={false}
+            style={{ width: 64, height: 64 }}
+        />
     );
 }
 
@@ -368,31 +534,40 @@ function RatingSection({ companyId, reviews }) {
                 <p style={{ color: GREEN, fontWeight: 600, fontSize: 14 }}>Cảm ơn bạn đã đánh giá!</p>
             ) : (
                 <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', paddingTop: 8 }}>
-                    {RATINGS.map(r => (
-                        <button key={r.value} onClick={() => submit(r.value)} disabled={submitting}
+                    {RATINGS.map((r) => (
+                        <button
+                            key={r.value}
+                            onClick={() => submit(r.value)}
+                            disabled={submitting}
                             onMouseEnter={() => setHovered(r.value)}
                             onMouseLeave={() => setHovered(null)}
                             style={{
-                                background: 'none', border: 'none', cursor: submitting ? 'wait' : 'pointer',
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
+                                background: 'none',
+                                border: 'none',
+                                cursor: submitting ? 'wait' : 'pointer',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: 8,
                                 opacity: selected && selected !== r.value ? 0.45 : 1,
                                 transform: hovered === r.value ? 'scale(1.1)' : 'scale(1)',
                                 transition: 'transform 0.15s, opacity 0.15s',
                                 padding: '4px 8px',
-                            }}>
+                            }}
+                        >
                             <div style={{ width: 64, height: 64 }}>
-                                <Lottie
-                                    animationData={r.anim}
-                                    loop={true}
-                                    autoplay={true}
-                                    style={{ width: 64, height: 64 }}
-                                />
+                                <RatingFace anim={r.anim} isHovered={hovered === r.value} />
                             </div>
-                            <span style={{
-                                fontSize: 11, color: selected === r.value ? GREEN : '#555',
-                                textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.4,
-                                fontWeight: selected === r.value ? 700 : 400,
-                            }}>
+                            <span
+                                style={{
+                                    fontSize: 11,
+                                    color: selected === r.value ? GREEN : '#555',
+                                    textAlign: 'center',
+                                    whiteSpace: 'pre-line',
+                                    lineHeight: 1.4,
+                                    fontWeight: selected === r.value ? 700 : 400,
+                                }}
+                            >
                                 {r.label}
                             </span>
                         </button>
@@ -412,36 +587,90 @@ function SimilarCompanies({ companies }) {
                 <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
                     Thương hiệu lớn tiêu biểu cùng lĩnh vực
                 </h3>
-                <span style={{ fontSize: 11, background: '#e8f5e9', color: GREEN, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>
+                <span
+                    style={{
+                        fontSize: 11,
+                        background: '#e8f5e9',
+                        color: GREEN,
+                        padding: '2px 8px',
+                        borderRadius: 10,
+                        fontWeight: 600,
+                    }}
+                >
                     Pro Company
                 </span>
             </div>
-            <div className="similar-companies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-                {companies.slice(0, 8).map(c => (
+            <div
+                className="similar-companies-grid"
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}
+            >
+                {companies.slice(0, 8).map((c) => (
                     <Link key={c.id} href={`/cong-ty/${c.slug ?? c.id}`} style={{ textDecoration: 'none' }}>
-                        <div style={{
-                            border: '1px solid #e8e8e8', borderRadius: 8, padding: '12px 14px',
-                            display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
-                            transition: 'border-color 0.2s',
-                        }}
-                            onMouseEnter={e => e.currentTarget.style.borderColor = GREEN}
-                            onMouseLeave={e => e.currentTarget.style.borderColor = '#e8e8e8'}
+                        <div
+                            style={{
+                                border: '1px solid #e8e8e8',
+                                borderRadius: 8,
+                                padding: '12px 14px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 12,
+                                cursor: 'pointer',
+                                transition: 'border-color 0.2s',
+                            }}
+                            onMouseEnter={(e) => (e.currentTarget.style.borderColor = GREEN)}
+                            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#e8e8e8')}
                         >
-                            <div style={{
-                                width: 40, height: 40, border: '1px solid #e8e8e8', borderRadius: 6,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                background: '#f8f8f8', flexShrink: 0,
-                            }}>
-                                {c.logoUrl
-                                    ? <Image src={c.logoUrl} alt="" width={40} height={40} style={{ objectFit: 'contain' }} unoptimized />
-                                    : <span style={{ fontSize: 16, fontWeight: 700, color: GREEN }}>{c.companyName?.[0]}</span>
-                                }
+                            <div
+                                style={{
+                                    width: 40,
+                                    height: 40,
+                                    border: '1px solid #e8e8e8',
+                                    borderRadius: 6,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    background: '#f8f8f8',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {c.logoUrl ? (
+                                    <Image
+                                        src={c.logoUrl}
+                                        alt=""
+                                        width={40}
+                                        height={40}
+                                        style={{ objectFit: 'contain' }}
+                                        unoptimized
+                                    />
+                                ) : (
+                                    <span style={{ fontSize: 16, fontWeight: 700, color: GREEN }}>
+                                        {c.companyName?.[0]}
+                                    </span>
+                                )}
                             </div>
                             <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <div
+                                    style={{
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        color: '#1a1a1a',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                    }}
+                                >
                                     {c.companyName}
                                 </div>
-                                <div style={{ fontSize: 12, color: '#767676', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                <div
+                                    style={{
+                                        fontSize: 12,
+                                        color: '#767676',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        marginTop: 2,
+                                    }}
+                                >
                                     <Briefcase size={11} />
                                     {c.jobCount} việc làm
                                 </div>
@@ -462,15 +691,23 @@ function JobsTab({ companyId, company }) {
     const [meta, setMeta] = useState(null);
     const [page, setPage] = useState(1);
 
-    const fetchJobs = useCallback((kw, pg) => {
-        const params = { page: pg ?? 1, limit: 10 };
-        if (kw) params.keyword = kw;
-        api.get(`/employers/${companyId}/jobs`, { params })
-            .then(r => { setJobs(r.data.data); setMeta(r.data.meta); })
-            .finally(() => setLoading(false));
-    }, [companyId]);
+    const fetchJobs = useCallback(
+        (kw, pg) => {
+            const params = { page: pg ?? 1, limit: 10 };
+            if (kw) params.keyword = kw;
+            api.get(`/employers/${companyId}/jobs`, { params })
+                .then((r) => {
+                    setJobs(r.data.data);
+                    setMeta(r.data.meta);
+                })
+                .finally(() => setLoading(false));
+        },
+        [companyId],
+    );
 
-    useEffect(() => { fetchJobs(undefined, 1); }, [fetchJobs]);
+    useEffect(() => {
+        fetchJobs(undefined, 1);
+    }, [fetchJobs]);
 
     const handleSearch = () => {
         setPage(1);
@@ -487,22 +724,45 @@ function JobsTab({ companyId, company }) {
             {/* Search bar */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
-                    <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
+                    <Search
+                        size={15}
+                        style={{
+                            position: 'absolute',
+                            left: 10,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            color: '#999',
+                        }}
+                    />
                     <input
                         value={keyword}
-                        onChange={e => setKeyword(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                        onChange={(e) => setKeyword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         placeholder="Tên công việc, vị trí ứng tuyển..."
                         style={{
-                            width: '100%', padding: '10px 12px 10px 34px', border: '1px solid #e8e8e8',
-                            borderRadius: 8, fontSize: 14, boxSizing: 'border-box', outline: 'none',
+                            width: '100%',
+                            padding: '10px 12px 10px 34px',
+                            border: '1px solid #e8e8e8',
+                            borderRadius: 8,
+                            fontSize: 14,
+                            boxSizing: 'border-box',
+                            outline: 'none',
                         }}
                     />
                 </div>
-                <button onClick={handleSearch} style={{
-                    padding: '10px 20px', background: GREEN, color: '#fff',
-                    border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14,
-                }}>
+                <button
+                    onClick={handleSearch}
+                    style={{
+                        padding: '10px 20px',
+                        background: GREEN,
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: 14,
+                    }}
+                >
                     Tìm kiếm
                 </button>
             </div>
@@ -511,17 +771,31 @@ function JobsTab({ companyId, company }) {
             {loading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {[...Array(5)].map((_, i) => (
-                        <div key={i} style={{ height: 76, background: '#f5f5f5', borderRadius: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                        <div
+                            key={i}
+                            style={{
+                                height: 76,
+                                background: '#f5f5f5',
+                                borderRadius: 8,
+                                animation: 'pulse 1.5s ease-in-out infinite',
+                            }}
+                        />
                     ))}
                 </div>
             ) : jobs.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-                    <Briefcase size={40} color="#ddd" style={{ marginBottom: 12, display: 'block', margin: '0 auto 12px' }} />
+                    <Briefcase
+                        size={40}
+                        color="#ddd"
+                        style={{ marginBottom: 12, display: 'block', margin: '0 auto 12px' }}
+                    />
                     <p style={{ margin: 0 }}>Không có tin tuyển dụng phù hợp</p>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {jobs.map(j => <JobCard key={j.id} job={j} company={company} />)}
+                    {jobs.map((j) => (
+                        <JobCard key={j.id} job={j} company={company} />
+                    ))}
                 </div>
             )}
 
@@ -529,12 +803,24 @@ function JobsTab({ companyId, company }) {
             {meta && meta.totalPages > 1 && (
                 <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 20 }}>
                     {[...Array(meta.totalPages)].map((_, i) => (
-                        <button key={i} onClick={() => { setPage(i + 1); fetchJobs(keyword, i + 1); }}
+                        <button
+                            key={i}
+                            onClick={() => {
+                                setPage(i + 1);
+                                fetchJobs(keyword, i + 1);
+                            }}
                             style={{
-                                width: 36, height: 36, borderRadius: '50%', border: `1px solid ${page === i + 1 ? GREEN : '#e8e8e8'}`,
-                                background: page === i + 1 ? GREEN : '#fff', color: page === i + 1 ? '#fff' : '#333',
-                                cursor: 'pointer', fontSize: 14, fontWeight: page === i + 1 ? 700 : 400,
-                            }}>
+                                width: 36,
+                                height: 36,
+                                borderRadius: '50%',
+                                border: `1px solid ${page === i + 1 ? GREEN : '#e8e8e8'}`,
+                                background: page === i + 1 ? GREEN : '#fff',
+                                color: page === i + 1 ? '#fff' : '#333',
+                                cursor: 'pointer',
+                                fontSize: 14,
+                                fontWeight: page === i + 1 ? 700 : 400,
+                            }}
+                        >
                             {i + 1}
                         </button>
                     ))}
@@ -551,7 +837,9 @@ function HomeTab({ company, jobs, loadingJobs, reviews }) {
             {/* About */}
             {company.description && (
                 <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', marginBottom: 16 }}>
-                    <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 14px' }}>Giới thiệu công ty</h2>
+                    <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: '0 0 14px' }}>
+                        Giới thiệu công ty
+                    </h2>
                     <div style={{ fontSize: 14, color: '#444', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                         {company.description}
                     </div>
@@ -560,9 +848,13 @@ function HomeTab({ company, jobs, loadingJobs, reviews }) {
 
             {/* Jobs preview */}
             <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}
+                >
                     <h2 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>Tin tuyển dụng</h2>
-                    <Link href="?tab=jobs" style={{ fontSize: 13, color: GREEN, textDecoration: 'none' }}>Xem thêm →</Link>
+                    <Link href="?tab=jobs" style={{ fontSize: 13, color: GREEN, textDecoration: 'none' }}>
+                        Xem thêm →
+                    </Link>
                 </div>
                 {loadingJobs ? (
                     <div style={{ color: '#999', fontSize: 14 }}>Đang tải...</div>
@@ -570,7 +862,9 @@ function HomeTab({ company, jobs, loadingJobs, reviews }) {
                     <div style={{ color: '#999', fontSize: 14 }}>Công ty chưa có tin tuyển dụng nào.</div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        {jobs.slice(0, 5).map(j => <JobCard key={j.id} job={j} company={company} />)}
+                        {jobs.slice(0, 5).map((j) => (
+                            <JobCard key={j.id} job={j} company={company} />
+                        ))}
                     </div>
                 )}
             </div>
@@ -601,7 +895,7 @@ export default function CompanyDetailPage() {
         if (!id) return;
 
         api.get(`/employers/${id}`)
-            .then(r => {
+            .then((r) => {
                 setCompany(r.data);
                 // Redirect UUID → slug
                 const slug = r.data.slug;
@@ -614,14 +908,14 @@ export default function CompanyDetailPage() {
             .finally(() => setLoading(false));
 
         api.get(`/employers/${id}/jobs`, { params: { limit: 10 } })
-            .then(r => setJobs(r.data.data))
+            .then((r) => setJobs(r.data.data))
             .finally(() => setLoadingJobs(false));
 
-        api.get(`/employers/${id}/reviews`).then(r => setReviews(r.data));
+        api.get(`/employers/${id}/reviews`).then((r) => setReviews(r.data));
 
         api.get(`/employers/${id}/follow-status`)
-            .then(r => setFollowed(r.data.followed))
-            .catch(() => { });
+            .then((r) => setFollowed(r.data.followed))
+            .catch(() => {});
     }, [id, router, searchParams]);
 
     const handleFollow = async () => {
@@ -651,8 +945,19 @@ export default function CompanyDetailPage() {
     if (loading) {
         return (
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
-                <div style={{ height: 160, background: '#f5f5f5', borderRadius: 8, marginBottom: 16, animation: 'pulse 1.5s ease-in-out infinite' }} />
-                <div className="company-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
+                <div
+                    style={{
+                        height: 160,
+                        background: '#f5f5f5',
+                        borderRadius: 8,
+                        marginBottom: 16,
+                        animation: 'pulse 1.5s ease-in-out infinite',
+                    }}
+                />
+                <div
+                    className="company-detail-grid"
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}
+                >
                     <div style={{ height: 400, background: '#f5f5f5', borderRadius: 8 }} />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div style={{ height: 180, background: '#f5f5f5', borderRadius: 8 }} />
@@ -668,7 +973,9 @@ export default function CompanyDetailPage() {
         return (
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '60px 16px', textAlign: 'center' }}>
                 <h2 style={{ color: '#333' }}>Không tìm thấy công ty</h2>
-                <Link href="/cong-ty" style={{ color: GREEN }}>← Quay lại danh sách</Link>
+                <Link href="/cong-ty" style={{ color: GREEN }}>
+                    ← Quay lại danh sách
+                </Link>
             </div>
         );
     }
@@ -687,7 +994,10 @@ export default function CompanyDetailPage() {
                     followLoading={followLoading}
                 />
 
-                <div className="company-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, alignItems: 'start' }}>
+                <div
+                    className="company-detail-grid"
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, alignItems: 'start' }}
+                >
                     {/* Main */}
                     <div>
                         {tab === 'home' ? (

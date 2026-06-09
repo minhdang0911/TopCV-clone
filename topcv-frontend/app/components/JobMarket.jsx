@@ -226,6 +226,7 @@ export default function JobMarket() {
     }, []);
 
     return (
+        <>
         <div style={{ padding: '0 0 32px', fontFamily: 'Inter, -apple-system, sans-serif' }}>
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
                 <div style={{ background: GRAD, borderRadius: '12px', overflow: 'hidden', padding: '20px 24px' }}>
@@ -254,7 +255,7 @@ export default function JobMarket() {
 
                     {/* ── Main 4-column grid ── */}
                     {/* Robot spans rows 1+2, stats in row 1, charts in row 2 */}
-                    <div style={{
+                    <div className="jm-grid" style={{
                         display: 'grid',
                         gridTemplateColumns: '190px repeat(3, 1fr)',
                         gridTemplateRows: 'auto 1fr',
@@ -262,7 +263,7 @@ export default function JobMarket() {
                         rowGap: '0',
                     }}>
                         {/* Robot — spans cả 2 rows */}
-                        <div style={{
+                        <div className="jm-robot" style={{
                             gridColumn: '1',
                             gridRow: '1 / 3',
                             display: 'flex',
@@ -280,19 +281,19 @@ export default function JobMarket() {
                         </div>
 
                         {/* Stat row (row 1, cols 2-4) */}
-                        <div style={{ gridColumn: '2', gridRow: '1' }}>
+                        <div className="jm-stat-1" style={{ gridColumn: '2', gridRow: '1' }}>
                             <StatBlock value={stats?.newToday} label="Việc làm 24h gần nhất" />
                         </div>
-                        <div style={{ gridColumn: '3', gridRow: '1' }}>
+                        <div className="jm-stat-2" style={{ gridColumn: '3', gridRow: '1' }}>
                             <StatBlock value={stats?.totalActive} label="Việc làm đang tuyển" />
                         </div>
-                        <div style={{ gridColumn: '4', gridRow: '1' }}>
+                        <div className="jm-stat-3" style={{ gridColumn: '4', gridRow: '1' }}>
                             <StatBlock value={stats?.totalCompanies} label="Công ty đang tuyển" />
                         </div>
 
                         {/* Charts row (row 2, cols 2-4) — add paddingTop to separate from stats */}
                         {/* Việc làm mới nhất */}
-                        <div style={{ gridColumn: '2', gridRow: '2', paddingTop: '14px' }}>
+                        <div className="jm-chart-1" style={{ gridColumn: '2', gridRow: '2', paddingTop: '14px' }}>
                             <SectionHead title="Việc làm mới nhất" />
                             {latestJobs.length === 0 ? (
                                 <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', padding: '20px 0', textAlign: 'center' }}>Đang tải...</div>
@@ -306,13 +307,13 @@ export default function JobMarket() {
                         </div>
 
                         {/* Growth chart */}
-                        <div style={{ gridColumn: '3', gridRow: '2', paddingTop: '14px' }}>
+                        <div className="jm-chart-2" style={{ gridColumn: '3', gridRow: '2', paddingTop: '14px' }}>
                             <SectionHead title="Tăng trưởng cơ hội việc làm" />
                             <LineChart data={growth} />
                         </div>
 
                         {/* Industry demand */}
-                        <div style={{ gridColumn: '4', gridRow: '2', paddingTop: '14px' }}>
+                        <div className="jm-chart-3" style={{ gridColumn: '4', gridRow: '2', paddingTop: '14px' }}>
                             <SectionHead
                                 title="Nhu cầu tuyển dụng theo"
                                 right={
@@ -335,5 +336,24 @@ export default function JobMarket() {
                 </div>
             </div>
         </div>
+        <style>{`
+            @media(max-width:768px){
+                .jm-grid{
+                    grid-template-columns:1fr 1fr 1fr!important;
+                    grid-template-rows:auto auto auto auto!important;
+                }
+                .jm-robot{display:none!important;}
+                .jm-stat-1{grid-column:1!important;grid-row:1!important;}
+                .jm-stat-2{grid-column:2!important;grid-row:1!important;}
+                .jm-stat-3{grid-column:3!important;grid-row:1!important;}
+                .jm-chart-1{grid-column:1/-1!important;grid-row:2!important;padding-top:12px!important;}
+                .jm-chart-2{grid-column:1/-1!important;grid-row:3!important;padding-top:12px!important;}
+                .jm-chart-3{grid-column:1/-1!important;grid-row:4!important;padding-top:12px!important;}
+            }
+            @media(max-width:480px){
+                .jm-stat-1,.jm-stat-2,.jm-stat-3{padding:0 8px 10px!important;}
+            }
+        `}</style>
+        </>
     );
 }

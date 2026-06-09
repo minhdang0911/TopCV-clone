@@ -69,8 +69,15 @@ export default function EmployerRegisterPage() {
 
     return (
         <div style={{ minHeight: '100vh', display: 'flex' }}>
+            <style>{`
+                @media(max-width:1024px){
+                    .emp-reg-right{display:none!important;}
+                    .emp-reg-left{margin-right:0!important;}
+                }
+            `}</style>
             {/* LEFT */}
             <div
+                className="emp-reg-left"
                 style={{
                     flex: 1,
                     display: 'flex',
@@ -746,7 +753,7 @@ export default function EmployerRegisterPage() {
             </div>
 
             {/* RIGHT - Banner: fixed so it stays in place while left scrolls */}
-            <div style={{ width: '420px', position: 'fixed', right: 0, top: 0, height: '100vh' }}>
+            <div className="emp-reg-right" style={{ width: '420px', position: 'fixed', right: 0, top: 0, height: '100vh' }}>
                 <Image src={RightBanner} alt="background" fill sizes="420px" style={{ objectFit: 'cover' }} priority />
             </div>
         </div>

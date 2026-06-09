@@ -194,9 +194,11 @@ function FooterCol({ col }) {
 export default function Footer() {
     return (
         <footer>
+            <FooterStyles />
             {/* ── Top section ── */}
             <div style={{ background: '#f8f8f8', borderTop: '1px solid #e8e8e8', padding: '40px 0 32px' }}>
                 <div
+                    className="footer-top-grid"
                     style={{
                         maxWidth: '1200px',
                         margin: '0 auto',
@@ -381,7 +383,7 @@ export default function Footer() {
                     </div>
 
                     {/* Right: 4 link columns */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
+                    <div className="footer-link-cols" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
                         <FooterCol col={COL1} />
                         <FooterCol col={COL2} />
                         <FooterCol col={COL3} />
@@ -393,7 +395,7 @@ export default function Footer() {
             {/* ── Bottom section ── */}
             <div style={{ background: 'white', borderTop: '1px solid #e8e8e8', padding: '28px 0 20px' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '32px', alignItems: 'start' }}>
+                    <div className="footer-bottom-grid" style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '32px', alignItems: 'start' }}>
                         {/* Legal info */}
                         <div>
                             <div
@@ -411,13 +413,13 @@ export default function Footer() {
                                     <span style={{ color: GREEN }}>▪</span> Giấy phép hoạt động dịch vụ việc làm số:{' '}
                                     <strong>44/2024/SLĐTBXH-GP</strong>
                                 </div>
-                                <div>
-                                    <span style={{ color: '#e8a000' }}>📍</span> <strong>Trụ sở HN:</strong> Tòa FS -
-                                    GoldSeason số 47 Nguyễn Tuân, Phường Thanh Xuân, Thành phố Hà Nội, Việt Nam
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: '3px' }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#e8a000"/></svg>
+                                    <span><strong>Trụ sở HN:</strong> Tòa FS - GoldSeason số 47 Nguyễn Tuân, Phường Thanh Xuân, Thành phố Hà Nội, Việt Nam</span>
                                 </div>
-                                <div>
-                                    <span style={{ color: '#e8a000' }}>📍</span> <strong>Chi nhánh HCM:</strong> Tòa nhà
-                                    Dali, 24C Phan Đăng Lưu, Phường Gia Định, TP HCM
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '4px' }}>
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: '3px' }}><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#e8a000"/></svg>
+                                    <span><strong>Chi nhánh HCM:</strong> Tòa nhà Dali, 24C Phan Đăng Lưu, Phường Gia Định, TP HCM</span>
                                 </div>
                             </div>
 
@@ -433,7 +435,7 @@ export default function Footer() {
                                 >
                                     Hệ sinh thái HR Tech của TopCV
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                                <div className="footer-ecosystem-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                                     {ECOSYSTEM.map((e) => (
                                         <a
                                             key={e.name}
@@ -478,7 +480,7 @@ export default function Footer() {
                         </div>
 
                         {/* QR code */}
-                        <div style={{ textAlign: 'center' }}>
+                        <div className="footer-qr" style={{ textAlign: 'center' }}>
                             <div
                                 style={{
                                     width: '90px',
@@ -504,6 +506,22 @@ export default function Footer() {
         </footer>
     );
 }
+
+/* ── Responsive ── */
+const FooterStyles = () => (
+    <style>{`
+        @media(max-width:768px){
+            .footer-top-grid{grid-template-columns:1fr!important;gap:24px!important;}
+            .footer-link-cols{grid-template-columns:repeat(2,1fr)!important;gap:16px!important;}
+            .footer-bottom-grid{grid-template-columns:1fr!important;}
+            .footer-ecosystem-grid{grid-template-columns:repeat(2,1fr)!important;}
+            .footer-qr{display:none!important;}
+        }
+        @media(max-width:480px){
+            .footer-link-cols{grid-template-columns:1fr!important;}
+        }
+    `}</style>
+);
 
 /* ── Simple QR-like decorative pattern ── */
 function QRPattern() {

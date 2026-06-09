@@ -659,6 +659,14 @@ export default function Header() {
 
     return (
         <>
+            <style>{`
+              .hdr-hamburger{display:none}
+              .hdr-desktop-nav{display:flex}
+              @media(max-width:768px){
+                .hdr-hamburger{display:flex!important}
+                .hdr-desktop-nav{display:none!important}
+              }
+            `}</style>
             {/* ══════════════ HEADER ══════════════ */}
             <header
                 style={{
@@ -670,24 +678,22 @@ export default function Header() {
                 }}
             >
                 <div style={{ height: '72px', display: 'flex', alignItems: 'center', paddingLeft: '16px' }}>
-                    {/* Hamburger */}
-                    {isMobile && (
-                        <button
-                            onClick={() => setMobileOpen(true)}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#374151',
-                                padding: '4px',
-                                marginRight: '8px',
-                                display: 'flex',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <Menu size={24} />
-                        </button>
-                    )}
+                    {/* Hamburger — always rendered, CSS controls visibility */}
+                    <button
+                        className="hdr-hamburger"
+                        onClick={() => setMobileOpen(true)}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#374151',
+                            padding: '4px',
+                            marginRight: '8px',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <Menu size={24} />
+                    </button>
 
                     {/* Logo */}
                     <Link
@@ -715,9 +721,9 @@ export default function Header() {
                     </Link>
 
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
-                        {/* ── Desktop Nav ── */}
-                        {!isMobile && (
-                            <nav ref={dropdownRef} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                        {/* ── Desktop Nav — always rendered, CSS hides on mobile ── */}
+                        {true && (
+                            <nav ref={dropdownRef} className="hdr-desktop-nav" style={{ alignItems: 'center', flex: 1 }}>
                                 {NAV_ITEMS.map((navItem) => (
                                     <div
                                         key={navItem.key}

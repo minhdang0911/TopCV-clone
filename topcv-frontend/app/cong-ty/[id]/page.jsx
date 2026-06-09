@@ -95,7 +95,7 @@ function Breadcrumb({ name }) {
 function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLoading }) {
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', marginBottom: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
+            <div className="company-header-inner company-header-actions" style={{ display: 'flex', alignItems: 'flex-start', gap: 20 }}>
                 {/* Logo */}
                 <div style={{
                     width: 90, height: 90, border: '1px solid #e8e8e8', borderRadius: 8,
@@ -128,6 +128,7 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
 
                 {/* Follow button */}
                 <button
+                    className="company-follow-btn"
                     onClick={onFollow}
                     disabled={followLoading}
                     style={{
@@ -415,7 +416,7 @@ function SimilarCompanies({ companies }) {
                     Pro Company
                 </span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            <div className="similar-companies-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 {companies.slice(0, 8).map(c => (
                     <Link key={c.id} href={`/cong-ty/${c.slug ?? c.id}`} style={{ textDecoration: 'none' }}>
                         <div style={{
@@ -651,7 +652,7 @@ export default function CompanyDetailPage() {
         return (
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px' }}>
                 <div style={{ height: 160, background: '#f5f5f5', borderRadius: 8, marginBottom: 16, animation: 'pulse 1.5s ease-in-out infinite' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
+                <div className="company-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16 }}>
                     <div style={{ height: 400, background: '#f5f5f5', borderRadius: 8 }} />
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                         <div style={{ height: 180, background: '#f5f5f5', borderRadius: 8 }} />
@@ -686,7 +687,7 @@ export default function CompanyDetailPage() {
                     followLoading={followLoading}
                 />
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, alignItems: 'start' }}>
+                <div className="company-detail-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 16, alignItems: 'start' }}>
                     {/* Main */}
                     <div>
                         {tab === 'home' ? (
@@ -697,7 +698,7 @@ export default function CompanyDetailPage() {
                     </div>
 
                     {/* Sidebar */}
-                    <div style={{ position: 'sticky', top: 80 }}>
+                    <div className="company-detail-sidebar" style={{ position: 'sticky', top: 80 }}>
                         <InfoCard company={company} />
                         <MapCard address={company.address} />
                         <ShareCard company={company} />
@@ -705,7 +706,19 @@ export default function CompanyDetailPage() {
                 </div>
             </div>
 
-            <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
+            <style>{`
+                @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+                @media(max-width:768px){
+                    .company-detail-grid{grid-template-columns:1fr!important;}
+                    .company-detail-sidebar{position:static!important;}
+                    .similar-companies-grid{grid-template-columns:1fr!important;}
+                    .company-header-actions{flex-direction:column!important;align-items:flex-start!important;gap:12px!important;}
+                    .company-follow-btn{width:100%!important;justify-content:center!important;}
+                }
+                @media(max-width:480px){
+                    .company-header-inner{flex-wrap:wrap!important;}
+                }
+            `}</style>
         </div>
     );
 }

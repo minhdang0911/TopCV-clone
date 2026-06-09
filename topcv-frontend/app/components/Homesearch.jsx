@@ -507,7 +507,7 @@ export default function HomeSearch() {
                 overflow: 'hidden',
             }}>
                 {/* Decorative left */}
-                <div style={{
+                <div className="hs-deco" style={{
                     position: 'absolute', top: 0, left: 0,
                     width: '317px', height: '100%', zIndex: 1, pointerEvents: 'none',
                     backgroundImage: `url(${beforeBg.src})`,
@@ -516,7 +516,7 @@ export default function HomeSearch() {
                     backgroundPosition: 'left top',
                 }} />
                 {/* Decorative right */}
-                <div style={{
+                <div className="hs-deco" style={{
                     position: 'absolute', top: 0, right: 0,
                     width: '317px', height: '100%', zIndex: 1, pointerEvents: 'none',
                     backgroundImage: `url(${afterBg.src})`,
@@ -527,7 +527,7 @@ export default function HomeSearch() {
 
                 <div style={{ maxWidth: '780px', margin: '0 auto', position: 'relative', zIndex: 2, textAlign: 'center' }}>
                     {/* Title */}
-                    <h1 style={{
+                    <h1 className="hs-title" style={{
                         color: '#00b14f', fontSize: '27px', fontWeight: '700',
                         lineHeight: '1.35', margin: '0 auto 10px',
                     }}>
@@ -539,7 +539,7 @@ export default function HomeSearch() {
                     </p>
 
                     {/* Search bar */}
-                    <div style={{
+                    <div className="hs-searchbar" style={{
                         display: 'flex', background: 'white', borderRadius: '8px',
                         boxShadow: '0 4px 24px rgba(0,0,0,0.22)', height: '52px',
                         overflow: 'hidden',
@@ -568,12 +568,13 @@ export default function HomeSearch() {
                         </div>
 
                         {/* Divider */}
-                        <div style={{ width: '1px', background: '#e5e7eb', alignSelf: 'center', height: '28px', flexShrink: 0 }} />
+                        <div className="hs-location-divider" style={{ width: '1px', background: '#e5e7eb', alignSelf: 'center', height: '28px', flexShrink: 0 }} />
 
                         {/* Location button */}
                         <button
                             ref={provinceBtnRef}
                             onClick={openProvince}
+                            className="hs-location-btn"
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '6px',
                                 padding: '0 14px', height: '52px',
@@ -655,9 +656,24 @@ export default function HomeSearch() {
                         ))}
                     </div>
 
-                    <StatsBox />
+                    <div className="hs-statsbox">
+                        <StatsBox />
+                    </div>
                 </div>
             </section>
+            <style>{`
+                @media(max-width:768px){
+                    .hs-deco{display:none!important;}
+                    .hs-title{font-size:20px!important;}
+                    .hs-location-btn{display:none!important;}
+                    .hs-location-divider{display:none!important;}
+                    .hs-statsbox{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+                }
+                @media(max-width:480px){
+                    .hs-title{font-size:18px!important;}
+                    .hs-searchbar{border-radius:8px!important;}
+                }
+            `}</style>
         </>
     );
 }

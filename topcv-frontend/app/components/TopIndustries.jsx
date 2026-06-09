@@ -206,6 +206,7 @@ export default function TopIndustries() {
 
     return (
         <div style={{ background: 'white', padding: '36px 0' }}>
+            <style>{`@media(max-width:640px){.top-ind-grid{grid-template-columns:repeat(2,1fr)!important;}}`}</style>
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
 
                 {/* ── Header ── */}
@@ -235,7 +236,7 @@ export default function TopIndustries() {
                 {industries.length === 0 ? (
                     <SkeletonGrid />
                 ) : (
-                    <div style={{
+                    <div className="top-ind-grid" style={{
                         display: 'grid',
                         gridTemplateColumns: 'repeat(4, 1fr)',
                         gap: '12px',
@@ -304,7 +305,7 @@ function NavBtn({ disabled, onClick, dir }) {
 /* ── Skeleton ── */
 function SkeletonGrid() {
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+        <div className="top-ind-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
             <style>{`@keyframes shimmer2{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
             {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} style={{

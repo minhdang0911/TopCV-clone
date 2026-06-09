@@ -286,6 +286,12 @@ export default async function JobListingPage({ searchParams }: { searchParams: P
 
     return (
         <div style={{ background: '#f3f4f6', minHeight: '100vh' }}>
+            <style>{`
+                @media(max-width:768px){
+                    .tvlmn-grid{grid-template-columns:1fr!important;}
+                    .tvlmn-sidebar{display:none!important;}
+                }
+            `}</style>
             {/* Search header — white bar */}
             <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '16px 0' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
@@ -315,6 +321,7 @@ export default async function JobListingPage({ searchParams }: { searchParams: P
             {/* Main */}
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px 16px' }}>
                 <div
+                    className="tvlmn-grid"
                     style={{
                         display: 'grid',
                         gridTemplateColumns: '256px 1fr',
@@ -323,7 +330,7 @@ export default async function JobListingPage({ searchParams }: { searchParams: P
                     }}
                 >
                     {/* Sidebar filter */}
-                    <div>
+                    <div className="tvlmn-sidebar">
                         <Suspense fallback={null}>
                             <JobFilter
                                 industries={industries}

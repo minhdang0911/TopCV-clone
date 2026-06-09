@@ -24,7 +24,7 @@ function FeaturedCard({ company }) {
             href={`/cong-ty/${company.id}`}
             style={{ textDecoration: 'none', display: 'block', height: '100%' }}
         >
-            <div style={{
+            <div className="feat-emp-featured" style={{
                 background: cardBg(company.companyName),
                 borderRadius: '12px',
                 padding: '28px 20px',
@@ -185,6 +185,14 @@ export default function FeaturedEmployers() {
 
     return (
         <div style={{ background: '#f5f5f5', padding: '28px 0' }}>
+            <style>{`
+              @media(max-width:768px){
+                .feat-emp-grid{grid-template-columns:1fr!important;}
+                .feat-emp-featured{min-height:180px!important;padding:20px!important;}
+                .feat-emp-inner-grid{grid-template-rows:auto!important;}
+                .feat-emp-filler{display:none!important;}
+              }
+            `}</style>
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
 
                 {/* ── Header ── */}
@@ -224,7 +232,7 @@ export default function FeaturedEmployers() {
                         Chưa có công ty nào trong ngành này.
                     </div>
                 ) : (
-                    <div style={{
+                    <div className="feat-emp-grid" style={{
                         display: 'grid',
                         gridTemplateColumns: '1fr 2fr',
                         gap: '12px',
@@ -234,7 +242,7 @@ export default function FeaturedEmployers() {
                         {featured && <FeaturedCard company={featured} />}
 
                         {/* Right: 2×3 grid */}
-                        <div style={{
+                        <div className="feat-emp-inner-grid" style={{
                             display: 'grid',
                             gridTemplateColumns: '1fr 1fr',
                             gridTemplateRows: 'repeat(3, 1fr)',
@@ -245,7 +253,7 @@ export default function FeaturedEmployers() {
                             ))}
                             {/* Filler cards if less than 6 */}
                             {rest.length < 6 && Array.from({ length: 6 - rest.length }).map((_, i) => (
-                                <div key={`empty-${i}`} style={{
+                                <div key={`empty-${i}`} className="feat-emp-filler" style={{
                                     border: '1.5px dashed #e0e0e0', borderRadius: '10px',
                                     background: '#fafafa', minHeight: '72px',
                                 }} />
@@ -316,7 +324,7 @@ function SkeletonBox({ style }) {
 
 function SkeletonGrid() {
     return (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
+        <div className="feat-emp-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '12px' }}>
             <SkeletonBox style={{ minHeight: '300px' }} />
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 {Array.from({ length: 6 }).map((_, i) => <SkeletonBox key={i} style={{ height: '80px' }} />)}

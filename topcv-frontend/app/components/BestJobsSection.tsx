@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
     ChevronLeft,
@@ -859,16 +860,19 @@ export default function BestJobsSection({
     showPagination = true,
     limit = 12,
 }: BestJobsSectionProps) {
+    const searchParams = useSearchParams();
+    const initialIndustryId = searchParams.get('industryId') || '';
+
     const [jobs, setJobs] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
     const [page, setPage] = useState(1);
     const [showTip, setShowTip] = useState(true);
-    const [filterType, setFilterType] = useState('location');
+    const [filterType, setFilterType] = useState(initialIndustryId ? 'industry' : 'location');
 
     const [filters, setFilters] = useState({
-        provinceCode: HCM_PROVINCE_CODE,
-        provinceName: HCM_PROVINCE_NAME,
+        provinceCode: initialIndustryId ? '' : HCM_PROVINCE_CODE,
+        provinceName: initialIndustryId ? '' : HCM_PROVINCE_NAME,
         districtCode: '',
         districtName: '',
         salary: '',
@@ -876,7 +880,7 @@ export default function BestJobsSection({
         salaryMax: undefined as number | undefined,
         salaryType: '',
         experience: '',
-        industryId: '',
+        industryId: initialIndustryId,
     });
 
     const [provinces, setProvinces] = useState<any[]>([]);

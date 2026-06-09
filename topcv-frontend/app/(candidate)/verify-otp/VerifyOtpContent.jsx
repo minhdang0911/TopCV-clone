@@ -243,6 +243,7 @@ export default function VerifyOtpContent() {
 
                 {/* OTP Inputs */}
                 <div
+                    className="otp-inputs"
                     style={{ display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '28px' }}
                     onPaste={handlePaste}
                 >
@@ -395,6 +396,10 @@ export default function VerifyOtpContent() {
             <style>{`
                 @keyframes spin { to { transform: rotate(360deg); } }
                 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+                @media(max-width:400px){
+                    .otp-inputs{gap:6px!important;}
+                    .otp-inputs input{width:44px!important;height:52px!important;font-size:20px!important;border-radius:10px!important;}
+                }
             `}</style>
         </div>
     );

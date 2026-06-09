@@ -540,6 +540,7 @@ export default function ViecLamTotNhatPage() {
             <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', padding: '12px 0' }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px' }}>
                     <div
+                        className="vlt-search-bar"
                         style={{
                             display: 'flex',
                             border: '1px solid #e5e7eb',
@@ -598,6 +599,7 @@ export default function ViecLamTotNhatPage() {
 
                         {/* Industry */}
                         <div
+                            className="vlt-select-col"
                             style={{
                                 width: '220px',
                                 borderRight: '1px solid #e5e7eb',
@@ -638,6 +640,7 @@ export default function ViecLamTotNhatPage() {
 
                         {/* Province */}
                         <div
+                            className="vlt-select-col"
                             style={{
                                 width: '220px',
                                 borderRight: '1px solid #e5e7eb',
@@ -846,6 +849,10 @@ export default function ViecLamTotNhatPage() {
 
             <style>{`
                 @media (max-width: 900px) { .sidebar { display: none !important; } }
+                @media (max-width: 640px) {
+                    .vlt-search-bar { flex-direction: column !important; border-radius: 8px !important; }
+                    .vlt-select-col { width: 100% !important; border-right: none !important; border-top: 1px solid #e5e7eb !important; }
+                }
                 * { box-sizing: border-box; -ms-overflow-style: none; scrollbar-width: none; }
                 *::-webkit-scrollbar { display: none; }
             `}</style>

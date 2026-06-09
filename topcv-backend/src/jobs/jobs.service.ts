@@ -170,6 +170,32 @@ export class JobsService {
     return result;
   }
 
+  // ─── BACKFILL industryId from employer profile ───────
+  async backfillIndustryId() {
+    const jobs = await this.prisma.job.findMany({
+      where: { industryId: null },
+      select: { id: true, employerId: true },
+    });
+
+    let updated = 0;
+    for (const job of jobs) {
+      const employer = await this.prisma.employerProfile.findUnique({
+        where: { id: job.employerId },
+        select: { industryId: true },
+      });
+      if (employer?.industryId) {
+        await this.prisma.job.update({
+          where: { id: job.id },
+          data: { industryId: employer.industryId },
+        });
+        updated++;
+      }
+    }
+
+    await this.invalidateCache();
+    return { total: jobs.length, updated };
+  }
+
   // ─── INDUSTRY DEMAND ─────────────────────────────────
   // GET /jobs/industry-demand
   // Trả về top 6 ngành theo số job đang tuyển
@@ -248,6 +274,7 @@ export class JobsService {
       const job = await this.prisma.job.create({
         data: {
           ...data,
+          industryId: data.industryId ?? employer.industryId ?? undefined,
           deadline: data.deadline ? new Date(data.deadline) : undefined,
           employerId: employer.id,
         },

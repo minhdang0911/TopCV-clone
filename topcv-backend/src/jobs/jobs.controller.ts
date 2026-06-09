@@ -28,6 +28,11 @@ export class JobsController {
     return this.jobsService.getStats();
   }
 
+  @Get('backfill-industry')
+  backfillIndustryId() {
+    return this.jobsService.backfillIndustryId();
+  }
+
   @Get()
   findAll(@Query() query: any) {
     return this.jobsService.findAll(query);

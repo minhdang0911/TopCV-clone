@@ -69,6 +69,12 @@ export class UsersController {
     );
   }
 
+  @Patch('me/job-preferences')
+  @UseGuards(JwtAuthGuard)
+  updateJobPreferences(@Req() req: any, @Body() body: any) {
+    return this.usersService.updateJobPreferences(req.user.sub, body);
+  }
+
   @Get('candidate/profile')
   @UseGuards(JwtAuthGuard)
   getCandidateProfile(@Req() req: any) {

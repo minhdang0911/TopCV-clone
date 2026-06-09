@@ -65,11 +65,11 @@ const TAO_CV_POSITION = [
     { label: 'Chuyên viên marketing', href: '/tao-cv' },
 ];
 const TAO_CV_MANAGE = [
-    { label: 'Quản lý CV', href: '#', Icon: FileText },
-    { label: 'Tải CV lên', href: '#', Icon: Upload },
+    { label: 'Quản lý CV', href: '/quan-ly-cv', Icon: FileText },
+    { label: 'Tải CV lên', href: '/tai-cv-len', Icon: Upload },
     { label: 'Hướng dẫn viết CV', href: '#', Icon: BookOpen },
-    { label: 'Quản lý Cover Letter', href: '#', Icon: Mail },
-    { label: 'Mẫu Cover Letter', href: '#', Icon: FileText },
+    { label: 'Quản lý Cover Letter', href: '/quan-ly-cv?type=cover-letter', Icon: Mail },
+    { label: 'Mẫu Cover Letter', href: '/mau-cover-letter', Icon: FileText },
 ];
 const KHAM_PHA_ITEMS = [
     { label: 'Bộ câu hỏi phỏng vấn', href: '#', Icon: HelpCircle, badge: 'Mới' },
@@ -141,8 +141,8 @@ const USER_MENU_SECTIONS = [
         key: 'cv',
         label: 'Quản lý CV & Cover letter',
         items: [
-            { label: 'CV của tôi', href: '#' },
-            { label: 'Cover Letter của tôi', href: '#' },
+            { label: 'CV của tôi', href: '/quan-ly-cv' },
+            { label: 'Cover Letter của tôi', href: '/quan-ly-cv?type=cover-letter' },
             { label: 'Nhà tuyển dụng muốn kết nối với bạn', href: '#' },
             { label: 'Nhà tuyển dụng xem hồ sơ', href: '#' },
         ],

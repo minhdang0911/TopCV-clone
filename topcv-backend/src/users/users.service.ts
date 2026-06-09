@@ -191,6 +191,14 @@ export class UsersService {
     return this.prisma.employerProfile.findUnique({ where: { userId } });
   }
 
+  // ─── JOB PREFERENCES ─────────────────────────────────
+  async updateJobPreferences(userId: string, jobPreferences: any) {
+    return this.prisma.candidateProfile.update({
+      where: { userId },
+      data: { jobPreferences },
+    });
+  }
+
   // ─── PASSWORD ────────────────────────────────────────
   async changePassword(
     userId: string,

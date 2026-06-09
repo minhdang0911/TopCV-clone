@@ -70,6 +70,7 @@ model CandidateProfile {
   avatarUrl           String?  @map("avatar_url")
   isLookingForJob     Boolean  @default(true) @map("is_looking_for_job")
   allowEmployerSearch Boolean  @default(true) @map("allow_employer_search")
+  jobPreferences      Json?    @map("job_preferences")
   createdAt           DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -185,8 +186,9 @@ model Job {
 model Resume {
   id          String   @id @default(uuid())
   userId      String   @map("user_id")
+  type        String   @default("resume")
   title       String   @default("CV chưa đặt tên")
-  template    String   @default("default_v2")
+  template    String   @default("tieu-chuan")
   color       String   @default("#00b14f")
   fontSize    String   @default("medium")
   lineSpacing Float    @default(1.5) @map("line_spacing")

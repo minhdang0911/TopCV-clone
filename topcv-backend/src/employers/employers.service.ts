@@ -6,6 +6,25 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { Redis } from '@upstash/redis';
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[àáâãăạảấầẩẫậắằẳẵặ]/g, 'a')
+    .replace(/[èéêẹẻẽếềểễệ]/g, 'e')
+    .replace(/[ìíịỉĩ]/g, 'i')
+    .replace(/[òóôõơọỏốồổỗộớờởỡợ]/g, 'o')
+    .replace(/[ùúưụủũứừửữự]/g, 'u')
+    .replace(/[ỳýỵỷỹ]/g, 'y')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 @Injectable()
 export class EmployersService {
   private _redis: Redis | null = null;
@@ -81,9 +100,13 @@ export class EmployersService {
     return result;
   }
 
-  async findOne(id: string) {
+  async findOne(idOrSlug: string) {
+    const where = UUID_RE.test(idOrSlug)
+      ? { id: idOrSlug }
+      : { slug: idOrSlug };
+
     const company = await this.prisma.employerProfile.findUnique({
-      where: { id },
+      where,
       include: {
         industry: { select: { id: true, name: true, slug: true } },
         _count: {
@@ -98,8 +121,17 @@ export class EmployersService {
 
     if (!company) throw new NotFoundException('Company not found');
 
+    // Auto-generate slug on first fetch
+    if (!company.slug) {
+      const slug = `${toSlug(company.companyName)}-${company.id.slice(0, 8)}`;
+      await this.prisma.employerProfile
+        .update({ where: { id: company.id }, data: { slug } })
+        .catch(() => {});
+      company.slug = slug;
+    }
+
     const reviewStats = await this.prisma.companyReview.aggregate({
-      where: { employerProfileId: id },
+      where: { employerProfileId: company.id },
       _avg: { rating: true },
     });
 
@@ -108,7 +140,7 @@ export class EmployersService {
       ? await this.prisma.employerProfile.findMany({
           where: {
             industryId: company.industryId,
-            id: { not: id },
+            id: { not: company.id },
           },
           include: {
             _count: { select: { jobs: { where: { isActive: true } } } },

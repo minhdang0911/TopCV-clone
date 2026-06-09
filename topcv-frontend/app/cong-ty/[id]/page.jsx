@@ -5,6 +5,18 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import Lottie from 'lottie-react';
+import {
+    Building2,
+    Users,
+    Hash,
+    MapPin,
+    Globe,
+    Heart,
+    Search,
+    Copy,
+    Check,
+    Briefcase,
+} from 'lucide-react';
 import api from '@/lib/axios';
 
 import veryBadAnim from '../../../public/verry_bad.json';
@@ -23,10 +35,35 @@ const RATINGS = [
     { value: 5, label: 'Rất đáng tin cậy\n& rõ ràng', anim: veryGoodAnim },
 ];
 
+/* ── Social SVGs ── */
+function FacebookIcon({ size = 20 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047v-2.66c0-3.025 1.792-4.697 4.533-4.697 1.313 0 2.686.235 2.686.235v2.97h-1.513c-1.491 0-1.956.93-1.956 1.886v2.266h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z" />
+        </svg>
+    );
+}
+
+function LinkedinIcon({ size = 20 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+        </svg>
+    );
+}
+
+function XIcon({ size = 20 }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.631 5.905-5.631zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+    );
+}
+
 /* ── Helpers ── */
 function formatSalary(min, max, type) {
     if (type === 'negotiable') return 'Thỏa thuận';
-    if (type === 'upto' && max) return `Tới ${max.toLocaleString('vi-VN')} đ`;
+    if (type === 'upto' && max) return `Tới ${(max / 1e6).toFixed(0)} triệu`;
     if (min && max) return `${(min / 1e6).toFixed(0)} - ${(max / 1e6).toFixed(0)} triệu`;
     return 'Thỏa thuận';
 }
@@ -82,11 +119,8 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
                     </h1>
                     {company.website && (
                         <a href={company.website} target="_blank" rel="noopener noreferrer"
-                            style={{ fontSize: 13, color: '#767676', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" />
-                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-                            </svg>
+                            style={{ fontSize: 13, color: '#767676', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <Globe size={13} />
                             {company.website.replace(/^https?:\/\//, '')}
                         </a>
                     )}
@@ -105,17 +139,8 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
                         transition: 'all 0.2s',
                     }}
                 >
-                    {followed ? (
-                        <>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
-                            Đang theo dõi
-                        </>
-                    ) : (
-                        <>
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" /></svg>
-                            + Theo dõi công ty
-                        </>
-                    )}
+                    <Heart size={15} fill={followed ? '#fff' : 'none'} />
+                    {followed ? 'Đang theo dõi' : '+ Theo dõi công ty'}
                 </button>
             </div>
 
@@ -143,26 +168,26 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
 /* ── Sidebar: General info ── */
 function InfoCard({ company }) {
     const rows = [
-        { icon: '🏢', label: 'Quy mô', value: company.companySize },
-        { icon: '🏭', label: 'Lĩnh vực', value: company.industryName },
-        { icon: '🔢', label: 'Mã số thuế', value: company.taxCode },
+        { icon: <Users size={16} color="#767676" />, label: 'Quy mô', value: company.companySize },
+        { icon: <Building2 size={16} color="#767676" />, label: 'Lĩnh vực', value: company.industryName },
+        { icon: <Hash size={16} color="#767676" />, label: 'Mã số thuế', value: company.taxCode },
     ].filter(r => r.value);
 
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px', marginBottom: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: '0 0 16px' }}>Thông tin chung</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {rows.map((r, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-                        <span style={{ fontSize: 16, flexShrink: 0 }}>{r.icon}</span>
+                        <div style={{ flexShrink: 0, marginTop: 1 }}>{r.icon}</div>
                         <div>
-                            <div style={{ fontSize: 12, color: '#767676' }}>{r.label}</div>
+                            <div style={{ fontSize: 12, color: '#767676', marginBottom: 2 }}>{r.label}</div>
                             <div style={{ fontSize: 14, color: '#333', fontWeight: 500 }}>{r.value}</div>
                         </div>
                     </div>
                 ))}
                 {rows.length === 0 && (
-                    <p style={{ color: '#999', fontSize: 13 }}>Chưa có thông tin</p>
+                    <p style={{ color: '#999', fontSize: 13, margin: 0 }}>Chưa có thông tin</p>
                 )}
             </div>
         </div>
@@ -171,23 +196,34 @@ function InfoCard({ company }) {
 
 /* ── Sidebar: Map ── */
 function MapCard({ address }) {
-    const query = encodeURIComponent(address || 'Vietnam');
+    if (!address) return null;
+    const query = encodeURIComponent(address);
+    const embedSrc = `https://maps.google.com/maps?q=${query}&output=embed&hl=vi&z=15`;
+
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px' }}>Địa điểm công ty</h3>
-            {address && <p style={{ fontSize: 13, color: '#555', margin: '0 0 12px' }}>{address}</p>}
-            <div style={{ borderRadius: 8, overflow: 'hidden', height: 180, background: '#e8f5e9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <a
-                    href={`https://maps.google.com/?q=${query}`}
-                    target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 13, color: GREEN, textDecoration: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}
-                >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill={GREEN}>
-                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
-                    </svg>
-                    Mở trong Google Maps
-                </a>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: '0 0 8px' }}>Địa điểm công ty</h3>
+            <p style={{ fontSize: 13, color: '#555', margin: '0 0 12px', display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                <MapPin size={14} color="#767676" style={{ flexShrink: 0, marginTop: 2 }} />
+                {address}
+            </p>
+            <div style={{ borderRadius: 8, overflow: 'hidden', height: 200 }}>
+                <iframe
+                    src={embedSrc}
+                    width="100%"
+                    height="200"
+                    style={{ border: 0, display: 'block' }}
+                    allowFullScreen
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Địa điểm công ty"
+                />
             </div>
+            <a href={`https://maps.google.com/?q=${query}`} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, color: GREEN, textDecoration: 'none', marginTop: 8 }}>
+                <MapPin size={12} />
+                Mở trong Google Maps
+            </a>
         </div>
     );
 }
@@ -204,37 +240,49 @@ function ShareCard({ company }) {
         });
     };
 
+    const shareLinks = [
+        {
+            href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`,
+            bg: '#1877f2', icon: <FacebookIcon size={16} />, title: 'Facebook',
+        },
+        {
+            href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(company.companyName)}`,
+            bg: '#000', icon: <XIcon size={16} />, title: 'X',
+        },
+        {
+            href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`,
+            bg: '#0a66c2', icon: <LinkedinIcon size={16} />, title: 'LinkedIn',
+        },
+    ];
+
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px', marginBottom: 16 }}>
             <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: '0 0 12px' }}>Chia sẻ công ty</h3>
-            <p style={{ fontSize: 13, color: '#767676', margin: '0 0 10px' }}>Sao chép đường dẫn</p>
+            <p style={{ fontSize: 13, color: '#767676', margin: '0 0 8px' }}>Sao chép đường dẫn</p>
             <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
                 <input readOnly value={url} style={{
                     flex: 1, padding: '7px 10px', borderRadius: 6, border: '1px solid #e8e8e8',
-                    fontSize: 12, color: '#555', background: '#f8f8f8',
+                    fontSize: 12, color: '#555', background: '#f8f8f8', minWidth: 0,
                 }} />
                 <button onClick={copy} style={{
-                    padding: '7px 14px', background: copied ? GREEN : '#f0faf4', border: `1px solid ${GREEN}`,
-                    borderRadius: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600,
-                    color: copied ? '#fff' : GREEN, flexShrink: 0,
+                    padding: '7px 12px', background: copied ? GREEN : '#f0faf4', border: `1px solid ${GREEN}`,
+                    borderRadius: 6, cursor: 'pointer', color: copied ? '#fff' : GREEN, flexShrink: 0,
+                    display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600,
                 }}>
+                    {copied ? <Check size={14} /> : <Copy size={14} />}
                     {copied ? 'Đã chép!' : 'Sao chép'}
                 </button>
             </div>
             <p style={{ fontSize: 13, color: '#767676', margin: '0 0 10px' }}>Chia sẻ qua mạng xã hội</p>
             <div style={{ display: 'flex', gap: 10 }}>
-                {[
-                    { href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, color: '#1877f2', label: 'f', title: 'Facebook' },
-                    { href: `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(company.companyName)}`, color: '#1da1f2', label: '𝕏', title: 'Twitter' },
-                    { href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, color: '#0a66c2', label: 'in', title: 'LinkedIn' },
-                ].map(s => (
+                {shareLinks.map(s => (
                     <a key={s.title} href={s.href} target="_blank" rel="noopener noreferrer" title={s.title}
                         style={{
-                            width: 36, height: 36, borderRadius: '50%', background: s.color,
+                            width: 36, height: 36, borderRadius: '50%', background: s.bg,
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: '#fff', fontWeight: 700, fontSize: 14, textDecoration: 'none',
+                            color: '#fff', textDecoration: 'none',
                         }}>
-                        {s.label}
+                        {s.icon}
                     </a>
                 ))}
             </div>
@@ -242,7 +290,7 @@ function ShareCard({ company }) {
     );
 }
 
-/* ── Job card (mini) ── */
+/* ── Job card ── */
 function JobCard({ job, company }) {
     return (
         <Link href={`/viec-lam/${job.id}`} style={{ textDecoration: 'none' }}>
@@ -269,9 +317,14 @@ function JobCard({ job, company }) {
                     <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a', marginBottom: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {job.title}
                     </div>
-                    <div style={{ fontSize: 13, color: '#767676', display: 'flex', gap: 12 }}>
+                    <div style={{ fontSize: 13, color: '#767676', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                         <span style={{ color: GREEN, fontWeight: 500 }}>{formatSalary(job.salaryMin, job.salaryMax, job.salaryType)}</span>
-                        {job.provinceName && <span>📍 {job.provinceName}</span>}
+                        {job.provinceName && (
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                <MapPin size={12} />
+                                {job.provinceName}
+                            </span>
+                        )}
                     </div>
                 </div>
                 <div style={{ fontSize: 12, color: '#999', flexShrink: 0 }}>{timeAgo(job.createdAt)}</div>
@@ -313,7 +366,7 @@ function RatingSection({ companyId, reviews }) {
             {submitted ? (
                 <p style={{ color: GREEN, fontWeight: 600, fontSize: 14 }}>Cảm ơn bạn đã đánh giá!</p>
             ) : (
-                <div style={{ display: 'flex', gap: 20, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', paddingTop: 8 }}>
                     {RATINGS.map(r => (
                         <button key={r.value} onClick={() => submit(r.value)} disabled={submitting}
                             onMouseEnter={() => setHovered(r.value)}
@@ -321,19 +374,23 @@ function RatingSection({ companyId, reviews }) {
                             style={{
                                 background: 'none', border: 'none', cursor: submitting ? 'wait' : 'pointer',
                                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
-                                opacity: selected && selected !== r.value ? 0.5 : 1,
-                                transform: hovered === r.value ? 'scale(1.08)' : 'scale(1)',
+                                opacity: selected && selected !== r.value ? 0.45 : 1,
+                                transform: hovered === r.value ? 'scale(1.1)' : 'scale(1)',
                                 transition: 'transform 0.15s, opacity 0.15s',
+                                padding: '4px 8px',
                             }}>
                             <div style={{ width: 64, height: 64 }}>
-                                <Lottie animationData={r.anim}
-                                    loop={hovered === r.value || selected === r.value}
-                                    style={{ width: 64, height: 64 }} />
+                                <Lottie
+                                    animationData={r.anim}
+                                    loop={true}
+                                    autoplay={true}
+                                    style={{ width: 64, height: 64 }}
+                                />
                             </div>
                             <span style={{
-                                fontSize: 12, color: selected === r.value ? GREEN : '#555',
+                                fontSize: 11, color: selected === r.value ? GREEN : '#555',
                                 textAlign: 'center', whiteSpace: 'pre-line', lineHeight: 1.4,
-                                fontWeight: selected === r.value ? 600 : 400,
+                                fontWeight: selected === r.value ? 700 : 400,
                             }}>
                                 {r.label}
                             </span>
@@ -350,15 +407,17 @@ function SimilarCompanies({ companies }) {
     if (!companies?.length) return null;
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', marginTop: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
                 <h3 style={{ fontSize: 15, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>
                     Thương hiệu lớn tiêu biểu cùng lĩnh vực
-                    <span style={{ fontSize: 11, background: '#e8f5e9', color: GREEN, padding: '2px 8px', borderRadius: 10, marginLeft: 8, fontWeight: 600 }}>Pro Company</span>
                 </h3>
+                <span style={{ fontSize: 11, background: '#e8f5e9', color: GREEN, padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>
+                    Pro Company
+                </span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                 {companies.slice(0, 8).map(c => (
-                    <Link key={c.id} href={`/cong-ty/${c.id}`} style={{ textDecoration: 'none' }}>
+                    <Link key={c.id} href={`/cong-ty/${c.slug ?? c.id}`} style={{ textDecoration: 'none' }}>
                         <div style={{
                             border: '1px solid #e8e8e8', borderRadius: 8, padding: '12px 14px',
                             display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer',
@@ -381,7 +440,10 @@ function SimilarCompanies({ companies }) {
                                 <div style={{ fontSize: 13, fontWeight: 600, color: '#1a1a1a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                     {c.companyName}
                                 </div>
-                                <div style={{ fontSize: 12, color: '#767676' }}>{c.industryName}</div>
+                                <div style={{ fontSize: 12, color: '#767676', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                    <Briefcase size={11} />
+                                    {c.jobCount} việc làm
+                                </div>
                             </div>
                         </div>
                     </Link>
@@ -424,10 +486,7 @@ function JobsTab({ companyId, company }) {
             {/* Search bar */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
                 <div style={{ flex: 1, position: 'relative' }}>
-                    <svg style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#999' }}
-                        width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
+                    <Search size={15} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: '#999' }} />
                     <input
                         value={keyword}
                         onChange={e => setKeyword(e.target.value)}
@@ -456,10 +515,8 @@ function JobsTab({ companyId, company }) {
                 </div>
             ) : jobs.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ddd" strokeWidth="1.5" style={{ marginBottom: 12 }}>
-                        <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-                    </svg>
-                    <p>Không có tin tuyển dụng phù hợp</p>
+                    <Briefcase size={40} color="#ddd" style={{ marginBottom: 12, display: 'block', margin: '0 auto 12px' }} />
+                    <p style={{ margin: 0 }}>Không có tin tuyển dụng phù hợp</p>
                 </div>
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -518,7 +575,6 @@ function HomeTab({ company, jobs, loadingJobs, reviews }) {
             </div>
 
             <SimilarCompanies companies={company.similarCompanies} />
-
             <RatingSection companyId={company.id} reviews={reviews} />
         </>
     );
@@ -542,8 +598,18 @@ export default function CompanyDetailPage() {
 
     useEffect(() => {
         if (!id) return;
+
         api.get(`/employers/${id}`)
-            .then(r => setCompany(r.data))
+            .then(r => {
+                setCompany(r.data);
+                // Redirect UUID → slug
+                const slug = r.data.slug;
+                const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+                if (slug && UUID_RE.test(id)) {
+                    const tab = searchParams.get('tab');
+                    router.replace(`/cong-ty/${slug}${tab ? `?tab=${tab}` : ''}`, { scroll: false });
+                }
+            })
             .finally(() => setLoading(false));
 
         api.get(`/employers/${id}/jobs`, { params: { limit: 10 } })
@@ -555,7 +621,7 @@ export default function CompanyDetailPage() {
         api.get(`/employers/${id}/follow-status`)
             .then(r => setFollowed(r.data.followed))
             .catch(() => { });
-    }, [id]);
+    }, [id, router, searchParams]);
 
     const handleFollow = async () => {
         setFollowLoading(true);
@@ -568,7 +634,6 @@ export default function CompanyDetailPage() {
                 setFollowed(true);
             }
         } catch {
-            // If not logged in, redirect to login
             router.push('/login');
         } finally {
             setFollowLoading(false);
@@ -640,9 +705,7 @@ export default function CompanyDetailPage() {
                 </div>
             </div>
 
-            <style>{`
-                @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-            `}</style>
+            <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }`}</style>
         </div>
     );
 }

@@ -3,6 +3,22 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
 import * as argon2 from 'argon2';
 
+function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[àáâãăạảấầẩẫậắằẳẵặ]/g, 'a')
+    .replace(/[èéêẹẻẽếềểễệ]/g, 'e')
+    .replace(/[ìíịỉĩ]/g, 'i')
+    .replace(/[òóôõơọỏốồổỗộớờởỡợ]/g, 'o')
+    .replace(/[ùúưụủũứừửữự]/g, 'u')
+    .replace(/[ỳýỵỷỹ]/g, 'y')
+    .replace(/đ/g, 'd')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
+
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -150,7 +166,7 @@ export class UsersService {
       where: { userId },
     });
 
-    return this.prisma.employerProfile.upsert({
+    const result = await this.prisma.employerProfile.upsert({
       where: { userId },
       update: cleanData,
       create: {
@@ -159,6 +175,16 @@ export class UsersService {
         ...cleanData,
       },
     });
+
+    if (!result.slug) {
+      const slug = toSlug(result.companyName) + '-' + result.id.slice(0, 8);
+      await this.prisma.employerProfile
+        .update({ where: { id: result.id }, data: { slug } })
+        .catch(() => {});
+      result.slug = slug;
+    }
+
+    return result;
   }
 
   async getEmployerProfile(userId: string) {

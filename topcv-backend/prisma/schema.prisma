@@ -57,6 +57,8 @@ model User {
   refreshTokens    RefreshToken[]
   auditLogs        AuditLog[]
   resumes          Resume[]
+  companyFollows   CompanyFollow[]
+  companyReviews   CompanyReview[]
 
   @@map("users")
 }
@@ -85,13 +87,44 @@ model EmployerProfile {
   website     String?
   address     String?
   description String?
+  taxCode     String?  @map("tax_code")
+  slug        String?  @unique
   createdAt   DateTime @default(now()) @map("created_at")
 
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  industry Industry? @relation(fields: [industryId], references: [id])
-  jobs     Job[]
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  industry  Industry?        @relation(fields: [industryId], references: [id])
+  jobs      Job[]
+  followers CompanyFollow[]
+  reviews   CompanyReview[]
 
   @@map("employer_profiles")
+}
+
+model CompanyFollow {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  employerProfileId String   @map("employer_profile_id")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employerProfile EmployerProfile @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, employerProfileId])
+  @@map("company_follows")
+}
+
+model CompanyReview {
+  id                String   @id @default(uuid())
+  userId            String   @map("user_id")
+  employerProfileId String   @map("employer_profile_id")
+  rating            Int
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employerProfile EmployerProfile @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, employerProfileId])
+  @@map("company_reviews")
 }
 
 model Industry {

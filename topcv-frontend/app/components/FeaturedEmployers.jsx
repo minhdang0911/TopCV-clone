@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import api from '@/lib/axios';
 
 const GREEN = '#00b14f';
@@ -19,7 +20,7 @@ const cardBg = name => CARD_SHADOWS[(name?.charCodeAt(0) ?? 0) % CARD_SHADOWS.le
 /* ── Featured large card (left column) ── */
 function FeaturedCard({ company }) {
     return (
-        <a
+        <Link
             href={`/cong-ty/${company.id}`}
             style={{ textDecoration: 'none', display: 'block', height: '100%' }}
         >
@@ -98,7 +99,7 @@ function FeaturedCard({ company }) {
                     <span>+</span> Theo dõi
                 </button>
             </div>
-        </a>
+        </Link>
     );
 }
 
@@ -106,7 +107,7 @@ function FeaturedCard({ company }) {
 function SmallCard({ company }) {
     const [hover, setHover] = useState(false);
     return (
-        <a href={`/cong-ty/${company.id}`} style={{ textDecoration: 'none' }}>
+        <Link href={`/cong-ty/${company.id}`} style={{ textDecoration: 'none' }}>
             <div
                 onMouseEnter={() => setHover(true)}
                 onMouseLeave={() => setHover(false)}
@@ -149,7 +150,7 @@ function SmallCard({ company }) {
                     </div>
                 </div>
             </div>
-        </a>
+        </Link>
     );
 }
 
@@ -172,7 +173,6 @@ export default function FeaturedEmployers() {
 
     // Load employers when filter changes
     useEffect(() => {
-        setLoading(true);
         const params = new URLSearchParams({ limit: '7' });
         if (selectedId != null) params.set('industryId', String(selectedId));
         api.get(`/employers?${params}`).then(r => {
@@ -256,7 +256,7 @@ export default function FeaturedEmployers() {
 
                 {/* ── Footer link ── */}
                 <div style={{ textAlign: 'center', marginTop: '16px' }}>
-                    <a
+                    <Link
                         href="/cong-ty"
                         style={{
                             display: 'inline-flex', alignItems: 'center', gap: '6px',
@@ -269,7 +269,7 @@ export default function FeaturedEmployers() {
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                             <path d="M5 3L10 7L5 11" stroke={GREEN} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
-                    </a>
+                    </Link>
                 </div>
 
             </div>

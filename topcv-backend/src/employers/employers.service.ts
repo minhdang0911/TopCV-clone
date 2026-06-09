@@ -177,19 +177,24 @@ export class EmployersService {
     };
   }
 
-  async getJobs(
-    id: string,
-    query: { page?: string; limit?: string; keyword?: string },
-  ) {
-    const limit = Math.min(Number(query.limit) || 10, 50);
-    const page = Number(query.page) || 1;
-    const skip = (page - 1) * limit;
-
+  private async resolveId(idOrSlug: string): Promise<string> {
+    if (UUID_RE.test(idOrSlug)) return idOrSlug;
     const company = await this.prisma.employerProfile.findUnique({
-      where: { id },
+      where: { slug: idOrSlug },
       select: { id: true },
     });
     if (!company) throw new NotFoundException('Company not found');
+    return company.id;
+  }
+
+  async getJobs(
+    idOrSlug: string,
+    query: { page?: string; limit?: string; keyword?: string },
+  ) {
+    const id = await this.resolveId(idOrSlug);
+    const limit = Math.min(Number(query.limit) || 10, 50);
+    const page = Number(query.page) || 1;
+    const skip = (page - 1) * limit;
 
     const where: any = {
       employerId: id,
@@ -231,12 +236,8 @@ export class EmployersService {
     };
   }
 
-  async follow(userId: string, employerProfileId: string) {
-    const company = await this.prisma.employerProfile.findUnique({
-      where: { id: employerProfileId },
-      select: { id: true },
-    });
-    if (!company) throw new NotFoundException('Company not found');
+  async follow(userId: string, idOrSlug: string) {
+    const employerProfileId = await this.resolveId(idOrSlug);
 
     try {
       await this.prisma.companyFollow.create({
@@ -249,30 +250,24 @@ export class EmployersService {
     return { followed: true };
   }
 
-  async unfollow(userId: string, employerProfileId: string) {
+  async unfollow(userId: string, idOrSlug: string) {
+    const employerProfileId = await this.resolveId(idOrSlug);
     await this.prisma.companyFollow.deleteMany({
       where: { userId, employerProfileId },
     });
     return { followed: false };
   }
 
-  async getFollowStatus(userId: string, employerProfileId: string) {
+  async getFollowStatus(userId: string, idOrSlug: string) {
+    const employerProfileId = await this.resolveId(idOrSlug);
     const follow = await this.prisma.companyFollow.findUnique({
       where: { userId_employerProfileId: { userId, employerProfileId } },
     });
     return { followed: !!follow };
   }
 
-  async createReview(
-    userId: string,
-    employerProfileId: string,
-    rating: number,
-  ) {
-    const company = await this.prisma.employerProfile.findUnique({
-      where: { id: employerProfileId },
-      select: { id: true },
-    });
-    if (!company) throw new NotFoundException('Company not found');
+  async createReview(userId: string, idOrSlug: string, rating: number) {
+    const employerProfileId = await this.resolveId(idOrSlug);
 
     await this.prisma.companyReview.upsert({
       where: { userId_employerProfileId: { userId, employerProfileId } },
@@ -292,7 +287,8 @@ export class EmployersService {
     };
   }
 
-  async getReviews(employerProfileId: string) {
+  async getReviews(idOrSlug: string) {
+    const employerProfileId = await this.resolveId(idOrSlug);
     const [stats, distribution] = await Promise.all([
       this.prisma.companyReview.aggregate({
         where: { employerProfileId },

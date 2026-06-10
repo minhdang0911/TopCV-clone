@@ -2,72 +2,169 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Save, Printer, ChevronDown, ChevronUp, Plus, Trash2, ArrowLeft } from 'lucide-react';
+import { Save, Printer, ArrowLeft, GripVertical, Check, Eye, EyeOff, ChevronRight, X } from 'lucide-react';
+import {
+    DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+    SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy,
+    useSortable, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import useAuthStore from '@/stores/auth.store';
 import useResumeStore from '@/stores/resume.store';
 import { resumeService } from '@/services/resume.service';
-import { getTemplate, TEMPLATE_META } from '@/app/components/cv/templateRegistry';
+import { getTemplate } from '@/app/components/cv/templateRegistry';
+import TieuChuanTemplate from '@/app/components/cv/templates/TieuChuan';
+import TieuChuanItKNTemplate from '@/app/components/cv/templates/TieuChuanItKN';
+import AnTuongTemplate from '@/app/components/cv/templates/AnTuong';
+import ThanhLichTemplate from '@/app/components/cv/templates/ThanhLich';
+import HienDaiTemplate from '@/app/components/cv/templates/HienDai';
+import ChuyenNghiepTemplate from '@/app/components/cv/templates/ChuyenNghiep';
+import GocCanhTemplate from '@/app/components/cv/templates/GocCanh';
+import ThamVongTemplate from '@/app/components/cv/templates/ThamVong';
+import EditableCVDocument, { SECTION_LABELS, ALL_SECTIONS } from './EditableCVDocument';
 
-/* ─── Left panel section editors ─── */
-function FieldInput({ label, value, onChange, type = 'text', placeholder = '' }) {
+// ── Constants ────────────────────────────────────────────────────────────────
+
+const A4_W = 794;
+const A4_H = 1123;
+const THUMB_SCALE = 0.19;
+const THUMB_W = Math.round(A4_W * THUMB_SCALE);
+const THUMB_H = Math.round(A4_H * THUMB_SCALE);
+
+const CV_BACKGROUNDS = [
+    { id: 'white', bg: 'white', label: 'Trắng' },
+    { id: 'gray', bg: '#f8f9fa', label: 'Xám nhạt' },
+    { id: 'green', bg: '#f0fdf4', label: 'Xanh lá' },
+    { id: 'blue', bg: '#eff6ff', label: 'Xanh dương' },
+    { id: 'purple', bg: '#faf5ff', label: 'Tím nhạt' },
+    { id: 'warm', bg: '#fff7ed', label: 'Cam nhạt' },
+    { id: 'rose', bg: '#fff1f2', label: 'Hồng nhạt' },
+    { id: 'teal', bg: '#f0fdfa', label: 'Xanh ngọc' },
+    { id: 'grad1', bg: 'linear-gradient(160deg,#f0fdf4 0%,#eff6ff 100%)', label: 'Gradient 1' },
+    { id: 'grad2', bg: 'linear-gradient(160deg,#faf5ff 0%,#fff7ed 100%)', label: 'Gradient 2' },
+    { id: 'grad3', bg: 'linear-gradient(160deg,#eff6ff 0%,#fff1f2 100%)', label: 'Gradient 3' },
+    { id: 'grad4', bg: 'linear-gradient(160deg,#f0fdfa 0%,#f0fdf4 100%)', label: 'Gradient 4' },
+];
+
+const FONTS = ['Arial', 'Georgia', 'Verdana', 'Tahoma', 'Times New Roman'];
+
+const ALL_TEMPLATES = [
+    { id: 'tieu-chuan', name: 'Tiêu chuẩn', Component: TieuChuanTemplate, colors: ['#00b14f', '#1e3a5f', '#c0392b', '#2471a3', '#6c3483'] },
+    { id: 'tieu-chuan-it-kn', name: 'Tiêu chuẩn (ít KN)', Component: TieuChuanItKNTemplate, colors: ['#00b14f', '#1e3a5f', '#e67e22', '#16a085'] },
+    { id: 'an-tuong', name: 'Ấn tượng', Component: AnTuongTemplate, colors: ['#1e3a5f', '#111827', '#7b2d8b', '#c0392b'] },
+    { id: 'thanh-lich', name: 'Thanh lịch', Component: ThanhLichTemplate, colors: ['#00b14f', '#1e3a5f', '#64748b', '#7c3aed'] },
+    { id: 'hien-dai', name: 'Hiện đại', Component: HienDaiTemplate, colors: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981'] },
+    { id: 'chuyen-nghiep', name: 'Chuyên nghiệp', Component: ChuyenNghiepTemplate, colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'] },
+    { id: 'goc-canh', name: 'Góc cạnh', Component: GocCanhTemplate, colors: ['#1e293b', '#1e3a5f', '#7c3aed', '#be123c'] },
+    { id: 'tham-vong', name: 'Tham vọng', Component: ThamVongTemplate, colors: ['#1e293b', '#0f4c75', '#6d28d9', '#064e3b'] },
+];
+
+const THUMB_SAMPLE = {
+    personalInfo: { fullName: 'Nguyễn Văn Minh', title: 'Frontend Developer', email: 'minh@email.com', phone: '0901 234 567', address: 'TP. Hồ Chí Minh', linkedin: 'linkedin.com/in/minhkv', github: 'github.com/minhkv' },
+    objective: 'Kỹ sư Frontend với 3 năm kinh nghiệm React và Next.js. Mong muốn đóng góp vào sản phẩm công nghệ lớn có tác động xã hội mạnh mẽ trong môi trường Agile năng động.',
+    experiences: [
+        { id: '1', position: 'Senior Frontend Developer', company: 'VNG Corporation', startDate: '06/2022', endDate: '', isCurrent: true, description: '- Phát triển tính năng mới cho Zalo Web với 20M+ người dùng\n- Tối ưu performance, giảm 40% load time\n- Mentor 2 junior developers trong nhóm' },
+        { id: '2', position: 'Frontend Developer', company: 'FPT Software', startDate: '09/2020', endDate: '05/2022', isCurrent: false, description: '- Xây dựng hệ thống quản lý nội bộ cho 500+ nhân viên\n- Tích hợp REST API với React/Redux\n- Cải thiện UX, tăng 25% user retention' },
+    ],
+    education: [{ id: '1', school: 'ĐH Bách Khoa TP.HCM', degree: 'Kỹ sư Công nghệ Thông tin', gpa: '3.6/4.0', startDate: '2016', endDate: '2020', description: 'Thủ khoa kỳ 3 năm 2018. Giải nhì cuộc thi lập trình ACM-ICPC cấp trường.' }],
+    skills: [
+        { id: '1', name: 'React / Next.js', level: 5 }, { id: '2', name: 'TypeScript', level: 4 },
+        { id: '3', name: 'Node.js / Express', level: 3 }, { id: '4', name: 'Tailwind CSS', level: 4 },
+        { id: '5', name: 'Git / CI-CD', level: 4 }, { id: '6', name: 'Docker / AWS', level: 3 },
+    ],
+    languages: [{ id: '1', name: 'Tiếng Anh', level: 'B2 (IELTS 6.5)' }, { id: '2', name: 'Tiếng Nhật', level: 'N4' }],
+    certifications: [{ id: '1', name: 'AWS Certified Developer', issuer: 'Amazon Web Services', date: '2023' }],
+    activities: [{ id: '1', role: 'Trưởng ban kỹ thuật', organization: 'CLB IT Bách Khoa', description: 'Tổ chức workshop hàng tháng về web development cho 200+ thành viên' }],
+    sectionOrder: ['objective', 'experiences', 'education', 'skills', 'languages', 'certifications', 'activities'],
+    hiddenSections: [],
+};
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const DEFAULT_SECTION_ORDER = ['objective', 'experiences', 'education', 'skills', 'languages', 'certifications', 'activities'];
+const DEFAULT_HIDDEN = ['certifications', 'activities'];
+
+// Pre-fill content so new CVs look full, not empty
+const SAMPLE_PREFILL = {
+    personalInfo: {
+        fullName: 'Họ và tên đầy đủ',
+        title: 'Vị trí ứng tuyển',
+        email: 'email@example.com',
+        phone: '0901 234 567',
+        address: 'TP. Hồ Chí Minh',
+        linkedin: 'linkedin.com/in/your-profile',
+        github: '',
+        avatarUrl: null,
+    },
+    objective: 'Với X năm kinh nghiệm làm việc trong lĩnh vực [ngành nghề], tôi mong muốn được đóng góp vào sự phát triển của quý công ty, đồng thời tiếp tục nâng cao kỹ năng chuyên môn trong môi trường năng động và chuyên nghiệp.',
+    experiences: [
+        { id: 'e1', position: 'Tên vị trí công việc', company: 'Tên công ty', startDate: '01/2022', endDate: '', isCurrent: true, description: '- Mô tả trách nhiệm và công việc chính\n- Thành tích nổi bật đạt được\n- Kết quả đo lường được (VD: tăng X%, tiết kiệm Y giờ/tuần)' },
+        { id: 'e2', position: 'Vị trí trước đó', company: 'Công ty trước', startDate: '06/2019', endDate: '12/2021', isCurrent: false, description: '- Mô tả công việc và đóng góp chính\n- Kỹ năng và công nghệ sử dụng' },
+    ],
+    education: [
+        { id: 'edu1', school: 'Tên trường đại học', degree: 'Ngành học / Bằng cấp', gpa: '3.5/4.0', startDate: '2015', endDate: '2019', description: 'Thành tích học tập và hoạt động nổi bật...' },
+    ],
+    skills: [
+        { id: 's1', name: 'Kỹ năng chuyên môn 1', level: 5 },
+        { id: 's2', name: 'Kỹ năng chuyên môn 2', level: 4 },
+        { id: 's3', name: 'Kỹ năng chuyên môn 3', level: 4 },
+        { id: 's4', name: 'Kỹ năng mềm', level: 4 },
+    ],
+    languages: [
+        { id: 'l1', name: 'Tiếng Anh', level: 'B2 - Giao tiếp tốt' },
+    ],
+    certifications: [
+        { id: 'c1', name: 'Tên chứng chỉ', issuer: 'Đơn vị cấp', date: '2023' },
+    ],
+    activities: [
+        { id: 'a1', role: 'Vai trò của bạn', organization: 'Tên tổ chức / CLB', description: 'Mô tả hoạt động và đóng góp...' },
+    ],
+};
+
+// ── Sortable section row (Bố cục tab) ────────────────────────────────────────
+
+function SortableRow({ id, label, hidden }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     return (
-        <div style={{ marginBottom: '10px' }}>
-            {label && <label style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>}
-            <input
-                type={type}
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', boxSizing: 'border-box', outline: 'none' }}
-            />
+        <div ref={setNodeRef}
+            style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px', background: isDragging ? '#f0fdf4' : 'white', border: `1px solid ${hidden ? '#f3f4f6' : '#e5e7eb'}`, borderRadius: '7px', marginBottom: '5px', boxShadow: isDragging ? '0 2px 10px rgba(0,0,0,0.12)' : 'none', opacity: hidden ? 0.45 : undefined }}>
+            <div {...attributes} {...listeners} style={{ cursor: 'grab', color: '#9ca3af', touchAction: 'none', display: 'flex' }}>
+                <GripVertical size={15} />
+            </div>
+            <span style={{ fontSize: '12px', color: hidden ? '#9ca3af' : '#374151', flex: 1 }}>{label}</span>
+            {hidden && <span style={{ fontSize: '10px', color: '#9ca3af', background: '#f3f4f6', padding: '1px 6px', borderRadius: '10px' }}>Ẩn</span>}
         </div>
     );
 }
 
-function FieldTextarea({ label, value, onChange, rows = 3, placeholder = '' }) {
-    return (
-        <div style={{ marginBottom: '10px' }}>
-            {label && <label style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '3px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>}
-            <textarea
-                value={value || ''}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={placeholder}
-                rows={rows}
-                style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', boxSizing: 'border-box', outline: 'none', resize: 'vertical', fontFamily: 'inherit' }}
-            />
-        </div>
-    );
-}
+// ── Left panel tabs ───────────────────────────────────────────────────────────
 
-function Accordion({ title, children, defaultOpen = false }) {
-    const [open, setOpen] = useState(defaultOpen);
-    return (
-        <div style={{ borderBottom: '1px solid #e5e7eb' }}>
-            <button
-                onClick={() => setOpen(!open)}
-                style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', fontWeight: '600', color: '#111827' }}
-            >
-                {title}
-                {open ? <ChevronUp size={15} color="#9ca3af" /> : <ChevronDown size={15} color="#9ca3af" />}
-            </button>
-            {open && <div style={{ padding: '0 16px 16px' }}>{children}</div>}
-        </div>
-    );
-}
+const TABS = [
+    { id: 'design', label: 'Thiết kế\n& Font' },
+    { id: 'sections', label: 'Thêm\nmục' },
+    { id: 'layout', label: 'Bố\ncục' },
+    { id: 'template', label: 'Đổi\nmẫu' },
+];
 
-function uuid() {
-    return Math.random().toString(36).slice(2) + Date.now().toString(36);
-}
+// ── Main page ────────────────────────────────────────────────────────────────
 
-/* ─── Main editor page ─── */
 export default function CvEditorPage() {
     const { id } = useParams();
     const router = useRouter();
-    const { hydrated, isAuthenticated } = useAuthStore();
+    const { hydrated, isAuthenticated, user } = useAuthStore();
     const { resume, setResume, isDirty, setSaving, saving } = useResumeStore();
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState(null); // null = panel closed
     const [saveMsg, setSaveMsg] = useState('');
+    const [previewMode, setPreviewMode] = useState(false);
     const autoSaveRef = useRef(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
 
     useEffect(() => {
         if (hydrated && !isAuthenticated) router.replace('/login');
@@ -76,7 +173,26 @@ export default function CvEditorPage() {
     useEffect(() => {
         if (!isAuthenticated) return;
         resumeService.get(id).then((res) => {
-            setResume(res.data);
+            let data = res.data;
+            const c = data.content || {};
+
+            // Pre-fill with sample content when CV is brand new / empty
+            const isEmpty = !c.personalInfo?.fullName && !c.experiences?.length && !c.education?.length;
+            if (isEmpty) {
+                data = { ...data, content: { ...SAMPLE_PREFILL, sectionOrder: DEFAULT_SECTION_ORDER, hiddenSections: DEFAULT_HIDDEN } };
+            } else {
+                // Ensure structural defaults
+                if (!c.sectionOrder) data = { ...data, content: { ...c, sectionOrder: DEFAULT_SECTION_ORDER } };
+                if (!c.hiddenSections) data = { ...data, content: { ...data.content, hiddenSections: DEFAULT_HIDDEN } };
+            }
+
+            // Carry over profile avatar if no custom avatar set
+            const content = data.content;
+            if (!content?.personalInfo?.avatarUrl && user?.candidateProfile?.avatarUrl) {
+                data = { ...data, content: { ...content, personalInfo: { ...content.personalInfo, avatarUrl: user.candidateProfile.avatarUrl } } };
+            }
+
+            setResume(data);
         }).catch(() => router.replace('/tao-cv')).finally(() => setLoading(false));
         return () => useResumeStore.getState().reset();
     }, [id, isAuthenticated]);
@@ -86,314 +202,345 @@ export default function CvEditorPage() {
         if (!r) return;
         setSaving(true);
         try {
-            await resumeService.update(r.id, {
-                title: r.title,
-                template: r.template,
-                color: r.color,
-                fontSize: r.fontSize,
-                lineSpacing: r.lineSpacing,
-                content: r.content,
-            });
-            setSaveMsg('Da luu');
+            await resumeService.update(r.id, { title: r.title, template: r.template, color: r.color, fontSize: r.fontSize, lineSpacing: r.lineSpacing, content: r.content });
+            setSaveMsg('Đã lưu');
             setTimeout(() => setSaveMsg(''), 2000);
         } catch {}
         setSaving(false);
     }, []);
 
-    // Auto-save 3s after last change
     useEffect(() => {
         if (!isDirty) return;
         clearTimeout(autoSaveRef.current);
-        autoSaveRef.current = setTimeout(save, 3000);
+        autoSaveRef.current = setTimeout(save, 2500);
         return () => clearTimeout(autoSaveRef.current);
     }, [isDirty, save]);
 
-    const handlePrint = () => {
-        window.print();
-    };
+    // Leave-page warning
+    useEffect(() => {
+        const handler = (e) => {
+            if (isDirty) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [isDirty]);
 
     if (!hydrated || loading || !resume) {
-        return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6b7280' }}>Dang tai...</div>;
+        return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6b7280', fontFamily: 'Arial, sans-serif' }}>Đang tải...</div>;
     }
 
-    const { resume: r, updateContent, updateMeta } = useResumeStore.getState();
     const content = resume.content || {};
-    const pi = content.personalInfo || {};
+    const sectionOrder = content.sectionOrder || DEFAULT_SECTION_ORDER;
+    const hiddenSections = content.hiddenSections || DEFAULT_HIDDEN;
+    const color = resume.color || '#00b14f';
+    const font = content.font || 'Arial';
+    const fontSize = resume.fontSize || 'medium';
+    const lineSpacing = resume.lineSpacing || 1.5;
+    const background = content.cvBackground || 'white';
     const TemplateComponent = getTemplate(resume.template);
-    const templateMeta = TEMPLATE_META.find((t) => t.id === resume.template);
+    const tplMeta = ALL_TEMPLATES.find((t) => t.id === resume.template);
 
-    const updatePI = (key, val) => {
-        useResumeStore.setState((s) => ({
-            resume: { ...s.resume, content: { ...s.resume.content, personalInfo: { ...(s.resume.content.personalInfo || {}), [key]: val } } },
-            isDirty: true,
-        }));
+    const setR = (patch) => useResumeStore.setState((s) => ({ resume: { ...s.resume, ...patch }, isDirty: true }));
+    const setContent = (newContent) => useResumeStore.setState((s) => ({ resume: { ...s.resume, content: newContent }, isDirty: true }));
+    const updateContent = (field, val) => useResumeStore.setState((s) => ({ resume: { ...s.resume, content: { ...s.resume.content, [field]: val } }, isDirty: true }));
+
+    const setSectionOrder = (order) => updateContent('sectionOrder', order);
+    const setHiddenSections = (hidden) => updateContent('hiddenSections', hidden);
+    const toggleSection = (key) => {
+        if (hiddenSections.includes(key)) {
+            setHiddenSections(hiddenSections.filter((k) => k !== key));
+        } else {
+            setHiddenSections([...hiddenSections, key]);
+        }
     };
 
-    const updateField = (key, val) => {
-        useResumeStore.setState((s) => ({
-            resume: { ...s.resume, content: { ...s.resume.content, [key]: val } },
-            isDirty: true,
-        }));
+    // DnD
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (active.id !== over?.id) {
+            const oldI = sectionOrder.indexOf(active.id);
+            const newI = sectionOrder.indexOf(over.id);
+            setSectionOrder(arrayMove(sectionOrder, oldI, newI));
+        }
     };
 
-    const updateMeta2 = (key, val) => {
-        useResumeStore.setState((s) => ({ resume: { ...s.resume, [key]: val }, isDirty: true }));
-    };
+    // ── Panels ────────────────────────────────────────────────────────────────
 
-    /* ─── List item helpers ─── */
-    const addItem = (key, template) => {
-        const list = [...(content[key] || []), { id: uuid(), ...template }];
-        updateField(key, list);
-    };
+    const DesignPanel = (
+        <div style={{ overflowY: 'auto', flex: 1, padding: '16px' }}>
+            <SectionLabel>Phông chữ</SectionLabel>
+            <select value={font} onChange={(e) => updateContent('font', e.target.value)}
+                style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: '7px', fontSize: '13px', marginBottom: '16px', outline: 'none', background: 'white' }}>
+                {FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
 
-    const removeItem = (key, itemId) => {
-        updateField(key, (content[key] || []).filter((i) => i.id !== itemId));
-    };
+            <SectionLabel>Cỡ chữ</SectionLabel>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+                {[['small', 'Nhỏ'], ['medium', 'Trung bình'], ['large', 'Siêu lớn']].map(([v, l]) => (
+                    <button key={v} onClick={() => setR({ fontSize: v })}
+                        style={{ flex: 1, padding: '7px 4px', border: fontSize === v ? '2px solid #00b14f' : '1px solid #e5e7eb', borderRadius: '7px', background: fontSize === v ? '#f0fdf4' : 'white', color: fontSize === v ? '#00b14f' : '#374151', fontSize: '11px', fontWeight: fontSize === v ? '700' : '400', cursor: 'pointer' }}>
+                        {l}
+                    </button>
+                ))}
+            </div>
 
-    const updateItem = (key, itemId, field, val) => {
-        updateField(key, (content[key] || []).map((i) => i.id === itemId ? { ...i, [field]: val } : i));
-    };
+            <SectionLabel>Khoảng cách dòng: {(lineSpacing).toFixed(1)}</SectionLabel>
+            <input type="range" min="1.0" max="2.0" step="0.1" value={lineSpacing}
+                onChange={(e) => setR({ lineSpacing: Number(e.target.value) })}
+                style={{ width: '100%', accentColor: '#00b14f', marginBottom: '4px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#9ca3af', marginBottom: '16px' }}>
+                <span>1.0</span><span>2.0</span>
+            </div>
+
+            <SectionLabel>Màu chủ đề</SectionLabel>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                {(tplMeta?.colors || ['#00b14f', '#1e3a5f', '#c0392b']).map((c) => (
+                    <button key={c} onClick={() => setR({ color: c })}
+                        style={{ width: '28px', height: '28px', borderRadius: '50%', background: c, border: color === c ? '3px solid #111827' : '2px solid transparent', cursor: 'pointer', outline: color === c ? '2px solid white' : 'none', outlineOffset: '-4px', flexShrink: 0 }} />
+                ))}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                <input type="color" value={color} onChange={(e) => setR({ color: e.target.value })}
+                    style={{ width: '36px', height: '36px', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: 'pointer', padding: '2px' }} />
+                <input type="text" value={color} onChange={(e) => setR({ color: e.target.value })}
+                    style={{ flex: 1, padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace', outline: 'none' }} />
+            </div>
+
+            <SectionLabel>Hình nền CV</SectionLabel>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                {CV_BACKGROUNDS.map((bg) => {
+                    const active = background === bg.bg;
+                    return (
+                        <button key={bg.id} onClick={() => updateContent('cvBackground', bg.bg)} title={bg.label}
+                            style={{ aspectRatio: '1', borderRadius: '8px', background: bg.bg, border: active ? '3px solid #111827' : '2px solid #e5e7eb', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+                            {active && (
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Check size={13} color="#111827" strokeWidth={3} />
+                                </div>
+                            )}
+                        </button>
+                    );
+                })}
+            </div>
+        </div>
+    );
+
+    const SectionsPanel = (
+        <div style={{ overflowY: 'auto', flex: 1, padding: '14px' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '14px', lineHeight: '1.5' }}>
+                Bật / tắt từng mục để hiện hoặc ẩn trên CV.
+            </div>
+            <div style={{ fontSize: '10px', fontWeight: '700', color: '#9ca3af', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Đang hiển thị</div>
+            {ALL_SECTIONS.filter((s) => !hiddenSections.includes(s)).map((s) => (
+                <div key={s} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', marginBottom: '5px' }}>
+                    <span style={{ fontSize: '12px', color: '#15803d', fontWeight: '500' }}>{SECTION_LABELS[s]}</span>
+                    <button onClick={() => toggleSection(s)} title="Ẩn mục này"
+                        style={{ background: 'none', border: '1px solid #bbf7d0', borderRadius: '5px', cursor: 'pointer', padding: '3px 8px', color: '#6b7280', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <EyeOff size={11} /> Ẩn
+                    </button>
+                </div>
+            ))}
+
+            {hiddenSections.length > 0 && (
+                <>
+                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#9ca3af', marginTop: '14px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chưa sử dụng</div>
+                    {hiddenSections.map((s) => (
+                        <div key={s} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 10px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '5px', opacity: 0.7 }}>
+                            <span style={{ fontSize: '12px', color: '#9ca3af' }}>{SECTION_LABELS[s]}</span>
+                            <button onClick={() => toggleSection(s)} title="Hiện mục này"
+                                style={{ background: '#00b14f', border: 'none', borderRadius: '5px', cursor: 'pointer', padding: '3px 10px', color: 'white', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}>
+                                + Thêm
+                            </button>
+                        </div>
+                    ))}
+                </>
+            )}
+        </div>
+    );
+
+    const LayoutPanel = (
+        <div style={{ overflowY: 'auto', flex: 1, padding: '14px' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px', lineHeight: '1.5' }}>Kéo để thay đổi thứ tự các mục trong CV.</div>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+                    {sectionOrder.map((key) => (
+                        <SortableRow key={key} id={key} label={SECTION_LABELS[key] || key} hidden={hiddenSections.includes(key)} />
+                    ))}
+                </SortableContext>
+            </DndContext>
+            <button onClick={() => setSectionOrder(DEFAULT_SECTION_ORDER)}
+                style={{ width: '100%', marginTop: '10px', padding: '8px', border: '1px solid #e5e7eb', background: 'white', borderRadius: '7px', fontSize: '12px', color: '#6b7280', cursor: 'pointer' }}>
+                Đặt lại mặc định
+            </button>
+        </div>
+    );
+
+    const TemplatePanel = (
+        <div style={{ overflowY: 'auto', flex: 1, padding: '12px' }}>
+            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px' }}>Chọn mẫu khác — nội dung giữ nguyên.</div>
+            {ALL_TEMPLATES.map((tpl) => {
+                const active = resume.template === tpl.id;
+                const c = active ? color : tpl.colors[0];
+                return (
+                    <div key={tpl.id} style={{ marginBottom: '18px' }}>
+                        <div onClick={() => { setR({ template: tpl.id, color: tpl.colors.includes(color) ? color : tpl.colors[0] }); }}
+                            style={{ borderRadius: '8px', overflow: 'hidden', border: active ? `2.5px solid ${color}` : '2px solid #e5e7eb', cursor: 'pointer', position: 'relative', background: '#f9fafb' }}>
+                            <div style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px`, overflow: 'hidden' }}>
+                                <div style={{ width: `${A4_W}px`, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left', pointerEvents: 'none', userSelect: 'none' }}>
+                                    <tpl.Component content={THUMB_SAMPLE} color={c} />
+                                </div>
+                            </div>
+                            {active && (
+                                <div style={{ position: 'absolute', top: '6px', right: '6px', background: color, borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Check size={11} color="white" strokeWidth={3} />
+                                </div>
+                            )}
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: active ? color : '#374151', marginTop: '5px', textAlign: 'center' }}>{tpl.name}</div>
+                        {active && (
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginTop: '6px', flexWrap: 'wrap' }}>
+                                {tpl.colors.map((c) => (
+                                    <button key={c} onClick={() => setR({ color: c })}
+                                        style={{ width: '20px', height: '20px', borderRadius: '50%', background: c, border: color === c ? '2.5px solid #111827' : '2px solid transparent', cursor: 'pointer', outline: color === c ? '2px solid white' : 'none', outlineOffset: '-3px', flexShrink: 0 }} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+
+    const panelContent = { design: DesignPanel, sections: SectionsPanel, layout: LayoutPanel, template: TemplatePanel };
+
+    // ── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', fontFamily: 'Arial, sans-serif' }}>
-            {/* ─── TOOLBAR ─── */}
-            <div className="cv-toolbar" style={{
-                position: 'fixed', top: 0, left: 0, right: 0, height: '52px', background: 'white',
-                borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center',
-                justifyContent: 'space-between', padding: '0 16px', zIndex: 500,
-            }}>
-                <button
-                    onClick={() => router.push('/quan-ly-cv')}
-                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#6b7280', fontWeight: '500' }}
-                >
-                    <ArrowLeft size={15} /> Quan ly CV
-                </button>
-
-                <input
-                    value={resume.title || ''}
-                    onChange={(e) => updateMeta2('title', e.target.value)}
-                    style={{ border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', color: '#111827', textAlign: 'center', background: 'transparent', minWidth: '200px' }}
-                />
-
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                    {saveMsg && <span style={{ fontSize: '12px', color: '#00b14f' }}>{saveMsg}</span>}
-                    <button
-                        onClick={save}
-                        disabled={saving}
-                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: '#f3f4f6', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: '#374151' }}
-                    >
-                        <Save size={14} /> {saving ? 'Dang luu...' : 'Luu'}
-                    </button>
-                    <button
-                        onClick={handlePrint}
-                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: '#00b14f', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: 'white' }}
-                    >
-                        <Printer size={14} /> Tai PDF
-                    </button>
-                </div>
-            </div>
-
-            {/* ─── LEFT PANEL ─── */}
-            <div style={{
-                width: '300px', flexShrink: 0, overflowY: 'auto',
-                borderRight: '1px solid #e5e7eb', background: 'white',
-                marginTop: '52px', paddingBottom: '40px',
-            }}>
-                {/* Style options */}
-                <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e7eb', background: '#f9fafb' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mau sac</div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        {(templateMeta?.colors || ['#00b14f', '#1e3a5f', '#c0392b']).map((c) => (
-                            <button
-                                key={c}
-                                onClick={() => updateMeta2('color', c)}
-                                style={{
-                                    width: '24px', height: '24px', borderRadius: '50%', background: c,
-                                    border: resume.color === c ? '2.5px solid #111827' : '2px solid transparent',
-                                    cursor: 'pointer',
-                                    outline: resume.color === c ? '2px solid white' : 'none',
-                                    outlineOffset: '-4px',
-                                }}
-                            />
-                        ))}
-                    </div>
-                </div>
-
-                {/* Personal Info */}
-                <Accordion title="Thong tin ca nhan" defaultOpen>
-                    <FieldInput label="Ho va ten" value={pi.fullName} onChange={(v) => updatePI('fullName', v)} placeholder="Nguyen Van A" />
-                    <FieldInput label="Vi tri ung tuyen" value={pi.title} onChange={(v) => updatePI('title', v)} placeholder="Frontend Developer" />
-                    <FieldInput label="Email" value={pi.email} onChange={(v) => updatePI('email', v)} type="email" />
-                    <FieldInput label="So dien thoai" value={pi.phone} onChange={(v) => updatePI('phone', v)} />
-                    <FieldInput label="Dia chi" value={pi.address} onChange={(v) => updatePI('address', v)} />
-                    <FieldInput label="LinkedIn" value={pi.linkedin} onChange={(v) => updatePI('linkedin', v)} />
-                    <FieldInput label="GitHub" value={pi.github} onChange={(v) => updatePI('github', v)} />
-                </Accordion>
-
-                {/* Objective */}
-                <Accordion title="Muc tieu nghe nghiep">
-                    <FieldTextarea value={content.objective} onChange={(v) => updateField('objective', v)} rows={4} placeholder="Toi la..." />
-                </Accordion>
-
-                {/* Experiences */}
-                <Accordion title={`Kinh nghiem (${(content.experiences || []).length})`}>
-                    {(content.experiences || []).map((exp) => (
-                        <div key={exp.id} style={{ background: '#f9fafb', borderRadius: '6px', padding: '10px', marginBottom: '10px', border: '1px solid #e5e7eb' }}>
-                            <FieldInput label="Vi tri" value={exp.position} onChange={(v) => updateItem('experiences', exp.id, 'position', v)} />
-                            <FieldInput label="Cong ty" value={exp.company} onChange={(v) => updateItem('experiences', exp.id, 'company', v)} />
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                <FieldInput label="Tu thang" value={exp.startDate} onChange={(v) => updateItem('experiences', exp.id, 'startDate', v)} placeholder="2022-01" />
-                                <FieldInput label="Den thang" value={exp.endDate} onChange={(v) => updateItem('experiences', exp.id, 'endDate', v)} placeholder="2024-06" />
-                            </div>
-                            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#374151', marginBottom: '8px', cursor: 'pointer' }}>
-                                <input type="checkbox" checked={!!exp.isCurrent} onChange={(e) => updateItem('experiences', exp.id, 'isCurrent', e.target.checked)} />
-                                Hien dang lam viec tai day
-                            </label>
-                            <FieldTextarea label="Mo ta" value={exp.description} onChange={(v) => updateItem('experiences', exp.id, 'description', v)} />
-                            <button onClick={() => removeItem('experiences', exp.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Trash2 size={12} /> Xoa
-                            </button>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => addItem('experiences', { position: '', company: '', startDate: '', endDate: '', isCurrent: false, description: '' })}
-                        style={{ width: '100%', padding: '8px', border: '1px dashed #d1d5db', background: 'white', borderRadius: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                    >
-                        <Plus size={13} /> Them kinh nghiem
-                    </button>
-                </Accordion>
-
-                {/* Education */}
-                <Accordion title={`Hoc van (${(content.education || []).length})`}>
-                    {(content.education || []).map((edu) => (
-                        <div key={edu.id} style={{ background: '#f9fafb', borderRadius: '6px', padding: '10px', marginBottom: '10px', border: '1px solid #e5e7eb' }}>
-                            <FieldInput label="Truong hoc" value={edu.school} onChange={(v) => updateItem('education', edu.id, 'school', v)} />
-                            <FieldInput label="Bang cap / Nganh" value={edu.degree} onChange={(v) => updateItem('education', edu.id, 'degree', v)} />
-                            <FieldInput label="GPA" value={edu.gpa} onChange={(v) => updateItem('education', edu.id, 'gpa', v)} placeholder="3.5/4.0" />
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                <FieldInput label="Nam vao" value={edu.startDate} onChange={(v) => updateItem('education', edu.id, 'startDate', v)} placeholder="2018-09" />
-                                <FieldInput label="Nam ra" value={edu.endDate} onChange={(v) => updateItem('education', edu.id, 'endDate', v)} placeholder="2022-06" />
-                            </div>
-                            <button onClick={() => removeItem('education', edu.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Trash2 size={12} /> Xoa
-                            </button>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => addItem('education', { school: '', degree: '', gpa: '', startDate: '', endDate: '' })}
-                        style={{ width: '100%', padding: '8px', border: '1px dashed #d1d5db', background: 'white', borderRadius: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                    >
-                        <Plus size={13} /> Them hoc van
-                    </button>
-                </Accordion>
-
-                {/* Skills */}
-                <Accordion title={`Ky nang (${(content.skills || []).length})`}>
-                    {(content.skills || []).map((s) => (
-                        <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                            <input
-                                value={s.name || ''}
-                                onChange={(e) => updateItem('skills', s.id, 'name', e.target.value)}
-                                placeholder="Ten ky nang"
-                                style={{ flex: 1, padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                            />
-                            <select
-                                value={s.level || 3}
-                                onChange={(e) => updateItem('skills', s.id, 'level', Number(e.target.value))}
-                                style={{ padding: '6px 4px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px' }}
-                            >
-                                {[1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}/5</option>)}
-                            </select>
-                            <button onClick={() => removeItem('skills', s.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '2px' }}>
-                                <Trash2 size={13} />
-                            </button>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => addItem('skills', { name: '', level: 3 })}
-                        style={{ width: '100%', padding: '7px', border: '1px dashed #d1d5db', background: 'white', borderRadius: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                    >
-                        <Plus size={13} /> Them ky nang
-                    </button>
-                </Accordion>
-
-                {/* Languages */}
-                <Accordion title={`Ngon ngu (${(content.languages || []).length})`}>
-                    {(content.languages || []).map((l) => (
-                        <div key={l.id} style={{ display: 'flex', gap: '6px', marginBottom: '8px', alignItems: 'center' }}>
-                            <input
-                                value={l.name || ''}
-                                onChange={(e) => updateItem('languages', l.id, 'name', e.target.value)}
-                                placeholder="Tieng Anh"
-                                style={{ flex: 1, padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                            />
-                            <input
-                                value={l.level || ''}
-                                onChange={(e) => updateItem('languages', l.id, 'level', e.target.value)}
-                                placeholder="Trung cap"
-                                style={{ flex: 1, padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', outline: 'none' }}
-                            />
-                            <button onClick={() => removeItem('languages', l.id)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '2px' }}>
-                                <Trash2 size={13} />
-                            </button>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => addItem('languages', { name: '', level: '' })}
-                        style={{ width: '100%', padding: '7px', border: '1px dashed #d1d5db', background: 'white', borderRadius: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                    >
-                        <Plus size={13} /> Them ngon ngu
-                    </button>
-                </Accordion>
-
-                {/* Certifications */}
-                <Accordion title={`Chung chi (${(content.certifications || []).length})`}>
-                    {(content.certifications || []).map((cert) => (
-                        <div key={cert.id} style={{ background: '#f9fafb', borderRadius: '6px', padding: '10px', marginBottom: '10px', border: '1px solid #e5e7eb' }}>
-                            <FieldInput label="Ten chung chi" value={cert.name} onChange={(v) => updateItem('certifications', cert.id, 'name', v)} />
-                            <FieldInput label="Don vi cap" value={cert.issuer} onChange={(v) => updateItem('certifications', cert.id, 'issuer', v)} />
-                            <FieldInput label="Nam" value={cert.date} onChange={(v) => updateItem('certifications', cert.id, 'date', v)} placeholder="2023" />
-                            <button onClick={() => removeItem('certifications', cert.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Trash2 size={12} /> Xoa
-                            </button>
-                        </div>
-                    ))}
-                    <button
-                        onClick={() => addItem('certifications', { name: '', issuer: '', date: '' })}
-                        style={{ width: '100%', padding: '7px', border: '1px dashed #d1d5db', background: 'white', borderRadius: '6px', fontSize: '12px', color: '#6b7280', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}
-                    >
-                        <Plus size={13} /> Them chung chi
-                    </button>
-                </Accordion>
-            </div>
-
-            {/* ─── CV PREVIEW ─── */}
-            <div style={{ flex: 1, overflowY: 'auto', background: '#525659', marginTop: '52px', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '32px 16px' }}>
-                <div
-                    id="cv-print-area"
-                    style={{
-                        width: '794px',
-                        minHeight: '1123px',
-                        background: 'white',
-                        boxShadow: '0 4px 30px rgba(0,0,0,0.4)',
-                        overflow: 'hidden',
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'white', fontFamily: 'Arial, sans-serif' }}>
+            {/* Toolbar */}
+            <div style={{ height: '52px', flexShrink: 0, background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '0', padding: '0 12px 0 0', zIndex: 10 }}>
+                <button onClick={() => {
+                        if (isDirty && !confirm('Bạn có thay đổi chưa lưu. Rời khỏi trang này?')) return;
+                        router.push('/quan-ly-cv');
                     }}
-                >
-                    <TemplateComponent
-                        content={resume.content}
-                        color={resume.color}
-                        fontSize={resume.fontSize}
-                        lineSpacing={resume.lineSpacing}
-                    />
+                    style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#6b7280', padding: '0 12px', height: '100%' }}>
+                    <ArrowLeft size={15} /> Quản lý CV
+                </button>
+                <div style={{ width: '1px', height: '24px', background: '#e5e7eb', margin: '0 4px' }} />
+                <input value={resume.title || ''} onChange={(e) => setR({ title: e.target.value })}
+                    style={{ border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', color: '#111827', background: 'transparent', flex: 1, padding: '0 12px', minWidth: '0' }} />
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+                    {saveMsg && <span style={{ fontSize: '12px', color: '#00b14f', fontWeight: '500' }}>{saveMsg}</span>}
+                    <button onClick={() => setPreviewMode(!previewMode)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', background: previewMode ? '#f0fdf4' : '#f3f4f6', border: previewMode ? '1px solid #bbf7d0' : 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: previewMode ? '#00b14f' : '#374151' }}>
+                        {previewMode ? <><EyeOff size={13} /> Chỉnh sửa</> : <><Eye size={13} /> Xem trước</>}
+                    </button>
+                    <button onClick={save} disabled={saving}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: '#f3f4f6', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: '#374151' }}>
+                        <Save size={14} />{saving ? 'Đang lưu...' : 'Lưu'}
+                    </button>
+                    <button onClick={() => window.print()}
+                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: '#00b14f', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: 'white' }}>
+                        <Printer size={14} />Tải PDF
+                    </button>
+                </div>
+            </div>
+
+            {/* Body */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                {/* Icon sidebar */}
+                <div style={{ width: '56px', flexShrink: 0, background: 'white', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '8px', gap: '2px', zIndex: 10 }}>
+                    {TABS.map((tab) => {
+                        const active = activeTab === tab.id;
+                        return (
+                            <button key={tab.id} onClick={() => setActiveTab(active ? null : tab.id)} title={tab.label.replace('\n', ' ')}
+                                style={{ width: '48px', padding: '8px 4px', borderRadius: '8px', border: 'none', background: active ? '#f0fdf4' : 'transparent', color: active ? '#00b14f' : '#9ca3af', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                                <TabIcon id={tab.id} />
+                                <span style={{ fontSize: '9px', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'pre', textAlign: 'center' }}>{tab.label}</span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Side panel (slides in) */}
+                {activeTab && (
+                    <div style={{ width: '280px', flexShrink: 0, borderRight: '1px solid #e5e7eb', background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 9 }}>
+                        <div style={{ padding: '12px 14px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>
+                                {TABS.find((t) => t.id === activeTab)?.label.replace('\n', ' & ')}
+                            </span>
+                            <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', padding: '2px' }}>
+                                <X size={16} />
+                            </button>
+                        </div>
+                        {panelContent[activeTab]}
+                    </div>
+                )}
+
+                {/* CV Canvas */}
+                <div style={{ flex: 1, overflowY: 'auto', background: '#525659', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '32px 24px' }}>
+                    {previewMode ? (
+                        <div id="cv-print-area" style={{ width: '794px', minHeight: '1123px', boxShadow: '0 4px 30px rgba(0,0,0,0.4)', flexShrink: 0 }}>
+                            <TemplateComponent content={content} color={color} fontSize={fontSize} lineSpacing={lineSpacing} background={background} />
+                        </div>
+                    ) : (
+                        <div style={{ width: '794px', minHeight: '1123px', boxShadow: '0 4px 30px rgba(0,0,0,0.4)', flexShrink: 0 }}>
+                            <EditableCVDocument
+                                content={content}
+                                onContentChange={setContent}
+                                sectionOrder={sectionOrder}
+                                onSectionOrderChange={setSectionOrder}
+                                hiddenSections={hiddenSections}
+                                onHideSection={(key) => setHiddenSections([...hiddenSections, key])}
+                                color={color}
+                                font={font}
+                                fontSize={fontSize}
+                                lineSpacing={lineSpacing}
+                                background={background}
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
             <style>{`
                 @media print {
                     body > * { display: none !important; }
-                    #cv-print-area { display: block !important; position: fixed; inset: 0; width: 100%; height: auto; box-shadow: none; }
+                    #cv-print-area { display: block !important; position: fixed; inset: 0; width: 100%; box-shadow: none; }
                 }
             `}</style>
         </div>
     );
+}
+
+function SectionLabel({ children }) {
+    return <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{children}</div>;
+}
+
+function TabIcon({ id }) {
+    const s = { width: 20, height: 20 };
+    if (id === 'design') return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
+            <circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
+        </svg>
+    );
+    if (id === 'sections') return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+    );
+    if (id === 'layout') return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
+            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+        </svg>
+    );
+    if (id === 'template') return (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
+            <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
+        </svg>
+    );
+    return null;
 }

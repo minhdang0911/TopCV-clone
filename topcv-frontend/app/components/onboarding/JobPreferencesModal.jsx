@@ -1,74 +1,85 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ChevronRight } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import { userService } from '@/services/user.service';
-
-const INDUSTRIES = [
-    'Công nghệ thông tin',
-    'Kinh doanh / Bán hàng',
-    'Marketing / PR',
-    'Kế toán / Tài chính',
-    'Nhân sự',
-    'Kỹ thuật / Cơ khí',
-    'Thiết kế / Sáng tạo',
-    'Giáo dục / Đào tạo',
-    'Y tế / Dược',
-    'Logistics / Vận tải',
-    'Xây dựng / Bất động sản',
-    'Ngân hàng / Bảo hiểm',
-    'Truyền thông / Báo chí',
-    'Khách sạn / Nhà hàng',
-    'Khác',
-];
+import { provinceService } from '@/services/province.service';
+import api from '@/lib/axios';
 
 const SALARY_OPTIONS = [
-    { label: 'Dưới 5 triệu', value: { min: 0, max: 5000000 } },
-    { label: '5 - 10 triệu', value: { min: 5000000, max: 10000000 } },
-    { label: '10 - 15 triệu', value: { min: 10000000, max: 15000000 } },
-    { label: '15 - 20 triệu', value: { min: 15000000, max: 20000000 } },
-    { label: '20 - 30 triệu', value: { min: 20000000, max: 30000000 } },
-    { label: 'Trên 30 triệu', value: { min: 30000000, max: null } },
-    { label: 'Thương lượng', value: { min: null, max: null } },
-];
-
-const PROVINCES = [
-    'Hồ Chí Minh', 'Hà Nội', 'Đà Nẵng', 'Bình Dương', 'Đồng Nai',
-    'Hải Phòng', 'Cần Thơ', 'Long An', 'Bà Rịa - Vũng Tàu', 'Khác',
+    { label: 'Dưới 5 triệu', min: 0, max: 5000000 },
+    { label: '5 - 10 triệu', min: 5000000, max: 10000000 },
+    { label: '10 - 15 triệu', min: 10000000, max: 15000000 },
+    { label: '15 - 20 triệu', min: 15000000, max: 20000000 },
+    { label: '20 - 30 triệu', min: 20000000, max: 30000000 },
+    { label: 'Trên 30 triệu', min: 30000000, max: null },
+    { label: 'Thương lượng', min: null, max: null },
 ];
 
 export default function JobPreferencesModal({ onClose }) {
-    const { setUser } = useAuthStore();
+    const { user, setUser } = useAuthStore();
     const [step, setStep] = useState(1);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState('');
 
-    const [selectedIndustries, setSelectedIndustries] = useState([]);
+    const [industries, setIndustries] = useState([]);
+    const [provinces, setProvinces] = useState([]);
+    const [selectedIndustryIds, setSelectedIndustryIds] = useState([]);
     const [desiredPosition, setDesiredPosition] = useState('');
     const [selectedSalary, setSelectedSalary] = useState(null);
-    const [selectedProvince, setSelectedProvince] = useState('');
+    const [selectedProvinceCode, setSelectedProvinceCode] = useState(null);
 
-    const toggleIndustry = (ind) => {
-        setSelectedIndustries((prev) =>
-            prev.includes(ind) ? prev.filter((i) => i !== ind) : [...prev, ind],
+    useEffect(() => {
+        api.get('/industries?limit=100').then((res) => {
+            setIndustries(Array.isArray(res.data) ? res.data : (res.data?.data || []));
+        }).catch(() => setIndustries([]));
+
+        provinceService.getAll().then((data) => {
+            setProvinces(Array.isArray(data) ? data : []);
+        }).catch(() => setProvinces([]));
+    }, []);
+
+    const toggleIndustry = (id) => {
+        setSelectedIndustryIds((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
         );
+    };
+
+    const updateUserState = (jobPreferences) => {
+        if (!user) return;
+        setUser({
+            ...user,
+            candidateProfile: {
+                ...user.candidateProfile,
+                jobPreferences,
+            },
+        });
+    };
+
+    const handleSkip = async () => {
+        try {
+            await userService.updateJobPreferences({ skipped: true });
+            updateUserState({ skipped: true });
+        } catch {}
+        onClose();
     };
 
     const handleSubmit = async () => {
         setSaving(true);
+        setError('');
         try {
             const jobPreferences = {
-                industries: selectedIndustries,
+                industryIds: selectedIndustryIds,
                 desiredPosition: desiredPosition.trim(),
                 salary: selectedSalary,
-                province: selectedProvince,
+                provinceCode: selectedProvinceCode,
             };
             await userService.updateJobPreferences(jobPreferences);
-            const res = await userService.getMe();
-            setUser(res.data);
+            updateUserState(jobPreferences);
             onClose();
         } catch {
-            onClose();
+            setError('Có lỗi xảy ra. Vui lòng thử lại.');
         } finally {
             setSaving(false);
         }
@@ -104,18 +115,18 @@ export default function JobPreferencesModal({ onClose }) {
                 <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
                         <div style={{ fontSize: '11px', fontWeight: '600', color: '#00b14f', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
-                            Buoc {step}/3
+                            Bước {step}/3
                         </div>
                         <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                            {step === 1 && 'Ban muon tim viec nganh gi?'}
-                            {step === 2 && 'Vi tri va muc luong mong muon'}
-                            {step === 3 && 'Ban muon lam viec o dau?'}
+                            {step === 1 && 'Bạn muốn tìm việc ngành gì?'}
+                            {step === 2 && 'Vị trí và mức lương mong muốn'}
+                            {step === 3 && 'Bạn muốn làm việc ở đâu?'}
                         </h2>
                         <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
-                            TopCV se goi y cong viec phu hop hon cho ban
+                            TopCV sẽ gợi ý công việc phù hợp hơn cho bạn
                         </p>
                     </div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px', marginTop: '-4px' }}>
+                    <button onClick={handleSkip} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px', marginTop: '-4px' }}>
                         <X size={20} />
                     </button>
                 </div>
@@ -132,32 +143,36 @@ export default function JobPreferencesModal({ onClose }) {
                     {step === 1 && (
                         <div>
                             <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                                Chon mot hoac nhieu nganh nghe
+                                Chọn một hoặc nhiều ngành nghề
                             </p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {INDUSTRIES.map((ind) => {
-                                    const selected = selectedIndustries.includes(ind);
-                                    return (
-                                        <button
-                                            key={ind}
-                                            onClick={() => toggleIndustry(ind)}
-                                            style={{
-                                                padding: '7px 14px',
-                                                borderRadius: '20px',
-                                                border: selected ? '1.5px solid #00b14f' : '1.5px solid #e5e7eb',
-                                                background: selected ? '#f0fdf4' : 'white',
-                                                color: selected ? '#00b14f' : '#374151',
-                                                fontSize: '13px',
-                                                fontWeight: selected ? '600' : '400',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.15s',
-                                            }}
-                                        >
-                                            {ind}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            {industries.length === 0 ? (
+                                <div style={{ color: '#9ca3af', fontSize: '13px' }}>Đang tải ngành nghề...</div>
+                            ) : (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                    {industries.map((ind) => {
+                                        const selected = selectedIndustryIds.includes(ind.id);
+                                        return (
+                                            <button
+                                                key={ind.id}
+                                                onClick={() => toggleIndustry(ind.id)}
+                                                style={{
+                                                    padding: '7px 14px',
+                                                    borderRadius: '20px',
+                                                    border: selected ? '1.5px solid #00b14f' : '1.5px solid #e5e7eb',
+                                                    background: selected ? '#f0fdf4' : 'white',
+                                                    color: selected ? '#00b14f' : '#374151',
+                                                    fontSize: '13px',
+                                                    fontWeight: selected ? '600' : '400',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.15s',
+                                                }}
+                                            >
+                                                {ind.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -165,11 +180,11 @@ export default function JobPreferencesModal({ onClose }) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
                                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                                    Vi tri mong muon
+                                    Vị trí mong muốn
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="VD: Frontend Developer, Ke toan tong hop..."
+                                    placeholder="VD: Frontend Developer, Kế toán tổng hợp..."
                                     value={desiredPosition}
                                     onChange={(e) => setDesiredPosition(e.target.value)}
                                     style={{
@@ -185,7 +200,7 @@ export default function JobPreferencesModal({ onClose }) {
                             </div>
                             <div>
                                 <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '8px' }}>
-                                    Muc luong mong muon
+                                    Mức lương mong muốn
                                 </label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                     {SALARY_OPTIONS.map((opt) => {
@@ -193,7 +208,7 @@ export default function JobPreferencesModal({ onClose }) {
                                         return (
                                             <button
                                                 key={opt.label}
-                                                onClick={() => setSelectedSalary({ label: opt.label, ...opt.value })}
+                                                onClick={() => setSelectedSalary(opt)}
                                                 style={{
                                                     padding: '7px 14px',
                                                     borderRadius: '20px',
@@ -217,31 +232,42 @@ export default function JobPreferencesModal({ onClose }) {
                     {step === 3 && (
                         <div>
                             <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                                Chon tinh/thanh pho ban muon lam viec
+                                Chọn tỉnh/thành phố bạn muốn làm việc
                             </p>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                                {PROVINCES.map((prov) => {
-                                    const selected = selectedProvince === prov;
-                                    return (
-                                        <button
-                                            key={prov}
-                                            onClick={() => setSelectedProvince(prov)}
-                                            style={{
-                                                padding: '7px 14px',
-                                                borderRadius: '20px',
-                                                border: selected ? '1.5px solid #00b14f' : '1.5px solid #e5e7eb',
-                                                background: selected ? '#f0fdf4' : 'white',
-                                                color: selected ? '#00b14f' : '#374151',
-                                                fontSize: '13px',
-                                                fontWeight: selected ? '600' : '400',
-                                                cursor: 'pointer',
-                                            }}
-                                        >
-                                            {prov}
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                            {provinces.length === 0 ? (
+                                <div style={{ color: '#9ca3af', fontSize: '13px' }}>Đang tải danh sách tỉnh thành...</div>
+                            ) : (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
+                                    {provinces.map((prov) => {
+                                        const selected = selectedProvinceCode === prov.code;
+                                        return (
+                                            <button
+                                                key={prov.code}
+                                                onClick={() => setSelectedProvinceCode(prov.code)}
+                                                style={{
+                                                    padding: '7px 14px',
+                                                    borderRadius: '20px',
+                                                    border: selected ? '1.5px solid #00b14f' : '1.5px solid #e5e7eb',
+                                                    background: selected ? '#f0fdf4' : 'white',
+                                                    color: selected ? '#00b14f' : '#374151',
+                                                    fontSize: '13px',
+                                                    fontWeight: selected ? '600' : '400',
+                                                    cursor: 'pointer',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {prov.name}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {error && (
+                        <div style={{ marginTop: '12px', padding: '10px 12px', background: '#fee2e2', borderRadius: '8px', color: '#dc2626', fontSize: '13px' }}>
+                            {error}
                         </div>
                     )}
                 </div>
@@ -253,14 +279,14 @@ export default function JobPreferencesModal({ onClose }) {
                             onClick={() => setStep(step - 1)}
                             style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}
                         >
-                            Quay lai
+                            Quay lại
                         </button>
                     ) : (
                         <button
-                            onClick={onClose}
+                            onClick={handleSkip}
                             style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '14px', cursor: 'pointer' }}
                         >
-                            Bo qua
+                            Bỏ qua
                         </button>
                     )}
 
@@ -281,7 +307,7 @@ export default function JobPreferencesModal({ onClose }) {
                                 cursor: 'pointer',
                             }}
                         >
-                            Tiep theo <ChevronRight size={16} />
+                            Tiếp theo <ChevronRight size={16} />
                         </button>
                     ) : (
                         <button
@@ -298,7 +324,7 @@ export default function JobPreferencesModal({ onClose }) {
                                 cursor: saving ? 'not-allowed' : 'pointer',
                             }}
                         >
-                            {saving ? 'Dang luu...' : 'Hoan thanh'}
+                            {saving ? 'Đang lưu...' : 'Hoàn thành'}
                         </button>
                     )}
                 </div>

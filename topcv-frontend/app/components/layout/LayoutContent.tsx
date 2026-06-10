@@ -26,7 +26,8 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     const { user, hydrated, isAuthenticated } = useAuthStore();
     const [showOnboarding, setShowOnboarding] = useState(false);
 
-    const hideHeader = HIDDEN_ROUTES.includes(pathname);
+    const isCvEditor = /^\/tao-cv\/[^/]+$/.test(pathname);
+    const hideHeader = HIDDEN_ROUTES.includes(pathname) || isCvEditor;
 
     useEffect(() => {
         if (

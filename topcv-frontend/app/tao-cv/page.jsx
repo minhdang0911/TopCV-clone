@@ -2,218 +2,196 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { X, Check } from 'lucide-react';
+import { X } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import { resumeService } from '@/services/resume.service';
+import TieuChuanTemplate from '@/app/components/cv/templates/TieuChuan';
+import TieuChuanItKNTemplate from '@/app/components/cv/templates/TieuChuanItKN';
+import AnTuongTemplate from '@/app/components/cv/templates/AnTuong';
+import ThanhLichTemplate from '@/app/components/cv/templates/ThanhLich';
+import HienDaiTemplate from '@/app/components/cv/templates/HienDai';
+import ChuyenNghiepTemplate from '@/app/components/cv/templates/ChuyenNghiep';
+import GocCanhTemplate from '@/app/components/cv/templates/GocCanh';
+import ThamVongTemplate from '@/app/components/cv/templates/ThamVong';
+import robo from '@/app/assests/img/toppy-list-mau-cv.png';
+
+const A4_W = 794;
+const A4_H = 1123;
+// Scale so the CV thumbnail fills the card width (~300px grid column)
+const SCALE = 0.36;
+const THUMB_W = Math.round(A4_W * SCALE);
+const THUMB_H = Math.round(A4_H * SCALE);
+
+const MODAL_SCALE = 0.58;
+const MODAL_W = Math.round(A4_W * MODAL_SCALE);
+const MODAL_H = Math.round(A4_H * MODAL_SCALE);
+
+const SAMPLE_CONTENT = {
+    personalInfo: {
+        fullName: 'Nguyễn Văn Minh',
+        title: 'Senior Frontend Developer',
+        email: 'minhkv@gmail.com',
+        phone: '0901 234 567',
+        address: 'Hồ Chí Minh',
+        linkedin: 'linkedin.com/in/minhkv',
+        github: 'github.com/minhkv',
+    },
+    objective:
+        'Kỹ sư Frontend với 3+ năm kinh nghiệm React và Next.js, chuyên xây dựng các ứng dụng web hiệu năng cao và trải nghiệm người dùng tốt. Mong muốn đóng góp vào sản phẩm có tác động lớn trong môi trường Agile năng động, học hỏi liên tục.',
+    experiences: [
+        {
+            id: '1',
+            position: 'Senior Frontend Developer',
+            company: 'VNG Corporation',
+            startDate: '06/2022',
+            endDate: '',
+            isCurrent: true,
+            description:
+                '- Phát triển tính năng mới cho Zalo Web với 20M+ người dùng\n- Tối ưu performance, giảm 40% load time bằng code splitting và lazy loading\n- Mentor 2 junior developers, tổ chức knowledge sharing sessions\n- Thiết kế hệ thống component library dùng chung cho 3 sản phẩm',
+        },
+        {
+            id: '2',
+            position: 'Frontend Developer',
+            company: 'FPT Software',
+            startDate: '09/2020',
+            endDate: '05/2022',
+            isCurrent: false,
+            description:
+                '- Xây dựng giao diện hệ thống quản lý nội bộ cho 500+ nhân viên\n- Tích hợp REST API với React/Redux, giảm 30% thời gian tải trang\n- Implement CI/CD pipeline với GitHub Actions\n- Cải thiện UX dựa trên user research, tăng 25% user retention',
+        },
+        {
+            id: '3',
+            position: 'Frontend Intern',
+            company: 'Tiki Corporation',
+            startDate: '06/2020',
+            endDate: '08/2020',
+            isCurrent: false,
+            description:
+                '- Hỗ trợ phát triển tính năng frontend cho trang thương mại điện tử\n- Fix bugs và viết unit tests cho module thanh toán',
+        },
+    ],
+    education: [
+        {
+            id: '1',
+            school: 'Đại học Bách Khoa TP.HCM',
+            degree: 'Kỹ sư Công nghệ Thông tin',
+            gpa: '3.6/4.0',
+            startDate: '2016',
+            endDate: '2020',
+            description: 'Thủ khoa kỳ 3 năm 2018. Giải nhì cuộc thi lập trình ACM-ICPC cấp trường.',
+        },
+    ],
+    skills: [
+        { id: '1', name: 'React / Next.js', level: 5 },
+        { id: '2', name: 'TypeScript', level: 4 },
+        { id: '3', name: 'Node.js / Express', level: 3 },
+        { id: '4', name: 'Tailwind CSS', level: 4 },
+        { id: '5', name: 'Git / CI-CD', level: 4 },
+        { id: '6', name: 'Docker / AWS', level: 3 },
+    ],
+    languages: [
+        { id: '1', name: 'Tiếng Anh', level: 'B2 (IELTS 6.5)' },
+        { id: '2', name: 'Tiếng Nhật', level: 'N4' },
+    ],
+    certifications: [
+        { id: '1', name: 'AWS Certified Developer', issuer: 'Amazon Web Services', date: '2023' },
+        { id: '2', name: 'Meta Frontend Developer', issuer: 'Meta / Coursera', date: '2022' },
+    ],
+    activities: [
+        {
+            id: '1',
+            role: 'Trưởng ban kỹ thuật',
+            organization: 'CLB IT Bách Khoa',
+            description:
+                'Tổ chức workshop hàng tháng về web development cho 200+ thành viên. Xây dựng hệ thống quản lý sự kiện nội bộ.',
+        },
+    ],
+};
 
 const TEMPLATES = [
     {
         id: 'tieu-chuan',
-        name: 'Tieu chuan',
-        description: 'Gon gang, ro rang, phu hop moi nganh nghe',
+        name: 'Tiêu chuẩn',
+        Component: TieuChuanTemplate,
+        description: 'Gọn gàng, rõ ràng, phù hợp mọi ngành nghề',
         colors: ['#00b14f', '#1e3a5f', '#c0392b', '#2471a3', '#6c3483'],
-        tags: ['Pho bien', 'Chuyen nghiep'],
-        preview: 'two-col',
+        tags: ['Mẫu CV Chuyên nghiệp'],
     },
     {
         id: 'tieu-chuan-it-kn',
-        name: 'Tieu chuan (it kinh nghiem)',
-        description: 'Toi uu cho sinh vien, fresher can viec lam dau tien',
+        name: 'Tiêu chuẩn (ít kinh nghiệm)',
+        Component: TieuChuanItKNTemplate,
+        description: 'Tối ưu cho sinh viên, fresher',
         colors: ['#00b14f', '#1e3a5f', '#e67e22', '#16a085'],
-        tags: ['Sinh vien', 'Fresher'],
-        preview: 'single-col',
+        tags: ['Mẫu CV Đơn giản'],
     },
     {
         id: 'an-tuong',
-        name: 'An tuong',
-        description: 'Noi bat voi header dam, phu hop vi tri senior/design',
+        name: 'Ấn tượng',
+        Component: AnTuongTemplate,
+        description: 'Nổi bật với header đậm, phù hợp senior',
         colors: ['#1e3a5f', '#111827', '#7b2d8b', '#c0392b'],
-        tags: ['An tuong', 'Sang tao'],
-        preview: 'dark-header',
+        tags: ['Mẫu CV Ấn tượng'],
+    },
+    {
+        id: 'thanh-lich',
+        name: 'Thanh lịch',
+        Component: ThanhLichTemplate,
+        description: 'Tối giản, thanh lịch, bố cục một cột',
+        colors: ['#00b14f', '#1e3a5f', '#64748b', '#7c3aed'],
+        tags: ['Mẫu CV Đơn giản'],
+    },
+    {
+        id: 'hien-dai',
+        name: 'Hiện đại',
+        Component: HienDaiTemplate,
+        description: 'Hai cột hiện đại, sidebar xám nhẹ',
+        colors: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981'],
+        tags: ['Mẫu CV Ấn tượng'],
+    },
+    {
+        id: 'chuyen-nghiep',
+        name: 'Chuyên nghiệp',
+        Component: ChuyenNghiepTemplate,
+        description: 'Header màu nổi bật, phong cách doanh nghiệp',
+        colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'],
+        tags: ['Mẫu CV Chuyên nghiệp'],
+    },
+    {
+        id: 'goc-canh',
+        name: 'Góc cạnh',
+        Component: GocCanhTemplate,
+        description: 'Sidebar tối, phong cách mạnh mẽ',
+        colors: ['#1e293b', '#1e3a5f', '#7c3aed', '#be123c'],
+        tags: ['Mẫu CV Ấn tượng'],
+    },
+    {
+        id: 'tham-vong',
+        name: 'Tham vọng',
+        Component: ThamVongTemplate,
+        description: 'Header tối, timeline thanh lịch',
+        colors: ['#1e293b', '#0f4c75', '#6d28d9', '#064e3b'],
+        tags: ['Mẫu CV Chuyên nghiệp'],
     },
 ];
 
-function TemplatePreviewSVG({ template, color }) {
-    const c = color || template.colors[0];
+const FILTER_TAGS = ['Tất cả', 'Mẫu CV Đơn giản', 'Mẫu CV Ấn tượng', 'Mẫu CV Chuyên nghiệp'];
 
-    if (template.preview === 'two-col') {
-        return (
-            <svg viewBox="0 0 200 260" style={{ width: '100%', height: '100%' }}>
-                {/* Left sidebar */}
-                <rect x="0" y="0" width="65" height="260" fill={c} />
-                {/* Avatar placeholder */}
-                <circle cx="32" cy="36" r="22" fill="white" fillOpacity="0.25" />
-                {/* Name lines */}
-                <rect x="8" y="64" width="50" height="5" rx="2" fill="white" fillOpacity="0.8" />
-                <rect x="12" y="73" width="42" height="3" rx="1.5" fill="white" fillOpacity="0.5" />
-                {/* Sidebar sections */}
-                {[90, 120, 150, 180].map((y) => (
-                    <g key={y}>
-                        <rect x="8" y={y} width="30" height="3" rx="1.5" fill="white" fillOpacity="0.7" />
-                        <rect x="8" y={y + 7} width="50" height="2" rx="1" fill="white" fillOpacity="0.4" />
-                        <rect x="8" y={y + 12} width="45" height="2" rx="1" fill="white" fillOpacity="0.4" />
-                    </g>
-                ))}
-                {/* Main content */}
-                <rect x="75" y="16" width="80" height="6" rx="2" fill={c} />
-                <rect x="75" y="26" width="60" height="3" rx="1.5" fill="#9ca3af" />
-                {/* Experience section */}
-                {[45, 90, 140, 185].map((y) => (
-                    <g key={y}>
-                        <rect x="75" y={y} width="50" height="3" rx="1.5" fill={c} fillOpacity="0.8" />
-                        <rect x="75" y={y + 7} width="110" height="2" rx="1" fill="#d1d5db" />
-                        <rect x="75" y={y + 12} width="95" height="2" rx="1" fill="#d1d5db" />
-                        <rect x="75" y={y + 17} width="105" height="2" rx="1" fill="#d1d5db" />
-                    </g>
-                ))}
-            </svg>
-        );
-    }
-
-    if (template.preview === 'single-col') {
-        return (
-            <svg viewBox="0 0 200 260" style={{ width: '100%', height: '100%' }}>
-                <rect x="0" y="0" width="200" height="55" fill={c} />
-                <rect x="16" y="14" width="80" height="6" rx="2" fill="white" />
-                <rect x="16" y="24" width="55" height="3" rx="1.5" fill="white" fillOpacity="0.7" />
-                <rect x="16" y="32" width="120" height="2" rx="1" fill="white" fillOpacity="0.5" />
-                {[68, 110, 155, 200].map((y) => (
-                    <g key={y}>
-                        <rect x="16" y={y} width="40" height="4" rx="1.5" fill={c} />
-                        <rect x="0" y={y + 8} width="200" height="1" fill="#e5e7eb" />
-                        <rect x="16" y={y + 14} width="165" height="2" rx="1" fill="#d1d5db" />
-                        <rect x="16" y={y + 19} width="140" height="2" rx="1" fill="#d1d5db" />
-                        <rect x="16" y={y + 24} width="155" height="2" rx="1" fill="#e5e7eb" />
-                    </g>
-                ))}
-            </svg>
-        );
-    }
-
-    if (template.preview === 'dark-header') {
-        return (
-            <svg viewBox="0 0 200 260" style={{ width: '100%', height: '100%' }}>
-                <rect x="0" y="0" width="200" height="70" fill={c} />
-                <circle cx="30" cy="35" r="22" fill="white" fillOpacity="0.15" />
-                <rect x="60" y="18" width="90" height="7" rx="2" fill="white" />
-                <rect x="60" y="30" width="70" height="4" rx="2" fill="white" fillOpacity="0.7" />
-                <rect x="60" y="38" width="110" height="2" rx="1" fill="white" fillOpacity="0.5" />
-                <rect x="60" y="44" width="80" height="2" rx="1" fill="white" fillOpacity="0.5" />
-                {[80, 120, 165, 210].map((y) => (
-                    <g key={y}>
-                        <rect x="16" y={y} width="45" height="4" rx="1.5" fill={c} />
-                        <rect x="0" y={y + 8} width="200" height="1" fill="#e5e7eb" />
-                        <rect x="16" y={y + 14} width="165" height="2" rx="1" fill="#d1d5db" />
-                        <rect x="16" y={y + 19} width="130" height="2" rx="1" fill="#d1d5db" />
-                        <rect x="16" y={y + 24} width="150" height="2" rx="1" fill="#e5e7eb" />
-                    </g>
-                ))}
-            </svg>
-        );
-    }
-
-    return null;
-}
-
-function PreviewModal({ template, selectedColor, onColorChange, onUse, onClose }) {
+function Thumbnail({ Component, color, scale = SCALE }) {
+    const w = Math.round(A4_W * scale);
+    const h = Math.round(A4_H * scale);
     return (
-        <div
-            style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(0,0,0,0.6)',
-                zIndex: 9999,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '16px',
-            }}
-            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-        >
-            <div style={{
-                background: 'white',
-                borderRadius: '16px',
-                display: 'flex',
-                overflow: 'hidden',
-                maxWidth: '800px',
-                width: '100%',
-                maxHeight: '90vh',
-            }}>
-                {/* Preview */}
-                <div style={{ flex: 1, background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-                    <div style={{ width: '280px', aspectRatio: '210/297', background: 'white', borderRadius: '4px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', overflow: 'hidden' }}>
-                        <TemplatePreviewSVG template={template} color={selectedColor} />
-                    </div>
-                </div>
-
-                {/* Side panel */}
-                <div style={{ width: '240px', padding: '24px', display: 'flex', flexDirection: 'column', borderLeft: '1px solid #e5e7eb' }}>
-                    <button onClick={onClose} style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}>
-                        <X size={20} />
-                    </button>
-
-                    <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>{template.name}</h3>
-                    <p style={{ fontSize: '12px', color: '#6b7280', marginBottom: '20px' }}>{template.description}</p>
-
-                    <div style={{ marginBottom: '20px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Mau sac</div>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {template.colors.map((c) => (
-                                <button
-                                    key={c}
-                                    onClick={() => onColorChange(c)}
-                                    style={{
-                                        width: '28px',
-                                        height: '28px',
-                                        borderRadius: '50%',
-                                        background: c,
-                                        border: selectedColor === c ? '3px solid #111827' : '2px solid transparent',
-                                        cursor: 'pointer',
-                                        outline: selectedColor === c ? '2px solid white' : 'none',
-                                        outlineOffset: '-4px',
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-
-                    <button
-                        onClick={onUse}
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            padding: '11px',
-                            background: '#00b14f',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            marginTop: 'auto',
-                        }}
-                    >
-                        <Check size={16} /> Dung mau nay
-                    </button>
-                    <button
-                        onClick={onClose}
-                        style={{
-                            padding: '10px',
-                            background: 'white',
-                            color: '#374151',
-                            border: '1px solid #d1d5db',
-                            borderRadius: '8px',
-                            fontSize: '14px',
-                            cursor: 'pointer',
-                            marginTop: '8px',
-                        }}
-                    >
-                        Dong lai
-                    </button>
-                </div>
+        <div style={{ width: `${w}px`, height: `${h}px`, overflow: 'hidden', background: 'white', margin: '0 auto' }}>
+            <div
+                style={{
+                    width: `${A4_W}px`,
+                    transform: `scale(${scale})`,
+                    transformOrigin: 'top left',
+                    pointerEvents: 'none',
+                    userSelect: 'none',
+                }}
+            >
+                <Component content={SAMPLE_CONTENT} color={color} />
             </div>
         </div>
     );
@@ -221,12 +199,11 @@ function PreviewModal({ template, selectedColor, onColorChange, onUse, onClose }
 
 export default function TaoCvPage() {
     const router = useRouter();
-    const { isAuthenticated, hydrated } = useAuthStore();
-    const [preview, setPreview] = useState(null);
-    const [selectedColors, setSelectedColors] = useState(
-        Object.fromEntries(TEMPLATES.map((t) => [t.id, t.colors[0]])),
-    );
+    const { isAuthenticated } = useAuthStore();
+    const [activeFilter, setActiveFilter] = useState('Tất cả');
+    const [selectedColors, setSelectedColors] = useState(Object.fromEntries(TEMPLATES.map((t) => [t.id, t.colors[0]])));
     const [creating, setCreating] = useState(false);
+    const [preview, setPreview] = useState(null); // { tpl, color }
 
     const handleUseTemplate = async (templateId, color) => {
         if (!isAuthenticated) {
@@ -235,11 +212,7 @@ export default function TaoCvPage() {
         }
         setCreating(true);
         try {
-            const res = await resumeService.create({
-                type: 'resume',
-                template: templateId,
-                color,
-            });
+            const res = await resumeService.create({ type: 'resume', template: templateId, color });
             router.push(`/tao-cv/${res.data.id}`);
         } catch {
             setCreating(false);
@@ -247,144 +220,178 @@ export default function TaoCvPage() {
     };
 
     return (
-        <div style={{ background: '#f3f4f6', minHeight: '100vh', padding: '32px 16px' }}>
-            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
-                {/* Page header */}
+        <div style={{ background: '#f3f4f6', minHeight: '100vh', padding: '40px 16px' }}>
+            <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                    <h1 style={{ fontSize: '28px', fontWeight: '800', color: '#111827', marginBottom: '8px' }}>
-                        Chon mau CV phu hop voi ban
+                    <h1 style={{ fontSize: '30px', fontWeight: '800', color: '#111827', marginBottom: '10px' }}>
+                        Mẫu CV xin việc tiếng Việt chuẩn 2026
                     </h1>
                     <p style={{ fontSize: '15px', color: '#6b7280' }}>
-                        Hon 20 mau CV chuyen nghiep, mien phi, tu chon mau sac
+                        Tuyển chọn mẫu CV đa dạng phong cách, giúp bạn tạo dấu ấn cá nhân
                     </p>
                 </div>
 
-                {/* Filters (UI only) */}
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '28px', justifyContent: 'center' }}>
-                    {['Tat ca', 'Mau CV Don gian', 'Mau CV An tuong', 'Mau CV Chuyen nghiep', 'Mau CV Harvard'].map((tag) => (
-                        <button
-                            key={tag}
-                            style={{
-                                padding: '7px 18px',
-                                borderRadius: '20px',
-                                border: tag === 'Tat ca' ? 'none' : '1px solid #e5e7eb',
-                                background: tag === 'Tat ca' ? '#00b14f' : 'white',
-                                color: tag === 'Tat ca' ? 'white' : '#374151',
-                                fontSize: '13px',
-                                fontWeight: '500',
-                                cursor: 'pointer',
-                            }}
-                        >
-                            {tag}
-                        </button>
-                    ))}
+                <div
+                    style={{
+                        display: 'flex',
+                        gap: '8px',
+                        flexWrap: 'wrap',
+                        marginBottom: '32px',
+                        justifyContent: 'center',
+                    }}
+                >
+                    {FILTER_TAGS.map((tag) => {
+                        const active = activeFilter === tag;
+                        return (
+                            <button
+                                key={tag}
+                                onClick={() => setActiveFilter(tag)}
+                                style={{
+                                    padding: '8px 20px',
+                                    borderRadius: '20px',
+                                    border: active ? 'none' : '1px solid #d1d5db',
+                                    background: active ? '#00b14f' : 'white',
+                                    color: active ? 'white' : '#374151',
+                                    fontSize: '13px',
+                                    fontWeight: '500',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                {tag}
+                            </button>
+                        );
+                    })}
                 </div>
 
-                {/* Template grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '20px' }}>
-                    {TEMPLATES.map((tpl) => {
+                <div
+                    style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                        gap: '24px',
+                    }}
+                >
+                    {TEMPLATES.filter((tpl) => activeFilter === 'Tất cả' || tpl.tags.includes(activeFilter)).map((tpl) => {
                         const color = selectedColors[tpl.id];
                         return (
                             <div
                                 key={tpl.id}
-                                style={{ background: 'white', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e5e7eb', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+                                style={{
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    overflow: 'hidden',
+                                    border: '1px solid #e5e7eb',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                                    transition: 'box-shadow 0.2s, transform 0.2s',
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.14)';
+                                    e.currentTarget.style.transform = 'translateY(-2px)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                }}
                             >
-                                {/* Preview thumbnail */}
                                 <div
-                                    style={{ height: '280px', background: '#f9fafb', position: 'relative', overflow: 'hidden', cursor: 'pointer' }}
-                                    onClick={() => setPreview(tpl)}
+                                    style={{ background: '#f0f0f0', overflow: 'hidden', cursor: 'pointer' }}
+                                    onClick={() => setPreview({ tpl, color })}
                                 >
-                                    <div style={{ position: 'absolute', inset: '12px' }}>
-                                        <TemplatePreviewSVG template={tpl} color={color} />
-                                    </div>
-
-                                    {/* Hover overlay */}
-                                    <div className="tpl-overlay" style={{
-                                        position: 'absolute',
-                                        inset: 0,
-                                        background: 'rgba(0,0,0,0)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '8px',
-                                        transition: 'background 0.2s',
-                                    }}>
-                                    </div>
+                                    <Thumbnail Component={tpl.Component} color={color} />
                                 </div>
 
-                                {/* Tags */}
-                                <div style={{ padding: '12px 16px 0' }}>
-                                    <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                                <div style={{ padding: '14px 16px 0' }}>
+                                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
                                         {tpl.tags.map((tag) => (
-                                            <span key={tag} style={{
-                                                padding: '2px 8px',
-                                                background: '#f3f4f6',
-                                                color: '#6b7280',
-                                                borderRadius: '4px',
-                                                fontSize: '11px',
-                                                fontWeight: '500',
-                                            }}>{tag}</span>
+                                            <span
+                                                key={tag}
+                                                style={{
+                                                    padding: '3px 9px',
+                                                    background: '#f0fdf4',
+                                                    color: '#15803d',
+                                                    borderRadius: '4px',
+                                                    fontSize: '11px',
+                                                    fontWeight: '600',
+                                                }}
+                                            >
+                                                {tag}
+                                            </span>
                                         ))}
                                     </div>
-                                    <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginBottom: '12px' }}>
+                                    <div
+                                        style={{
+                                            fontSize: '15px',
+                                            fontWeight: '700',
+                                            color: '#111827',
+                                            marginBottom: '4px',
+                                        }}
+                                    >
                                         {tpl.name}
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>
+                                        {tpl.description}
                                     </div>
                                 </div>
 
-                                {/* Color dots */}
-                                <div style={{ padding: '0 16px 12px', display: 'flex', gap: '6px', alignItems: 'center' }}>
+                                <div
+                                    style={{
+                                        padding: '0 16px 12px',
+                                        display: 'flex',
+                                        gap: '6px',
+                                        alignItems: 'center',
+                                    }}
+                                >
                                     {tpl.colors.map((c) => (
                                         <button
                                             key={c}
                                             onClick={() => setSelectedColors((prev) => ({ ...prev, [tpl.id]: c }))}
                                             style={{
-                                                width: '20px',
-                                                height: '20px',
+                                                width: '22px',
+                                                height: '22px',
                                                 borderRadius: '50%',
                                                 background: c,
                                                 border: color === c ? '2.5px solid #111827' : '2px solid transparent',
                                                 cursor: 'pointer',
                                                 outline: color === c ? '2px solid white' : 'none',
                                                 outlineOffset: '-4px',
+                                                flexShrink: 0,
                                             }}
                                         />
                                     ))}
                                 </div>
 
-                                {/* Actions */}
-                                <div style={{ padding: '0 12px 12px', display: 'flex', gap: '8px' }}>
+                                <div style={{ padding: '0 12px 14px', display: 'flex', gap: '8px' }}>
                                     <button
-                                        onClick={() => setPreview(tpl)}
+                                        onClick={() => setPreview({ tpl, color })}
                                         style={{
                                             flex: 1,
-                                            padding: '8px',
-                                            border: '1px solid #e5e7eb',
+                                            padding: '9px',
+                                            border: '1px solid #d1d5db',
                                             background: 'white',
-                                            borderRadius: '6px',
+                                            borderRadius: '8px',
                                             fontSize: '13px',
                                             color: '#374151',
                                             cursor: 'pointer',
                                             fontWeight: '500',
                                         }}
                                     >
-                                        Xem truoc
+                                        Xem trước
                                     </button>
                                     <button
                                         onClick={() => handleUseTemplate(tpl.id, color)}
                                         disabled={creating}
                                         style={{
                                             flex: 1,
-                                            padding: '8px',
+                                            padding: '9px',
                                             border: 'none',
                                             background: '#00b14f',
-                                            borderRadius: '6px',
+                                            borderRadius: '8px',
                                             fontSize: '13px',
                                             color: 'white',
                                             cursor: creating ? 'not-allowed' : 'pointer',
                                             fontWeight: '600',
                                         }}
                                     >
-                                        Dung mau nay
+                                        Dùng mẫu này
                                     </button>
                                 </div>
                             </div>
@@ -393,17 +400,145 @@ export default function TaoCvPage() {
                 </div>
             </div>
 
+            {/* Preview modal */}
             {preview && (
-                <PreviewModal
-                    template={preview}
-                    selectedColor={selectedColors[preview.id]}
-                    onColorChange={(c) => setSelectedColors((prev) => ({ ...prev, [preview.id]: c }))}
-                    onUse={() => {
-                        setPreview(null);
-                        handleUseTemplate(preview.id, selectedColors[preview.id]);
+                <div
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        background: 'rgba(0,0,0,0.7)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        justifyContent: 'center',
+                        padding: '32px 16px',
+                        overflowY: 'auto',
                     }}
-                    onClose={() => setPreview(null)}
-                />
+                    onClick={() => setPreview(null)}
+                >
+                    <div
+                        style={{
+                            display: 'flex',
+                            gap: '24px',
+                            alignItems: 'flex-start',
+                            maxWidth: '1000px',
+                            width: '100%',
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* CV preview */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <div
+                                style={{
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                                    width: `${MODAL_W}px`,
+                                }}
+                            >
+                                <div style={{ width: `${MODAL_W}px`, height: `${MODAL_H}px`, overflow: 'hidden' }}>
+                                    <div
+                                        style={{
+                                            width: `${A4_W}px`,
+                                            transform: `scale(${MODAL_SCALE})`,
+                                            transformOrigin: 'top left',
+                                            pointerEvents: 'none',
+                                            userSelect: 'none',
+                                        }}
+                                    >
+                                        <preview.tpl.Component content={SAMPLE_CONTENT} color={preview.color} />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Side panel */}
+                        <div
+                            style={{
+                                width: '260px',
+                                flexShrink: 0,
+                                background: 'white',
+                                borderRadius: '12px',
+                                padding: '24px',
+                                boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+                            }}
+                        >
+                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
+                                {preview.tpl.name}
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '20px' }}>
+                                {preview.tpl.description}
+                            </div>
+
+                            <div
+                                style={{
+                                    fontSize: '11px',
+                                    fontWeight: '700',
+                                    color: '#6b7280',
+                                    marginBottom: '10px',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.5px',
+                                }}
+                            >
+                                Màu sắc
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                                {preview.tpl.colors.map((c) => (
+                                    <button
+                                        key={c}
+                                        onClick={() => setPreview((p) => ({ ...p, color: c }))}
+                                        style={{
+                                            width: '28px',
+                                            height: '28px',
+                                            borderRadius: '50%',
+                                            background: c,
+                                            border: preview.color === c ? '3px solid #111827' : '2px solid transparent',
+                                            cursor: 'pointer',
+                                            outline: preview.color === c ? '2px solid white' : 'none',
+                                            outlineOffset: '-4px',
+                                        }}
+                                    />
+                                ))}
+                            </div>
+
+                            <button
+                                onClick={() => {
+                                    handleUseTemplate(preview.tpl.id, preview.color);
+                                    setPreview(null);
+                                }}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px',
+                                    background: '#00b14f',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    fontSize: '14px',
+                                    fontWeight: '700',
+                                    cursor: 'pointer',
+                                    marginBottom: '10px',
+                                }}
+                            >
+                                Dùng mẫu này
+                            </button>
+                            <button
+                                onClick={() => setPreview(null)}
+                                style={{
+                                    width: '100%',
+                                    padding: '10px',
+                                    background: 'white',
+                                    border: '1px solid #d1d5db',
+                                    borderRadius: '8px',
+                                    color: '#374151',
+                                    fontSize: '14px',
+                                    cursor: 'pointer',
+                                }}
+                            >
+                                Quay lại
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

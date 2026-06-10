@@ -15,7 +15,7 @@ const PROVINCE_API_V2 = 'https://provinces.open-api.vn/api/v2';
 
 const QUICK_CHIPS = [
     'Nhân viên kinh doanh',
-    'Nhan vien ky thuat han dien tu',
+    'Nhân viên kỹ thuật hàn điện tử',
     'Nhân viên kỹ thuật hàn',
     'Thực tập sinh software',
     'Nhân viên livestream',

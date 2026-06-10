@@ -1,5 +1,5 @@
-import Image from 'next/image';
-import { Mail, Phone, MapPin, Globe, Linkedin, Github } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import { FaLinkedin, FaGithub } from 'react-icons/fa';
 
 function Section({ title, color, children }) {
     return (
@@ -13,10 +13,10 @@ function Section({ title, color, children }) {
     );
 }
 
-function SkillBar({ name, level, color }) {
+function SkillBar({ name, level }) {
     return (
         <div style={{ marginBottom: '8px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+            <div style={{ marginBottom: '3px' }}>
                 <span style={{ fontSize: '11px', color: 'white' }}>{name}</span>
             </div>
             <div style={{ height: '4px', background: 'rgba(255,255,255,0.25)', borderRadius: '2px' }}>
@@ -26,7 +26,7 @@ function SkillBar({ name, level, color }) {
     );
 }
 
-export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fontSize = 'medium' }) {
+export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fontSize = 'medium', background = 'white' }) {
     const {
         personalInfo = {},
         objective = '',
@@ -41,7 +41,7 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
     const baseFontSize = fontSize === 'small' ? 11 : fontSize === 'large' ? 13 : 12;
 
     return (
-        <div style={{ display: 'flex', minHeight: '100%', fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.55' }}>
+        <div style={{ display: 'flex', minHeight: '100%', fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.55', background }}>
             {/* LEFT SIDEBAR */}
             <div style={{ width: '200px', flexShrink: 0, background: color, padding: '24px 16px', color: 'white' }}>
                 {/* Avatar */}
@@ -62,7 +62,7 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                 {/* Contact */}
                 {(personalInfo.phone || personalInfo.email || personalInfo.address) && (
                     <div style={{ marginBottom: '16px' }}>
-                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7, marginBottom: '8px' }}>Lien he</div>
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7, marginBottom: '8px' }}>Liên hệ</div>
                         {personalInfo.phone && (
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', marginBottom: '5px', fontSize: '11px' }}>
                                 <Phone size={11} style={{ marginTop: '1px', flexShrink: 0 }} />
@@ -83,13 +83,13 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                         )}
                         {personalInfo.linkedin && (
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', marginBottom: '5px', fontSize: '11px', wordBreak: 'break-all' }}>
-                                <Linkedin size={11} style={{ marginTop: '1px', flexShrink: 0 }} />
+                                <FaLinkedin style={{ marginTop: '2px', flexShrink: 0 }} />
                                 <span>{personalInfo.linkedin}</span>
                             </div>
                         )}
                         {personalInfo.github && (
                             <div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', marginBottom: '5px', fontSize: '11px', wordBreak: 'break-all' }}>
-                                <Github size={11} style={{ marginTop: '1px', flexShrink: 0 }} />
+                                <FaGithub style={{ marginTop: '2px', flexShrink: 0 }} />
                                 <span>{personalInfo.github}</span>
                             </div>
                         )}
@@ -99,9 +99,9 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                 {/* Skills */}
                 {skills.length > 0 && (
                     <div style={{ marginBottom: '16px' }}>
-                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7, marginBottom: '8px' }}>Ky nang</div>
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7, marginBottom: '8px' }}>Kỹ năng</div>
                         {skills.map((s, i) => (
-                            <SkillBar key={s.id || i} name={s.name} level={s.level || 3} color={color} />
+                            <SkillBar key={s.id || i} name={s.name} level={s.level || 3} />
                         ))}
                     </div>
                 )}
@@ -109,7 +109,7 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                 {/* Languages */}
                 {languages.length > 0 && (
                     <div>
-                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7, marginBottom: '8px' }}>Ngon ngu</div>
+                        <div style={{ fontSize: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.7, marginBottom: '8px' }}>Ngôn ngữ</div>
                         {languages.map((l, i) => (
                             <div key={l.id || i} style={{ fontSize: '11px', marginBottom: '4px' }}>
                                 <span>{l.name}</span>
@@ -125,7 +125,7 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                 {/* Name & Title */}
                 <div style={{ marginBottom: '20px', borderBottom: `2px solid ${color}`, paddingBottom: '14px' }}>
                     <h1 style={{ fontSize: `${baseFontSize + 8}px`, fontWeight: '800', color: color, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                        {personalInfo.fullName || 'Ho va Ten'}
+                        {personalInfo.fullName || 'Họ và Tên'}
                     </h1>
                     {personalInfo.title && (
                         <div style={{ fontSize: `${baseFontSize + 1}px`, color: '#374151', fontWeight: '500' }}>
@@ -134,16 +134,14 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                     )}
                 </div>
 
-                {/* Objective */}
                 {objective && (
-                    <Section title="Muc tieu nghe nghiep" color={color}>
+                    <Section title="Mục tiêu nghề nghiệp" color={color}>
                         <p style={{ color: '#374151', margin: 0, fontSize: `${baseFontSize}px` }}>{objective}</p>
                     </Section>
                 )}
 
-                {/* Experience */}
                 {experiences.length > 0 && (
-                    <Section title="Kinh nghiem lam viec" color={color}>
+                    <Section title="Kinh nghiệm làm việc" color={color}>
                         {experiences.map((exp, i) => (
                             <div key={exp.id || i} style={{ marginBottom: '14px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -152,7 +150,7 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                                         <div style={{ color: color, fontWeight: '600', fontSize: `${baseFontSize}px` }}>{exp.company}</div>
                                     </div>
                                     <div style={{ fontSize: '10px', color: '#9ca3af', flexShrink: 0, marginLeft: '8px' }}>
-                                        {exp.startDate} - {exp.isCurrent ? 'Hien tai' : exp.endDate}
+                                        {exp.startDate} - {exp.isCurrent ? 'Hiện tại' : exp.endDate}
                                     </div>
                                 </div>
                                 {exp.description && (
@@ -165,9 +163,8 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                     </Section>
                 )}
 
-                {/* Education */}
                 {education.length > 0 && (
-                    <Section title="Hoc van" color={color}>
+                    <Section title="Học vấn" color={color}>
                         {education.map((edu, i) => (
                             <div key={edu.id || i} style={{ marginBottom: '12px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -185,9 +182,8 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                     </Section>
                 )}
 
-                {/* Certifications */}
                 {certifications.length > 0 && (
-                    <Section title="Chung chi" color={color}>
+                    <Section title="Chứng chỉ" color={color}>
                         {certifications.map((cert, i) => (
                             <div key={cert.id || i} style={{ marginBottom: '6px', fontSize: `${baseFontSize - 1}px`, color: '#374151' }}>
                                 <span style={{ fontWeight: '600' }}>{cert.name}</span>
@@ -198,9 +194,8 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
                     </Section>
                 )}
 
-                {/* Activities */}
                 {activities.length > 0 && (
-                    <Section title="Hoat dong ngoai khoa" color={color}>
+                    <Section title="Hoạt động ngoại khóa" color={color}>
                         {activities.map((act, i) => (
                             <div key={act.id || i} style={{ marginBottom: '10px' }}>
                                 <div style={{ fontWeight: '700', color: '#111827', fontSize: `${baseFontSize}px` }}>{act.role}</div>

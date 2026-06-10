@@ -1,4 +1,5 @@
-import { Mail, Phone, MapPin, Linkedin, Github } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import { FaLinkedin, FaGithub } from 'react-icons/fa';
 
 function Section({ title, color, children }) {
     return (
@@ -11,7 +12,7 @@ function Section({ title, color, children }) {
     );
 }
 
-export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f', fontSize = 'medium' }) {
+export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f', fontSize = 'medium', background = 'white' }) {
     const {
         personalInfo = {},
         objective = '',
@@ -26,18 +27,17 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
     const baseFontSize = fontSize === 'small' ? 11 : fontSize === 'large' ? 13 : 12;
 
     return (
-        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.6', background: 'white', minHeight: '100%' }}>
+        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.6', background, minHeight: '100%' }}>
             {/* Header */}
             <div style={{ background: color, color: 'white', padding: '28px 28px 20px' }}>
                 <h1 style={{ margin: '0 0 4px', fontSize: `${baseFontSize + 10}px`, fontWeight: '800', letterSpacing: '1px' }}>
-                    {personalInfo.fullName || 'Ho va Ten'}
+                    {personalInfo.fullName || 'Họ và Tên'}
                 </h1>
                 {personalInfo.title && (
                     <div style={{ fontSize: `${baseFontSize + 2}px`, opacity: 0.9, fontWeight: '500', marginBottom: '12px' }}>
                         {personalInfo.title}
                     </div>
                 )}
-                {/* Contact row */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '11px', opacity: 0.9 }}>
                     {personalInfo.phone && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -56,12 +56,12 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
                     )}
                     {personalInfo.linkedin && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Linkedin size={10} /> {personalInfo.linkedin}
+                            <FaLinkedin style={{ flexShrink: 0 }} /> {personalInfo.linkedin}
                         </span>
                     )}
                     {personalInfo.github && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                            <Github size={10} /> {personalInfo.github}
+                            <FaGithub style={{ flexShrink: 0 }} /> {personalInfo.github}
                         </span>
                     )}
                 </div>
@@ -69,16 +69,14 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
 
             {/* Body */}
             <div style={{ padding: '24px 28px' }}>
-                {/* Objective */}
                 {objective && (
-                    <Section title="Muc tieu nghe nghiep" color={color}>
+                    <Section title="Mục tiêu nghề nghiệp" color={color}>
                         <p style={{ color: '#374151', margin: 0, fontSize: `${baseFontSize}px` }}>{objective}</p>
                     </Section>
                 )}
 
-                {/* Education first — this template targets fresh graduates */}
                 {education.length > 0 && (
-                    <Section title="Hoc van" color={color}>
+                    <Section title="Học vấn" color={color}>
                         {education.map((edu, i) => (
                             <div key={edu.id || i} style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div>
@@ -95,9 +93,8 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
                     </Section>
                 )}
 
-                {/* Skills */}
                 {skills.length > 0 && (
-                    <Section title="Ky nang" color={color}>
+                    <Section title="Kỹ năng" color={color}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                             {skills.map((s, i) => (
                                 <span
@@ -119,9 +116,8 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
                     </Section>
                 )}
 
-                {/* Experience (internship/part-time) */}
                 {experiences.length > 0 && (
-                    <Section title="Kinh nghiem lam viec" color={color}>
+                    <Section title="Kinh nghiệm làm việc" color={color}>
                         {experiences.map((exp, i) => (
                             <div key={exp.id || i} style={{ marginBottom: '14px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -130,7 +126,7 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
                                         <div style={{ color: color, fontWeight: '600' }}>{exp.company}</div>
                                     </div>
                                     <div style={{ fontSize: '10px', color: '#9ca3af', flexShrink: 0, marginLeft: '8px' }}>
-                                        {exp.startDate} - {exp.isCurrent ? 'Hien tai' : exp.endDate}
+                                        {exp.startDate} - {exp.isCurrent ? 'Hiện tại' : exp.endDate}
                                     </div>
                                 </div>
                                 {exp.description && (
@@ -143,9 +139,8 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
                     </Section>
                 )}
 
-                {/* Activities */}
                 {activities.length > 0 && (
-                    <Section title="Hoat dong ngoai khoa" color={color}>
+                    <Section title="Hoạt động ngoại khóa" color={color}>
                         {activities.map((act, i) => (
                             <div key={act.id || i} style={{ marginBottom: '10px' }}>
                                 <div style={{ fontWeight: '700', color: '#111827' }}>{act.role}</div>
@@ -156,11 +151,10 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
                     </Section>
                 )}
 
-                {/* Languages + Certifications in 2 col */}
                 {(languages.length > 0 || certifications.length > 0) && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                         {languages.length > 0 && (
-                            <Section title="Ngon ngu" color={color}>
+                            <Section title="Ngôn ngữ" color={color}>
                                 {languages.map((l, i) => (
                                     <div key={l.id || i} style={{ marginBottom: '4px', fontSize: `${baseFontSize - 1}px`, color: '#374151' }}>
                                         <span style={{ fontWeight: '600' }}>{l.name}</span>
@@ -170,7 +164,7 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
                             </Section>
                         )}
                         {certifications.length > 0 && (
-                            <Section title="Chung chi" color={color}>
+                            <Section title="Chứng chỉ" color={color}>
                                 {certifications.map((cert, i) => (
                                     <div key={cert.id || i} style={{ marginBottom: '6px', fontSize: `${baseFontSize - 1}px`, color: '#374151' }}>
                                         <div style={{ fontWeight: '600' }}>{cert.name}</div>

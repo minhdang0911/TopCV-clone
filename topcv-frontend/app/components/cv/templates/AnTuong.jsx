@@ -1,4 +1,5 @@
-import { Mail, Phone, MapPin, Linkedin, Github } from 'lucide-react';
+import { Mail, Phone, MapPin } from 'lucide-react';
+import { FaLinkedin, FaGithub } from 'react-icons/fa';
 
 function Section({ title, color, children }) {
     return (
@@ -13,7 +14,7 @@ function Section({ title, color, children }) {
     );
 }
 
-export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontSize = 'medium' }) {
+export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontSize = 'medium', background = 'white' }) {
     const {
         personalInfo = {},
         objective = '',
@@ -28,7 +29,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
     const baseFontSize = fontSize === 'small' ? 11 : fontSize === 'large' ? 13 : 12;
 
     return (
-        <div style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.6', background: 'white', minHeight: '100%' }}>
+        <div style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.6', background, minHeight: '100%' }}>
             {/* Dark header */}
             <div style={{ background: color, color: 'white', padding: '32px 28px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
@@ -46,7 +47,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                     )}
                     <div>
                         <h1 style={{ margin: '0 0 4px', fontSize: `${baseFontSize + 10}px`, fontWeight: '800', letterSpacing: '0.5px' }}>
-                            {personalInfo.fullName || 'Ho va Ten'}
+                            {personalInfo.fullName || 'Họ và Tên'}
                         </h1>
                         {personalInfo.title && (
                             <div style={{ fontSize: `${baseFontSize + 2}px`, opacity: 0.8, fontWeight: '400', letterSpacing: '0.5px' }}>
@@ -75,12 +76,12 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                     )}
                     {personalInfo.linkedin && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <Linkedin size={11} /> {personalInfo.linkedin}
+                            <FaLinkedin style={{ flexShrink: 0 }} /> {personalInfo.linkedin}
                         </span>
                     )}
                     {personalInfo.github && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            <Github size={11} /> {personalInfo.github}
+                            <FaGithub style={{ flexShrink: 0 }} /> {personalInfo.github}
                         </span>
                     )}
                 </div>
@@ -91,19 +92,19 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                 {/* Main column */}
                 <div style={{ flex: 1, padding: '24px 24px 24px 28px', borderRight: '1px solid #f3f4f6' }}>
                     {objective && (
-                        <Section title="Gioi thieu ban than" color={color}>
+                        <Section title="Giới thiệu bản thân" color={color}>
                             <p style={{ color: '#374151', margin: 0 }}>{objective}</p>
                         </Section>
                     )}
 
                     {experiences.length > 0 && (
-                        <Section title="Kinh nghiem" color={color}>
+                        <Section title="Kinh nghiệm" color={color}>
                             {experiences.map((exp, i) => (
                                 <div key={exp.id || i} style={{ marginBottom: '16px', paddingLeft: '12px', borderLeft: `2px solid ${color}30` }}>
                                     <div style={{ fontWeight: '700', color: '#111827', fontSize: `${baseFontSize + 1}px` }}>{exp.position}</div>
                                     <div style={{ color: color, fontWeight: '600', fontSize: `${baseFontSize}px` }}>{exp.company}</div>
                                     <div style={{ fontSize: '10px', color: '#9ca3af', margin: '2px 0 6px' }}>
-                                        {exp.startDate} - {exp.isCurrent ? 'Hien tai' : exp.endDate}
+                                        {exp.startDate} - {exp.isCurrent ? 'Hiện tại' : exp.endDate}
                                     </div>
                                     {exp.description && (
                                         <p style={{ color: '#4b5563', margin: 0, fontSize: `${baseFontSize - 1}px`, whiteSpace: 'pre-wrap' }}>
@@ -116,7 +117,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                     )}
 
                     {activities.length > 0 && (
-                        <Section title="Hoat dong" color={color}>
+                        <Section title="Hoạt động" color={color}>
                             {activities.map((act, i) => (
                                 <div key={act.id || i} style={{ marginBottom: '12px', paddingLeft: '12px', borderLeft: `2px solid ${color}30` }}>
                                     <div style={{ fontWeight: '700', color: '#111827' }}>{act.role}</div>
@@ -131,7 +132,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                 {/* Side column */}
                 <div style={{ width: '190px', flexShrink: 0, padding: '24px 16px 24px 20px' }}>
                     {education.length > 0 && (
-                        <Section title="Hoc van" color={color}>
+                        <Section title="Học vấn" color={color}>
                             {education.map((edu, i) => (
                                 <div key={edu.id || i} style={{ marginBottom: '12px' }}>
                                     <div style={{ fontWeight: '700', color: '#111827', fontSize: `${baseFontSize}px` }}>{edu.school}</div>
@@ -144,7 +145,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                     )}
 
                     {skills.length > 0 && (
-                        <Section title="Ky nang" color={color}>
+                        <Section title="Kỹ năng" color={color}>
                             {skills.map((s, i) => (
                                 <div key={s.id || i} style={{ marginBottom: '8px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px', fontSize: '11px', color: '#374151', fontWeight: '500' }}>
@@ -159,7 +160,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                     )}
 
                     {languages.length > 0 && (
-                        <Section title="Ngon ngu" color={color}>
+                        <Section title="Ngôn ngữ" color={color}>
                             {languages.map((l, i) => (
                                 <div key={l.id || i} style={{ marginBottom: '4px', fontSize: '11px', color: '#374151' }}>
                                     <span style={{ fontWeight: '600' }}>{l.name}</span>
@@ -170,7 +171,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
                     )}
 
                     {certifications.length > 0 && (
-                        <Section title="Chung chi" color={color}>
+                        <Section title="Chứng chỉ" color={color}>
                             {certifications.map((cert, i) => (
                                 <div key={cert.id || i} style={{ marginBottom: '8px', fontSize: '11px' }}>
                                     <div style={{ fontWeight: '600', color: '#111827' }}>{cert.name}</div>

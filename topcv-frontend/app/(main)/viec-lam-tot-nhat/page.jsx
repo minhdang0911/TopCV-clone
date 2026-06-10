@@ -174,7 +174,7 @@ function JobCard({ job }) {
                         </span>
                     )}
                     <Link
-                        href={`/viec-lam/${job.id}`}
+                        href={`/viec-lam/${job.slug || job.id}`}
                         style={{
                             fontSize: '15px',
                             fontWeight: '600',
@@ -287,7 +287,7 @@ function JobCard({ job }) {
                         <Bookmark size={15} fill={saved ? GREEN : 'none'} />
                     </button>
                     <Link
-                        href={`/viec-lam/${job.id}`}
+                        href={`/viec-lam/${job.slug || job.id}`}
                         style={{
                             padding: '8px 20px',
                             borderRadius: '4px',

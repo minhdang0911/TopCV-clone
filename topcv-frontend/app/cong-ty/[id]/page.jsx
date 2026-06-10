@@ -390,7 +390,7 @@ function ShareCard({ company }) {
 /* ── Job card ── */
 function JobCard({ job, company }) {
     return (
-        <Link href={`/viec-lam/${job.id}`} style={{ textDecoration: 'none' }}>
+        <Link href={`/viec-lam/${job.slug || job.id}`} style={{ textDecoration: 'none' }}>
             <div
                 style={{
                     border: '1px solid #e8e8e8',

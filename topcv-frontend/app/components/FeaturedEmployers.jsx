@@ -189,8 +189,11 @@ export default function FeaturedEmployers() {
               @media(max-width:768px){
                 .feat-emp-grid{grid-template-columns:1fr!important;}
                 .feat-emp-featured{min-height:180px!important;padding:20px!important;}
-                .feat-emp-inner-grid{grid-template-rows:auto!important;}
+                .feat-emp-inner-grid{grid-template-columns:1fr 1fr!important;grid-template-rows:auto!important;}
                 .feat-emp-filler{display:none!important;}
+              }
+              @media(max-width:480px){
+                .feat-emp-inner-grid{grid-template-columns:1fr!important;}
               }
             `}</style>
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
@@ -208,6 +211,7 @@ export default function FeaturedEmployers() {
                 {/* ── Industry tabs ── */}
                 <div
                     ref={tabsRef}
+                    className="feat-tabs"
                     style={{
                         display: 'flex', gap: '8px', overflowX: 'auto', marginBottom: '16px',
                         scrollbarWidth: 'none', paddingBottom: '4px',

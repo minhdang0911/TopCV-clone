@@ -51,8 +51,16 @@ function timeAgo(dateStr: string) {
     return `${Math.floor(days / 30)} tháng trước`;
 }
 
+function checkDeadlineSoon(deadline: string | undefined): boolean {
+    if (!deadline) return false;
+    const now = Date.now();
+    const dl = new Date(deadline).getTime();
+    return dl - now < 3 * 86400000 && dl > now;
+}
+
 interface Job {
     id: string;
+    slug?: string | null;
     title: string;
     salaryMin?: number | null;
     salaryMax?: number | null;
@@ -86,10 +94,7 @@ export default function JobCard({ job, featured, suggested }: JobCardProps) {
         ? `${job.districtName}, ${job.provinceName}`
         : job.provinceName || job.employer.address || 'Chưa cập nhật';
 
-    const isDeadlineSoon =
-        job.deadline &&
-        new Date(job.deadline).getTime() - Date.now() < 3 * 86400000 &&
-        new Date(job.deadline).getTime() > Date.now();
+    const isDeadlineSoon = checkDeadlineSoon(job.deadline);
 
     const isNegotiable = job.salaryType === 'negotiable' || (!job.salaryMin && !job.salaryMax);
 
@@ -137,7 +142,7 @@ export default function JobCard({ job, featured, suggested }: JobCardProps) {
             )}
 
             {/* Logo */}
-            <Link href={`/viec-lam/${job.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
+            <Link href={`/viec-lam/${job.slug || job.id}`} style={{ textDecoration: 'none', flexShrink: 0 }}>
                 <div
                     style={{
                         width: '60px',
@@ -173,7 +178,7 @@ export default function JobCard({ job, featured, suggested }: JobCardProps) {
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <Link
-                            href={`/viec-lam/${job.id}`}
+                            href={`/viec-lam/${job.slug || job.id}`}
                             style={{
                                 fontSize: '14px',
                                 fontWeight: '700',

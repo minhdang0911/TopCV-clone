@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { PLAN_LIMITS } from '../common/plan-limits';
 
 const DEFAULT_CONTENT = {
   personalInfo: {
@@ -50,6 +51,16 @@ export class ResumesService {
     return resume;
   }
 
+  private async getUserPlan(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { plan: true, planExpiresAt: true } });
+    if (!user) return 'FREE';
+    if (user.plan !== 'FREE' && user.planExpiresAt && user.planExpiresAt < new Date()) {
+      await this.prisma.user.update({ where: { id: userId }, data: { plan: 'FREE', planExpiresAt: null } });
+      return 'FREE';
+    }
+    return user.plan ?? 'FREE';
+  }
+
   async create(
     userId: string,
     data: {
@@ -62,6 +73,13 @@ export class ResumesService {
       content?: any;
     },
   ) {
+    const plan = await this.getUserPlan(userId);
+    const limit = PLAN_LIMITS[plan]?.cv ?? 6;
+    const count = await this.prisma.resume.count({ where: { userId, type: 'resume' } });
+    if (count >= limit) {
+      throw new ForbiddenException(`Bạn đã đạt giới hạn ${limit} CV. Nâng cấp tài khoản để tạo thêm.`);
+    }
+
     return this.prisma.resume.create({
       data: {
         userId,

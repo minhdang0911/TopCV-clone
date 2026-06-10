@@ -21,7 +21,7 @@ function JobCard({ job }) {
 
     return (
         <div
-            onClick={() => router.push(`/viec-lam/${job.id}`)}
+            onClick={() => router.push(`/viec-lam/${job.slug || job.id}`)}
             style={{
                 background: 'white',
                 border: '1px solid #e5e7eb',

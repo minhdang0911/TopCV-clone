@@ -85,6 +85,21 @@ export class UploadController {
     return { data: { url } };
   }
 
+  @Post('cover-letter-avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  async uploadCoverLetterAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    const userId = req.user.sub;
+    const me = await this.usersService.getMe(userId);
+    const fullName = me?.candidateProfile?.fullName || userId;
+    const folder = `topcv-clone/${slugify(fullName)}/cover-letter-avatars`;
+    const url = await this.uploadService.uploadImage(file, folder, 'cl-avatar');
+    return { data: { url } };
+  }
+
   @Post('logo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', { storage: undefined }))

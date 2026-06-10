@@ -11,6 +11,8 @@ import { AuditLogsModule } from './audit-logs/audit-logs.module';
 import { JobsModule } from './jobs/jobs.module';
 import { EmployersModule } from './employers/employers.module';
 import { ResumesModule } from './resumes/resumes.module';
+import { CoverLettersModule } from './cover-letters/cover-letters.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { ResumesModule } from './resumes/resumes.module';
     JobsModule,
     EmployersModule,
     ResumesModule,
+    CoverLettersModule,
+    PaymentsModule,
   ],
 })
 export class AppModule {}

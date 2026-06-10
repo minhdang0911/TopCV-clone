@@ -19,6 +19,34 @@ import { jobService } from '@/services/job.service';
 import { provinceService } from '@/services/province.service';
 import api from '@/lib/axios';
 
+type Job = {
+    id: string;
+    title: string;
+    slug: string;
+    salaryMin: number;
+    salaryMax: number;
+    salaryType: string;
+    districtName?: string;
+    provinceName?: string;
+    address?: string;
+    isHot?: boolean;
+    featured?: boolean;
+    isPremium?: boolean;
+    isTop?: boolean;
+    isPro?: boolean;
+    isOutstanding?: boolean;
+    isNoBat?: boolean;
+    createdAt: string;
+    employer: { companyName: string; logoUrl?: string; slug?: string };
+};
+
+type Province = { code: string; name: string };
+type District = { code: string; name: string };
+type Industry = { id: string | number; name: string };
+type SelectOption = { label: string; value: string };
+type FilterOption = { label: string; value: string; code?: string; name?: string; min?: number; max?: number; salaryType?: string };
+type JobParams = { page: number; limit: number; provinceCode?: string; districtCode?: string; salaryMin?: number; salaryMax?: number; salaryType?: string; experience?: string; industryId?: string };
+
 const GREEN = '#00b14f';
 
 const HCM_PROVINCE_CODE = '79';
@@ -67,7 +95,7 @@ const formatSalary = (min: number, max: number, type: string) => {
 const isNew = (dateStr: string) => Date.now() - new Date(dateStr).getTime() < 7 * 86400000;
 
 /* ─── JobCard ─── */
-function JobCard({ job }: { job: any }) {
+function JobCard({ job }: { job: Job }) {
     const [saved, setSaved] = useState(false);
     const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryType);
     const location = job.districtName
@@ -208,7 +236,7 @@ function JobCard({ job }: { job: any }) {
                     </div>
 
                     <Link
-                        href={`/viec-lam/${job.id}`}
+                        href={`/viec-lam/${job.slug || job.id}`}
                         style={{
                             fontSize: '14px',
                             fontWeight: '600',
@@ -310,6 +338,17 @@ function JobCard({ job }: { job: any }) {
     );
 }
 
+type FilterBarProps = {
+    filterType: string;
+    setFilterType: (type: string) => void;
+    filters: Filters;
+    setFilters: (updater: ((f: Filters) => Filters) | Filters) => void;
+    industries: Industry[];
+    provinces: Province[];
+    districts: District[];
+    loadingDistricts: boolean;
+};
+
 /* ─── FilterBar ─── */
 function FilterBar({
     filterType,
@@ -320,7 +359,7 @@ function FilterBar({
     provinces,
     districts,
     loadingDistricts,
-}: any) {
+}: FilterBarProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
@@ -365,7 +404,7 @@ function FilterBar({
             if (filters.provinceCode && districts.length > 0) {
                 return [
                     { label: 'Tất cả', value: '__all_district__' },
-                    ...districts.map((d: any) => ({
+                    ...districts.map((d: District) => ({
                         label: d.name,
                         value: String(d.code),
                         code: d.code,
@@ -375,7 +414,7 @@ function FilterBar({
             }
             return [
                 { label: 'Tất cả', value: '__all_province__' },
-                ...provinces.map((p: any) => ({
+                ...provinces.map((p: Province) => ({
                     label: p.name,
                     value: String(p.code),
                     code: p.code,
@@ -388,7 +427,7 @@ function FilterBar({
         if (filterType === 'industry')
             return [
                 { label: 'Tất cả', value: '' },
-                ...industries.map((i: any) => ({ label: i.name, value: String(i.id) })),
+                ...industries.map((i: Industry) => ({ label: i.name, value: String(i.id) })),
             ];
         return [];
     })();
@@ -401,10 +440,10 @@ function FilterBar({
         return '';
     })();
 
-    const handleSelect = (opt: any) => {
+    const handleSelect = (opt: FilterOption) => {
         if (filterType === 'location') {
             if (opt.value === '__all_province__') {
-                setFilters((f: any) => ({
+                setFilters((f: Filters) => ({
                     ...f,
                     provinceCode: '',
                     provinceName: '',
@@ -412,21 +451,21 @@ function FilterBar({
                     districtName: '',
                 }));
             } else if (opt.value === '__all_district__') {
-                setFilters((f: any) => ({ ...f, districtCode: '', districtName: '' }));
+                setFilters((f: Filters) => ({ ...f, districtCode: '', districtName: '' }));
             } else if (!filters.provinceCode) {
-                setFilters((f: any) => ({
+                setFilters((f: Filters) => ({
                     ...f,
                     provinceCode: String(opt.code),
-                    provinceName: opt.name,
+                    provinceName: opt.name ?? '',
                     districtCode: '',
                     districtName: '',
                 }));
             } else {
-                setFilters((f: any) => ({ ...f, districtCode: String(opt.code), districtName: opt.name }));
+                setFilters((f: Filters) => ({ ...f, districtCode: String(opt.code), districtName: opt.name ?? '' }));
             }
         } else if (filterType === 'salary') {
             if (!opt.value) {
-                setFilters((f: any) => ({
+                setFilters((f: Filters) => ({
                     ...f,
                     salary: '',
                     salaryMin: undefined,
@@ -434,15 +473,15 @@ function FilterBar({
                     salaryType: '',
                 }));
             } else if (opt.salaryType) {
-                setFilters((f: any) => ({
+                setFilters((f: Filters) => ({
                     ...f,
                     salary: opt.value,
                     salaryMin: undefined,
                     salaryMax: undefined,
-                    salaryType: opt.salaryType,
+                    salaryType: opt.salaryType ?? '',
                 }));
             } else {
-                setFilters((f: any) => ({
+                setFilters((f: Filters) => ({
                     ...f,
                     salary: opt.value,
                     salaryMin: opt.min,
@@ -451,9 +490,9 @@ function FilterBar({
                 }));
             }
         } else if (filterType === 'experience') {
-            setFilters((f: any) => ({ ...f, experience: opt.value }));
+            setFilters((f: Filters) => ({ ...f, experience: opt.value }));
         } else if (filterType === 'industry') {
-            setFilters((f: any) => ({ ...f, industryId: opt.value }));
+            setFilters((f: Filters) => ({ ...f, industryId: opt.value }));
         }
     };
 
@@ -600,7 +639,7 @@ function FilterBar({
                         {loadingDistricts ? (
                             <span style={{ fontSize: '13px', color: '#9ca3af', padding: '6px 14px' }}>Đang tải...</span>
                         ) : (
-                            options.map((opt: any) => {
+                            options.map((opt) => {
                                 const isActive = activeValue === opt.value;
                                 return (
                                     <button
@@ -662,7 +701,7 @@ function FilterBar({
                                         : filters.provinceName
                                 }
                                 onRemove={() =>
-                                    setFilters((f: any) => ({
+                                    setFilters((f: Filters) => ({
                                         ...f,
                                         provinceCode: '',
                                         provinceName: '',
@@ -676,7 +715,7 @@ function FilterBar({
                             <ActiveTag
                                 label={SALARY_OPTIONS.find((s) => s.value === filters.salary)?.label}
                                 onRemove={() =>
-                                    setFilters((f: any) => ({
+                                    setFilters((f: Filters) => ({
                                         ...f,
                                         salary: '',
                                         salaryMin: undefined,
@@ -689,13 +728,13 @@ function FilterBar({
                         {filters.experience && (
                             <ActiveTag
                                 label={EXPERIENCE_OPTIONS.find((e) => e.value === filters.experience)?.label}
-                                onRemove={() => setFilters((f: any) => ({ ...f, experience: '' }))}
+                                onRemove={() => setFilters((f: Filters) => ({ ...f, experience: '' }))}
                             />
                         )}
                         {filters.industryId && (
                             <ActiveTag
-                                label={industries.find((i: any) => String(i.id) === filters.industryId)?.name}
-                                onRemove={() => setFilters((f: any) => ({ ...f, industryId: '' }))}
+                                label={industries.find((i: Industry) => String(i.id) === filters.industryId)?.name}
+                                onRemove={() => setFilters((f: Filters) => ({ ...f, industryId: '' }))}
                             />
                         )}
                     </div>
@@ -852,6 +891,19 @@ interface BestJobsSectionProps {
     limit?: number;
 }
 
+type Filters = {
+    provinceCode: string;
+    provinceName: string;
+    districtCode: string;
+    districtName: string;
+    salary: string;
+    salaryMin: number | undefined;
+    salaryMax: number | undefined;
+    salaryType: string;
+    experience: string;
+    industryId: string;
+};
+
 /* ══════════════════════════════════════════
    MAIN COMPONENT
 ══════════════════════════════════════════ */
@@ -863,7 +915,7 @@ export default function BestJobsSection({
     const searchParams = useSearchParams();
     const initialIndustryId = searchParams.get('industryId') || '';
 
-    const [jobs, setJobs] = useState<any[]>([]);
+    const [jobs, setJobs] = useState<Job[]>([]);
     const [loading, setLoading] = useState(true);
     const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
     const [page, setPage] = useState(1);
@@ -883,10 +935,10 @@ export default function BestJobsSection({
         industryId: initialIndustryId,
     });
 
-    const [provinces, setProvinces] = useState<any[]>([]);
-    const [districts, setDistricts] = useState<any[]>([]);
+    const [provinces, setProvinces] = useState<Province[]>([]);
+    const [districts, setDistricts] = useState<District[]>([]);
     const [loadingDistricts, setLoadingDistricts] = useState(false);
-    const [industries, setIndustries] = useState<any[]>([]);
+    const [industries, setIndustries] = useState<Industry[]>([]);
 
     /* Load provinces + industries */
     useEffect(() => {
@@ -899,22 +951,25 @@ export default function BestJobsSection({
     /* Load districts khi đổi tỉnh */
     useEffect(() => {
         if (!filters.provinceCode) {
-            setDistricts([]);
-            return;
+            const t = setTimeout(() => setDistricts([]), 0);
+            return () => clearTimeout(t);
         }
-        setLoadingDistricts(true);
-        provinceService
-            .getDistricts(filters.provinceCode)
-            .then((data: any) => setDistricts(data.districts || data || []))
-            .catch(console.error)
-            .finally(() => setLoadingDistricts(false));
+        const t2 = setTimeout(() => {
+            setLoadingDistricts(true);
+            provinceService
+                .getDistricts(filters.provinceCode)
+                .then((data: { districts?: District[] } | District[]) => setDistricts(Array.isArray(data) ? data : (data as { districts?: District[] }).districts || []))
+                .catch(console.error)
+                .finally(() => setLoadingDistricts(false));
+        }, 0);
+        return () => clearTimeout(t2);
     }, [filters.provinceCode]);
 
     /* Fetch jobs */
     const fetchJobs = useCallback(async () => {
         setLoading(true);
         try {
-            const params: any = { page, limit };
+            const params: JobParams = { page, limit };
             if (filters.provinceCode) params.provinceCode = filters.provinceCode;
             if (filters.districtCode) params.districtCode = filters.districtCode;
             if (filters.salaryMin !== undefined) params.salaryMin = filters.salaryMin;
@@ -934,12 +989,14 @@ export default function BestJobsSection({
     }, [page, filters, limit]);
 
     useEffect(() => {
-        fetchJobs();
+        const t = setTimeout(() => fetchJobs(), 0);
+        return () => clearTimeout(t);
     }, [fetchJobs]);
 
     /* Reset page khi đổi filter */
     useEffect(() => {
-        setPage(1);
+        const t = setTimeout(() => setPage(1), 0);
+        return () => clearTimeout(t);
     }, [filters]);
 
     const filterBar = (

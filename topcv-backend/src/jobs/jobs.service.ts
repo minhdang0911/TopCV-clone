@@ -23,6 +23,20 @@ export class JobsService {
 
   constructor(private prisma: PrismaService) {}
 
+  private generateSlug(title: string, id: string): string {
+    const base = title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/đ/g, 'd').replace(/Đ/g, 'd')
+      .replace(/[^a-z0-9\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+    const short = id.replace(/-/g, '').slice(0, 8);
+    return `${base}-${short}`;
+  }
+
   private async logAudit(
     userId: string,
     action: string,
@@ -271,13 +285,19 @@ export class JobsService {
         throw new BadRequestException('Không tìm thấy thông tin công ty');
       }
 
-      const job = await this.prisma.job.create({
+      const created = await this.prisma.job.create({
         data: {
           ...data,
           industryId: data.industryId ?? employer.industryId ?? undefined,
           deadline: data.deadline ? new Date(data.deadline) : undefined,
           employerId: employer.id,
         },
+      });
+
+      const slug = this.generateSlug(data.title, created.id);
+      const job = await this.prisma.job.update({
+        where: { id: created.id },
+        data: { slug },
         include: {
           employer: {
             select: {
@@ -434,13 +454,14 @@ export class JobsService {
 
   // ─── FIND ONE ─────────────────────────────────────────
 
-  async findOne(id: string) {
-    const cacheKey = `job:${id}`;
+  async findOne(slugOrId: string) {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+    const cacheKey = `job:${slugOrId}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) return cached;
 
-    const job = await this.prisma.job.findUnique({
-      where: { id },
+    const job = await this.prisma.job.findFirst({
+      where: isUuid ? { id: slugOrId } : { slug: slugOrId },
       include: {
         employer: {
           select: {
@@ -451,6 +472,7 @@ export class JobsService {
             website: true,
             companySize: true,
             description: true,
+            slug: true,
           },
         },
         industry: true,
@@ -459,9 +481,40 @@ export class JobsService {
     });
 
     if (!job) throw new BadRequestException('Không tìm thấy job');
-
     await this.redis.set(cacheKey, job, { ex: 300 });
     return job;
+  }
+
+  // ─── BACKFILL SLUGS ───────────────────────────────────
+
+  async backfillSlugs() {
+    const jobs = await this.prisma.job.findMany({ where: { slug: null } });
+    let count = 0;
+    for (const job of jobs) {
+      const slug = this.generateSlug(job.title, job.id);
+      try {
+        await this.prisma.job.update({ where: { id: job.id }, data: { slug } });
+        count++;
+      } catch {}
+    }
+    return { updated: count };
+  }
+
+  // ─── FIND RELATED ────────────────────────────────────
+
+  async findRelated(jobId: string, industryId?: number | null, limit = 6) {
+    return this.prisma.job.findMany({
+      where: {
+        isActive: true,
+        id: { not: jobId },
+        ...(industryId ? { industryId } : {}),
+      },
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        employer: { select: { companyName: true, logoUrl: true, slug: true } },
+      },
+    });
   }
 
   // ─── MY JOBS (EMPLOYER) ───────────────────────────────

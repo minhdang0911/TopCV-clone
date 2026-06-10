@@ -1,13 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
+import { paymentService } from '@/services/payment.service';
+
+const PLAN_META = {
+    FREE:    { label: 'Thường',  color: '#6b7280', bg: '#f3f4f6' },
+    PRO:     { label: 'Pro',     color: '#00b14f', bg: '#dcfce7' },
+    PREMIUM: { label: 'Premium', color: '#d97706', bg: '#fef3c7' },
+};
 
 export default function ProfileSidebar() {
     const { user, setUser } = useAuthStore();
     const [toggling, setToggling] = useState(false);
+    const [planInfo, setPlanInfo] = useState(null);
+
+    useEffect(() => {
+        paymentService.getMyPlan()
+            .then(res => setPlanInfo(res.data))
+            .catch(() => {});
+    }, []);
 
     if (!user) return null;
 
@@ -77,19 +91,46 @@ export default function ProfileSidebar() {
                         Tài khoản đã xác thực
                     </span>
                 )}
-                <div>
-                    <Link
-                        href="#"
-                        style={{
-                            fontSize: '12px',
-                            color: '#00b14f',
-                            fontWeight: '600',
-                            textDecoration: 'none',
-                        }}
-                    >
-                        Nâng cấp tài khoản
-                    </Link>
-                </div>
+                {/* Plan badge */}
+                {planInfo && (() => {
+                    const plan = planInfo.plan ?? 'FREE';
+                    const meta = PLAN_META[plan] || PLAN_META.FREE;
+                    const expires = planInfo.planExpiresAt ? new Date(planInfo.planExpiresAt) : null;
+                    const now = new Date();
+                    const daysLeft = expires ? Math.max(0, Math.ceil((expires.getTime() - now.getTime()) / 86400000)) : null;
+                    return (
+                        <div style={{ marginTop: '10px' }}>
+                            <span style={{
+                                display: 'inline-block',
+                                padding: '3px 10px',
+                                borderRadius: '20px',
+                                background: meta.bg,
+                                color: meta.color,
+                                fontSize: '12px',
+                                fontWeight: '700',
+                            }}>
+                                {plan === 'FREE' ? 'Tài khoản Thường' : `Tài khoản ${meta.label}`}
+                            </span>
+                            {expires && daysLeft !== null && (
+                                <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                                    Hết hạn: {expires.toLocaleDateString('vi-VN')}
+                                    {daysLeft <= 7 && (
+                                        <span style={{ color: '#ef4444', fontWeight: '600', marginLeft: '4px' }}>
+                                            (còn {daysLeft} ngày)
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                            {plan === 'FREE' && (
+                                <div style={{ marginTop: '6px' }}>
+                                    <Link href="/nang-cap" style={{ fontSize: '12px', color: '#00b14f', fontWeight: '600', textDecoration: 'none' }}>
+                                        Nâng cấp tài khoản →
+                                    </Link>
+                                </div>
+                            )}
+                        </div>
+                    );
+                })()}
             </div>
 
             {/* isLookingForJob toggle (candidates only) */}

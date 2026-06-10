@@ -61,6 +61,18 @@ export class JobsController {
     return this.jobsService.getJobSuggestions(req.user.sub);
   }
 
+  @Get('backfill-slugs')
+  backfillSlugs() {
+    return this.jobsService.backfillSlugs();
+  }
+
+  @Get(':slugOrId/related')
+  getRelated(@Param('slugOrId') slugOrId: string) {
+    return this.jobsService.findOne(slugOrId).then((job: any) =>
+      this.jobsService.findRelated(job.id, job.industryId),
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.jobsService.findOne(id);

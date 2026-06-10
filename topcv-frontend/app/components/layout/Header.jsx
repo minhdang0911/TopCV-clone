@@ -40,6 +40,13 @@ import logo from '@/app/assests/img/logo-home.png';
 import api from '@/lib/axios';
 import useAuthStore from '@/stores/auth.store';
 import { useRouter } from 'next/navigation';
+import { paymentService } from '@/services/payment.service';
+
+const PLAN_META = {
+    FREE:    { label: null,      color: null,      bg: null },
+    PRO:     { label: 'Pro',     color: '#00b14f', bg: '#dcfce7' },
+    PREMIUM: { label: 'Premium', color: '#d97706', bg: '#fef3c7' },
+};
 
 /* ─── Icon map for mobile menus ─── */
 const VIEC_LAM_ITEMS = [
@@ -162,14 +169,18 @@ const USER_MENU_SECTIONS = [
             { label: 'Cài đặt thông tin cá nhân', href: '/cai-dat-thong-tin-ca-nhan' },
             { label: 'Cài đặt bảo mật', href: '/tai-khoan/bao-mat' },
             { label: 'Đổi mật khẩu', href: '/tai-khoan/mat-khau' },
-            { label: 'Xác minh 2 bước', href: '/tai-khoan/bao-mat', badgeFn: (u) => u?.twoFactorEnabled ? null : 'Chưa kích hoạt' },
+            {
+                label: 'Xác minh 2 bước',
+                href: '/tai-khoan/bao-mat',
+                badgeFn: (u) => (u?.twoFactorEnabled ? null : 'Chưa kích hoạt'),
+            },
         ],
     },
     {
         key: 'nang-cap',
         label: 'Nâng cấp tài khoản',
         items: [
-            { label: 'Nâng cấp tài khoản VIP', href: '#' },
+            { label: 'Nâng cấp tài khoản VIP', href: '/nang-cap' },
             { label: 'Kích hoạt quà tặng', href: '#' },
         ],
     },
@@ -207,6 +218,41 @@ const NewBadge = ({ label = 'Mới' }) => (
     </span>
 );
 
+function MobileSubItem({ href, Icon, label, badge, onClick, onClose }) {
+    return (
+        <Link
+            href={href}
+            onClick={onClick || onClose}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '13px 16px',
+                fontSize: '14px',
+                color: '#111827',
+                textDecoration: 'none',
+                borderBottom: '1px solid #f3f4f6',
+            }}
+        >
+            {Icon && <Icon size={18} style={{ color: GREEN, flexShrink: 0 }} />}
+            <span style={{ flex: 1 }}>{label}</span>
+            {badge === 'Pro' && <ProBadge />}
+            {badge === 'Mới' && <NewBadge />}
+        </Link>
+    );
+}
+
+function MobileSection({ title, items, onClose }) {
+    return (
+        <div>
+            {title && <p style={{ ...sectionLabel, padding: '14px 16px 4px', margin: 0 }}>{title}</p>}
+            {items.map((item) => (
+                <MobileSubItem key={item.label} {...item} onClose={onClose} />
+            ))}
+        </div>
+    );
+}
+
 export default function Header() {
     const [jobPositions, setJobPositions] = useState([]);
     const [industries, setIndustries] = useState([]);
@@ -230,6 +276,14 @@ export default function Header() {
     const router = useRouter();
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [openSections, setOpenSections] = useState(new Set());
+    const [planInfo, setPlanInfo] = useState(null);
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        paymentService.getMyPlan()
+            .then(res => setPlanInfo(res.data))
+            .catch(() => {});
+    }, [isAuthenticated]);
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth <= 768);
@@ -269,7 +323,9 @@ export default function Header() {
 
     const handleLogout = async () => {
         setUserMenuOpen(false);
-        try { await api.post('/auth/logout'); } catch {}
+        try {
+            await api.post('/auth/logout');
+        } catch {}
         clearAuth();
         router.push('/login');
     };
@@ -290,7 +346,10 @@ export default function Header() {
     }, [mobileOpen]);
 
     useEffect(() => {
-        if (!mobileOpen) setMobileView(null);
+        if (!mobileOpen) {
+            const t = setTimeout(() => setMobileView(null), 280);
+            return () => clearTimeout(t);
+        }
     }, [mobileOpen]);
 
     const half = Math.ceil(jobPositions.length / 2);
@@ -303,14 +362,9 @@ export default function Header() {
             return <div style={{ width: '130px', height: '32px', borderRadius: '6px', background: '#f3f4f6' }} />;
         if (isAuthenticated && user) {
             const avatarSrc =
-                user.candidateProfile?.avatarUrl ||
-                user.employerProfile?.logoUrl ||
-                '/default-avatar.png';
+                user.candidateProfile?.avatarUrl || user.employerProfile?.logoUrl || '/default-avatar.png';
             const displayName =
-                user.candidateProfile?.fullName ||
-                user.employerProfile?.companyName ||
-                user.email ||
-                '';
+                user.candidateProfile?.fullName || user.employerProfile?.companyName || user.email || '';
 
             return (
                 <div ref={userMenuRef} style={{ position: 'relative' }}>
@@ -417,22 +471,23 @@ export default function Header() {
                                     >
                                         {displayName}
                                     </div>
-                                    {user.isVerified && (
-                                        <span
-                                            style={{
-                                                display: 'inline-block',
-                                                marginTop: '3px',
-                                                fontSize: '10px',
-                                                color: '#059669',
-                                                background: '#d1fae5',
-                                                padding: '1px 7px',
-                                                borderRadius: '4px',
-                                                fontWeight: '600',
-                                            }}
-                                        >
-                                            Tài khoản đã xác thực
-                                        </span>
-                                    )}
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
+                                        {user.isVerified && (
+                                            <span style={{ fontSize: '10px', color: '#059669', background: '#d1fae5', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>
+                                                Đã xác thực
+                                            </span>
+                                        )}
+                                        {planInfo && (() => {
+                                            const plan = planInfo.plan ?? 'FREE';
+                                            const meta = PLAN_META[plan];
+                                            if (!meta?.label) return null;
+                                            return (
+                                                <span style={{ fontSize: '10px', color: meta.color, background: meta.bg, padding: '1px 7px', borderRadius: '4px', fontWeight: '700' }}>
+                                                    {meta.label}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
                                 </div>
                             </div>
 
@@ -441,10 +496,7 @@ export default function Header() {
                                 {USER_MENU_SECTIONS.map((section) => {
                                     const isOpen = openSections.has(section.key);
                                     return (
-                                        <div
-                                            key={section.key}
-                                            style={{ borderBottom: '1px solid #f3f4f6' }}
-                                        >
+                                        <div key={section.key} style={{ borderBottom: '1px solid #f3f4f6' }}>
                                             <button
                                                 onClick={() => toggleSection(section.key)}
                                                 style={{
@@ -467,9 +519,7 @@ export default function Header() {
                                                     size={13}
                                                     style={{
                                                         color: '#9ca3af',
-                                                        transform: isOpen
-                                                            ? 'rotate(180deg)'
-                                                            : 'rotate(0deg)',
+                                                        transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
                                                         transition: 'transform 0.18s',
                                                         flexShrink: 0,
                                                     }}
@@ -493,17 +543,17 @@ export default function Header() {
                                                                 transition: 'background 0.12s',
                                                             }}
                                                             onMouseEnter={(e) =>
-                                                                (e.currentTarget.style.background =
-                                                                    '#f9fafb')
+                                                                (e.currentTarget.style.background = '#f9fafb')
                                                             }
                                                             onMouseLeave={(e) =>
-                                                                (e.currentTarget.style.background =
-                                                                    'transparent')
+                                                                (e.currentTarget.style.background = 'transparent')
                                                             }
                                                         >
                                                             {item.label}
                                                             {(() => {
-                                                                const badgeText = item.badge || (item.badgeFn ? item.badgeFn(user) : null);
+                                                                const badgeText =
+                                                                    item.badge ||
+                                                                    (item.badgeFn ? item.badgeFn(user) : null);
                                                                 return badgeText ? (
                                                                     <span
                                                                         style={{
@@ -595,42 +645,13 @@ export default function Header() {
     };
 
     /* ─── Mobile submenu content ─── */
-    const MobileSubItem = ({ href, Icon, label, badge, onClick }) => (
-        <Link
-            href={href}
-            onClick={onClick || (() => setMobileOpen(false))}
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '13px 16px',
-                fontSize: '14px',
-                color: '#111827',
-                textDecoration: 'none',
-                borderBottom: '1px solid #f3f4f6',
-            }}
-        >
-            {Icon && <Icon size={18} style={{ color: GREEN, flexShrink: 0 }} />}
-            <span style={{ flex: 1 }}>{label}</span>
-            {badge === 'Pro' && <ProBadge />}
-            {badge === 'Mới' && <NewBadge />}
-        </Link>
-    );
-
-    const MobileSection = ({ title, items }) => (
-        <div>
-            {title && <p style={{ ...sectionLabel, padding: '14px 16px 4px', margin: 0 }}>{title}</p>}
-            {items.map((item) => (
-                <MobileSubItem key={item.label} {...item} />
-            ))}
-        </div>
-    );
+    const onMobileClose = () => setMobileOpen(false);
 
     const mobileSubContent = {
         'viec-lam': (
             <>
-                <MobileSection title="VIỆC LÀM" items={VIEC_LAM_ITEMS} />
-                <MobileSection title="CÔNG TY" items={CONG_TY_ITEMS} />
+                <MobileSection title="VIỆC LÀM" items={VIEC_LAM_ITEMS} onClose={onMobileClose} />
+                <MobileSection title="CÔNG TY" items={CONG_TY_ITEMS} onClose={onMobileClose} />
                 {jobPositions.length > 0 && (
                     <div>
                         <p style={{ ...sectionLabel, padding: '14px 16px 4px', margin: 0 }}>VIỆC LÀM THEO VỊ TRÍ</p>
@@ -639,6 +660,7 @@ export default function Header() {
                                 key={pos.id}
                                 href={`/tim-viec-lam-${pos.slug}`}
                                 label={`Việc làm ${pos.name}`}
+                                onClose={onMobileClose}
                             />
                         ))}
                     </div>
@@ -651,6 +673,7 @@ export default function Header() {
                                 key={ind.id}
                                 href={`/tim-viec-lam-moi-nhat?company_field=${ind.id}&type_keyword=1&sba=1&saturday_status=0`}
                                 label={`Việc làm ${ind.name}`}
+                                onClose={onMobileClose}
                             />
                         ))}
                     </div>
@@ -667,7 +690,7 @@ export default function Header() {
                         Mẫu CV theo style →
                     </Link>
                 </div>
-                <MobileSection title="" items={TAO_CV_STYLE} />
+                <MobileSection title="" items={TAO_CV_STYLE} onClose={onMobileClose} />
                 <div style={{ padding: '14px 16px 4px' }}>
                     <Link
                         href="/tao-cv"
@@ -677,18 +700,18 @@ export default function Header() {
                     </Link>
                 </div>
                 {TAO_CV_POSITION.map((item) => (
-                    <MobileSubItem key={item.label} href={item.href} label={item.label} />
+                    <MobileSubItem key={item.label} href={item.href} label={item.label} onClose={onMobileClose} />
                 ))}
-                <MobileSection title="" items={TAO_CV_MANAGE} />
+                <MobileSection title="" items={TAO_CV_MANAGE} onClose={onMobileClose} />
             </>
         ),
         'cong-cu': (
             <>
-                <MobileSection title="KHÁM PHÁ VÀ NÂNG CẤP BẢN THÂN" items={KHAM_PHA_ITEMS} />
-                <MobileSection title="CÔNG CỤ" items={CONG_CU_ITEMS} />
+                <MobileSection title="KHÁM PHÁ VÀ NÂNG CẤP BẢN THÂN" items={KHAM_PHA_ITEMS} onClose={onMobileClose} />
+                <MobileSection title="CÔNG CỤ" items={CONG_CU_ITEMS} onClose={onMobileClose} />
             </>
         ),
-        'cam-nang': <MobileSection title="" items={CAM_NANG_ITEMS.map((i) => ({ ...i, Icon: BarChart2 }))} />,
+        'cam-nang': <MobileSection title="" items={CAM_NANG_ITEMS.map((i) => ({ ...i, Icon: BarChart2 }))} onClose={onMobileClose} />,
     };
 
     /* ─── Desktop dropdown content ─── */
@@ -967,8 +990,10 @@ export default function Header() {
                 style={{
                     background: 'white',
                     borderBottom: '1px solid #e5e7eb',
-                    position: 'sticky',
+                    position: 'fixed',
                     top: 0,
+                    left: 0,
+                    right: 0,
                     zIndex: 100,
                 }}
             >
@@ -1018,7 +1043,11 @@ export default function Header() {
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
                         {/* ── Desktop Nav — always rendered, CSS hides on mobile ── */}
                         {true && (
-                            <nav ref={dropdownRef} className="hdr-desktop-nav" style={{ alignItems: 'center', flex: 1 }}>
+                            <nav
+                                ref={dropdownRef}
+                                className="hdr-desktop-nav"
+                                style={{ alignItems: 'center', flex: 1 }}
+                            >
                                 {NAV_ITEMS.map((navItem) => (
                                     <div
                                         key={navItem.key}
@@ -1414,7 +1443,10 @@ export default function Header() {
                                     </Link>
                                 ))}
                                 <button
-                                    onClick={() => { setMobileOpen(false); handleLogout(); }}
+                                    onClick={() => {
+                                        setMobileOpen(false);
+                                        handleLogout();
+                                    }}
                                     style={{
                                         width: '100%',
                                         display: 'flex',
@@ -1438,7 +1470,14 @@ export default function Header() {
                         )}
 
                         {hydrated && !isAuthenticated && (
-                            <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', borderBottom: '1px solid #f3f4f6' }}>
+                            <div
+                                style={{
+                                    padding: '12px 16px',
+                                    display: 'flex',
+                                    gap: '8px',
+                                    borderBottom: '1px solid #f3f4f6',
+                                }}
+                            >
                                 <Link
                                     href="/login"
                                     onClick={() => setMobileOpen(false)}

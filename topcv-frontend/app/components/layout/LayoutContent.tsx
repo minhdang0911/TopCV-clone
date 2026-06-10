@@ -46,12 +46,12 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     return (
         <>
             {!hideHeader && <Header />}
-            {children}
-            {!HIDDEN_SEO.includes(pathname) && <SeoKeywords />}
-            {!hideHeader && <Footer />}
-            {showOnboarding && (
-                <JobPreferencesModal onClose={() => setShowOnboarding(false)} />
-            )}
+            <div style={!hideHeader ? { paddingTop: '72px' } : undefined}>
+                {children}
+                {!HIDDEN_SEO.includes(pathname) && <SeoKeywords />}
+                {!hideHeader && <Footer />}
+            </div>
+            {showOnboarding && <JobPreferencesModal onClose={() => setShowOnboarding(false)} />}
         </>
     );
 }

@@ -70,6 +70,21 @@ export class UploadController {
     };
   }
 
+  @Post('cv-avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  async uploadCvAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    const userId = req.user.sub;
+    const me = await this.usersService.getMe(userId);
+    const fullName = me?.candidateProfile?.fullName || userId;
+    const folder = `topcv-clone/${slugify(fullName)}/cv-avatars`;
+    const url = await this.uploadService.uploadImage(file, folder, 'cv-avatar');
+    return { data: { url } };
+  }
+
   @Post('logo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', { storage: undefined }))

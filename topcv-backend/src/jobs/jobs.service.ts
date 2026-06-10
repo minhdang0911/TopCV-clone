@@ -572,6 +572,86 @@ export class JobsService {
     return { message: 'Xóa job thành công' };
   }
 
+  // ─── JOB SUGGESTIONS ──────────────────────────────────
+
+  async getJobSuggestions(userId: string) {
+    const profile = await this.prisma.candidateProfile.findUnique({
+      where: { userId },
+      select: { jobPreferences: true },
+    });
+
+    const prefs = profile?.jobPreferences as any;
+    const include = {
+      employer: { select: { companyName: true, logoUrl: true, slug: true } },
+      industry: { select: { name: true } },
+    };
+
+    if (prefs && !prefs.skipped) {
+      const hasIndustry = Array.isArray(prefs.industryIds) && prefs.industryIds.length > 0;
+      const hasProvince = !!prefs.provinceCode;
+      const industryIds = hasIndustry ? prefs.industryIds.map(Number) : [];
+      const provinceCode = hasProvince ? String(prefs.provinceCode) : null;
+
+      // Tier 1: industry + province
+      if (hasIndustry && hasProvince) {
+        const jobs = await this.prisma.job.findMany({
+          where: {
+            isActive: true,
+            industryId: { in: industryIds },
+            provinceCode,
+          },
+          take: 9,
+          orderBy: { createdAt: 'desc' },
+          include,
+        });
+        if (jobs.length >= 1) {
+          return { data: jobs, isPersonalized: true };
+        }
+      }
+
+      // Tier 2: industry only
+      if (hasIndustry) {
+        const jobs = await this.prisma.job.findMany({
+          where: {
+            isActive: true,
+            industryId: { in: industryIds },
+          },
+          take: 9,
+          orderBy: { createdAt: 'desc' },
+          include,
+        });
+        if (jobs.length >= 1) {
+          return { data: jobs, isPersonalized: true };
+        }
+      }
+
+      // Tier 3: province only
+      if (hasProvince) {
+        const jobs = await this.prisma.job.findMany({
+          where: {
+            isActive: true,
+            provinceCode,
+          },
+          take: 9,
+          orderBy: { createdAt: 'desc' },
+          include,
+        });
+        if (jobs.length >= 1) {
+          return { data: jobs, isPersonalized: true };
+        }
+      }
+    }
+
+    const fallback = await this.prisma.job.findMany({
+      where: { isActive: true },
+      take: 9,
+      orderBy: { createdAt: 'desc' },
+      include,
+    });
+
+    return { data: fallback, isPersonalized: false };
+  }
+
   // ─── TOGGLE ACTIVE ────────────────────────────────────
 
   async toggleActive(userId: string, id: string, ipAddress?: string) {

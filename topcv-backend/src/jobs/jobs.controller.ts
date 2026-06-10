@@ -55,6 +55,12 @@ export class JobsController {
     return this.jobsService.getIndustryDemand(limit ? parseInt(limit, 10) : 6);
   }
 
+  @Get('suggestions')
+  @UseGuards(JwtAuthGuard)
+  getSuggestions(@Req() req: any) {
+    return this.jobsService.getJobSuggestions(req.user.sub);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.jobsService.findOne(id);

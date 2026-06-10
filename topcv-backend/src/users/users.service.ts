@@ -193,9 +193,10 @@ export class UsersService {
 
   // ─── JOB PREFERENCES ─────────────────────────────────
   async updateJobPreferences(userId: string, jobPreferences: any) {
-    return this.prisma.candidateProfile.update({
+    return this.prisma.candidateProfile.upsert({
       where: { userId },
-      data: { jobPreferences },
+      update: { jobPreferences },
+      create: { userId, fullName: '', jobPreferences },
     });
   }
 

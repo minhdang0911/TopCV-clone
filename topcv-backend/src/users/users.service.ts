@@ -220,4 +220,20 @@ export class UsersService {
       data: { passwordHash },
     });
   }
+
+  async saveFcmToken(userId: string, token: string) {
+    await (this.prisma as any).user.update({
+      where: { id: userId },
+      data: { fcmToken: token },
+    });
+    return { message: 'ok' };
+  }
+
+  async getFcmToken(userId: string): Promise<string | null> {
+    const user = await (this.prisma as any).user.findUnique({
+      where: { id: userId },
+      select: { fcmToken: true },
+    });
+    return user?.fcmToken ?? null;
+  }
 }

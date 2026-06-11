@@ -33,6 +33,11 @@ export class ResumesController {
     return this.resumesService.findOne(req.user.sub, id);
   }
 
+  @Get(':id/view')
+  findOneForViewer(@Req() req: any, @Param('id') id: string) {
+    return this.resumesService.findOneForViewer(req.user.sub, id);
+  }
+
   @Patch(':id')
   update(@Req() req: any, @Param('id') id: string, @Body() body: any) {
     return this.resumesService.update(req.user.sub, id, body);

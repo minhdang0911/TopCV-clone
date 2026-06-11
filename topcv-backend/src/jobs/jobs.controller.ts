@@ -28,6 +28,13 @@ export class JobsController {
     return this.jobsService.getStats();
   }
 
+  @Get('my-stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYER')
+  getMyStats(@Req() req: any) {
+    return this.jobsService.getMyStats(req.user.sub);
+  }
+
   @Get('backfill-industry')
   backfillIndustryId() {
     return this.jobsService.backfillIndustryId();

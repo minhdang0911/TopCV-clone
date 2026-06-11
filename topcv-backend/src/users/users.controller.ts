@@ -86,4 +86,10 @@ export class UsersController {
   getEmployerProfile(@Req() req: any) {
     return this.usersService.getEmployerProfile(req.user.sub);
   }
+
+  @Patch('me/fcm-token')
+  @UseGuards(JwtAuthGuard)
+  saveFcmToken(@Req() req: any, @Body() body: { token: string }) {
+    return this.usersService.saveFcmToken(req.user.sub, body.token);
+  }
 }

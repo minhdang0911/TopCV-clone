@@ -100,6 +100,24 @@ export class UploadController {
     return { data: { url } };
   }
 
+  @Post('cv-file')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  async uploadCvFile(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    const userId = req.user.sub;
+    const me = await this.usersService.getMe(userId);
+    const fullName = me?.candidateProfile?.fullName || userId;
+    const timestamp = Date.now();
+    const folder = `topcv-clone/${slugify(fullName)}/cv-files`;
+    const ext = file.mimetype === 'application/pdf' ? '.pdf'
+      : file.mimetype === 'application/msword' ? '.doc' : '.docx';
+    const url = await this.uploadService.uploadFile(file, folder, `cv-${timestamp}${ext}`);
+    return { data: { url } };
+  }
+
   @Post('logo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', { storage: undefined }))

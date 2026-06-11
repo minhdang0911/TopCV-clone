@@ -51,6 +51,13 @@ export class ResumesService {
     return resume;
   }
 
+  async findOneForViewer(viewerId: string, id: string) {
+    const resume = await this.prisma.resume.findUnique({ where: { id } });
+    if (!resume) throw new NotFoundException('Không tìm thấy CV');
+    // Owner or any authenticated user can view (link is only shared via employer dashboard)
+    return resume;
+  }
+
   private async getUserPlan(userId: string): Promise<string> {
     const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { plan: true, planExpiresAt: true } });
     if (!user) return 'FREE';

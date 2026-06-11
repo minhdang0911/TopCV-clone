@@ -49,7 +49,7 @@ const FILTER_TABS = [
 
 function ApplicationCard({ item, onWithdraw }) {
     const job = item.job || {};
-    const employer = job.company || {};
+    const employer = { companyName: job.employer?.companyName, logo: job.employer?.logoUrl };
     const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.PENDING;
     const locationText = job.locations?.length > 0
         ? job.locations.map(l => l.provinceName).filter(Boolean).join(' • ')

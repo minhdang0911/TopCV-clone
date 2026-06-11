@@ -130,7 +130,7 @@ export class ApplicationsService {
               salaryType: true,
               jobType: true,
               locations: true,
-              company: { select: { companyName: true, logo: true } },
+              employer: { select: { companyName: true, logoUrl: true } },
             },
           },
           resume: { select: { id: true, title: true } },

@@ -17,6 +17,7 @@ const HIDDEN_ROUTES = [
     '/employer-login',
     '/employer-register',
     '/employer-complete-profile',
+    '/nha-tuyen-dung',
 ];
 
 const HIDDEN_SEO = ['/'];
@@ -27,7 +28,9 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     const [showOnboarding, setShowOnboarding] = useState(false);
 
     const isCvEditor = /^\/tao-cv\/[^/]+$/.test(pathname);
-    const hideHeader = HIDDEN_ROUTES.includes(pathname) || isCvEditor;
+    const isEmployerDashboard = /^\/nha-tuyen-dung/.test(pathname);
+    const isViewer = /^\/(xem-cv|xem-cover-letter|sua-cover-letter)\//.test(pathname);
+    const hideHeader = HIDDEN_ROUTES.includes(pathname) || isCvEditor || isEmployerDashboard || isViewer;
 
     useEffect(() => {
         if (
@@ -48,7 +51,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             {!hideHeader && <Header />}
             <div style={!hideHeader ? { paddingTop: '72px' } : undefined}>
                 {children}
-                {!HIDDEN_SEO.includes(pathname) && <SeoKeywords />}
+                {!HIDDEN_SEO.includes(pathname) && !hideHeader && <SeoKeywords />}
                 {!hideHeader && <Footer />}
             </div>
             {showOnboarding && <JobPreferencesModal onClose={() => setShowOnboarding(false)} />}

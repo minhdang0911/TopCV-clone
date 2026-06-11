@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
@@ -13,12 +13,18 @@ import backgroundGrid from '../../assests/img/background-grid.svg';
 
 export default function EmployerLoginPage() {
     const router = useRouter();
-    const { setAuth } = useAuthStore();
+    const { setAuth, hydrated, isAuthenticated, role } = useAuthStore();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        if (hydrated && isAuthenticated && role === 'EMPLOYER') {
+            router.replace('/nha-tuyen-dung');
+        }
+    }, [hydrated, isAuthenticated, role]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -27,19 +33,20 @@ export default function EmployerLoginPage() {
 
         try {
             const res = await authService.login(email, password);
+            const data = res.data?.data ?? res.data;
 
-            if (res.data.require2FA) {
-                router.push(`/verify-otp?email=${res.data.email}&type=two_factor_login&role=${res.data.role}`);
+            if (data.require2FA) {
+                router.push(`/verify-otp?email=${data.email}&type=two_factor_login&role=${data.role}`);
                 return;
             }
 
-            if (res.data.role !== 'EMPLOYER') {
+            if (data.role !== 'EMPLOYER') {
                 setError('Tài khoản này không phải nhà tuyển dụng');
                 return;
             }
 
-            setAuth(res.data.accessToken, res.data.refreshToken, res.data.role);
-            router.push('/employer/dashboard');
+            setAuth(data.accessToken, data.refreshToken, data.role);
+            router.push('/nha-tuyen-dung');
         } catch (err) {
             const message = err.response?.data?.message;
 

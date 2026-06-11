@@ -39,6 +39,7 @@ import {
 import logo from '@/app/assests/img/logo-home.png';
 import api from '@/lib/axios';
 import useAuthStore from '@/stores/auth.store';
+import NotificationBell from '@/app/components/NotificationBell';
 import { useRouter } from 'next/navigation';
 import { paymentService } from '@/services/payment.service';
 
@@ -1120,38 +1121,7 @@ export default function Header() {
                                 paddingRight: '16px',
                             }}
                         >
-                            <button
-                                style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: '#6b7280',
-                                    cursor: 'pointer',
-                                    position: 'relative',
-                                    padding: '4px',
-                                    display: 'flex',
-                                }}
-                            >
-                                <Bell size={20} />
-                                <span
-                                    style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        right: 0,
-                                        background: '#ef4444',
-                                        color: 'white',
-                                        fontSize: '9px',
-                                        borderRadius: '50%',
-                                        width: '14px',
-                                        height: '14px',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontWeight: '700',
-                                    }}
-                                >
-                                    3
-                                </span>
-                            </button>
+                            <NotificationBell />
                             <button
                                 style={{
                                     background: 'none',

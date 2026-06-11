@@ -13,6 +13,10 @@ import { EmployersModule } from './employers/employers.module';
 import { ResumesModule } from './resumes/resumes.module';
 import { CoverLettersModule } from './cover-letters/cover-letters.module';
 import { PaymentsModule } from './payments/payments.module';
+import { ApplicationsModule } from './applications/applications.module';
+import { SavedJobsModule } from './saved-jobs/saved-jobs.module';
+import { FirebaseModule } from './firebase/firebase.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -30,6 +34,10 @@ import { PaymentsModule } from './payments/payments.module';
     ResumesModule,
     CoverLettersModule,
     PaymentsModule,
+    ApplicationsModule,
+    SavedJobsModule,
+    FirebaseModule,
+    NotificationsModule,
   ],
 })
 export class AppModule {}

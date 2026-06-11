@@ -143,6 +143,18 @@ export default function NotificationBell({ iconColor = '#6b7280' }) {
 
     return (
         <div ref={dropdownRef} style={{ position: 'relative' }}>
+            <style>{`
+                @media (max-width: 480px) {
+                    .notif-dropdown {
+                        position: fixed !important;
+                        top: 56px !important;
+                        left: 8px !important;
+                        right: 8px !important;
+                        width: auto !important;
+                        max-width: none !important;
+                    }
+                }
+            `}</style>
             <button
                 onClick={() => setOpen((o) => !o)}
                 title="Thông báo"
@@ -168,8 +180,8 @@ export default function NotificationBell({ iconColor = '#6b7280' }) {
             </button>
 
             {open && (
-                <div style={{
-                    position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '360px',
+                <div className="notif-dropdown" style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: 'min(360px, calc(100vw - 16px))',
                     background: 'white', borderRadius: '12px',
                     boxShadow: '0 8px 32px rgba(0,0,0,0.16)', border: '1px solid #e5e7eb',
                     zIndex: 500, overflow: 'hidden',

@@ -644,17 +644,18 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
 
     return (
         <tr
+            className="ap-tr"
             style={{ borderBottom: '1px solid #f3f4f6', background: selected ? '#f0fdf4' : 'white' }}
             onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#fafafa'; }}
             onMouseLeave={e => { e.currentTarget.style.background = selected ? '#f0fdf4' : 'white'; }}
         >
             {/* Checkbox */}
-            <td style={{ padding: '12px 8px 12px 16px', width: '36px' }}>
+            <td className="ap-td ap-td-check" style={{ padding: '12px 8px 12px 16px', width: '36px' }}>
                 <input type="checkbox" checked={selected} onChange={() => onToggleSelect(item.id)}
                     style={{ width: '15px', height: '15px', accentColor: GREEN, cursor: 'pointer' }} />
             </td>
             {/* Candidate */}
-            <td style={{ padding: '12px 16px' }}>
+            <td className="ap-td ap-td-cand" style={{ padding: '12px 16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <div style={{
                         width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
@@ -676,7 +677,7 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
             </td>
 
             {/* Job */}
-            <td style={{ padding: '12px 16px' }}>
+            <td className="ap-td ap-td-job" style={{ padding: '12px 16px' }}>
                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '2px' }}>{job.title}</div>
                 {item.location && (
                     <div style={{ fontSize: '12px', color: '#6b7280' }}>
@@ -686,7 +687,7 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
             </td>
 
             {/* CV */}
-            <td style={{ padding: '12px 16px' }}>
+            <td className="ap-td ap-td-cv" style={{ padding: '12px 16px' }}>
                 {item.resume ? (
                     <a href={`/xem-cv/${item.resume.id}`} target="_blank" rel="noopener noreferrer"
                         style={{ fontSize: '12px', color: '#2563eb', textDecoration: 'none', fontWeight: '500' }}
@@ -709,12 +710,12 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
             </td>
 
             {/* Applied at */}
-            <td style={{ padding: '12px 16px' }}>
+            <td className="ap-td ap-td-time" style={{ padding: '12px 16px' }}>
                 <span style={{ fontSize: '12px', color: '#6b7280' }}>{timeAgo(item.createdAt)}</span>
             </td>
 
             {/* Status */}
-            <td style={{ padding: '12px 16px' }}>
+            <td className="ap-td ap-td-status" style={{ padding: '12px 16px' }}>
                 <StatusDropdown
                     current={item.status}
                     applicationId={item.id}
@@ -724,7 +725,7 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
             </td>
 
             {/* Actions */}
-            <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+            <td className="ap-td ap-td-actions" style={{ padding: '12px 16px', textAlign: 'center' }}>
                 <button
                     onClick={() => onViewDetail(item)}
                     title="Xem chi tiết"
@@ -1001,6 +1002,26 @@ export default function CandidateProfilesPage() {
 
     return (
         <div>
+            <style>{`
+                @media (max-width: 768px) {
+                    .ap-thead { display: none; }
+                    .ap-tr {
+                        display: flex !important;
+                        flex-wrap: wrap;
+                        align-items: flex-start;
+                        padding: 12px !important;
+                        gap: 0;
+                    }
+                    .ap-td { padding: 0 !important; }
+                    .ap-td-check { flex-shrink: 0; padding-top: 6px !important; }
+                    .ap-td-cand { flex: 1; min-width: 0; padding-left: 10px !important; }
+                    .ap-td-job { width: 100%; padding-left: 51px !important; margin-top: 2px; }
+                    .ap-td-cv { display: none !important; }
+                    .ap-td-time { display: none !important; }
+                    .ap-td-status { padding-left: 51px !important; margin-top: 8px; }
+                    .ap-td-actions { margin-left: auto; margin-top: 8px; }
+                }
+            `}</style>
             {detailItem && (
                 <DetailModal
                     item={detailItem}
@@ -1119,7 +1140,7 @@ export default function CandidateProfilesPage() {
                 <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                         <thead>
-                            <tr>
+                            <tr className="ap-thead">
                                 <th style={{ ...thStyle, width: '36px', padding: '10px 8px 10px 16px' }}>
                                     <input type="checkbox" checked={allChecked}
                                         ref={el => { if (el) el.indeterminate = someChecked; }}

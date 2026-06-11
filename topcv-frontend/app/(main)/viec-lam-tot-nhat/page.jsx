@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
     ChevronLeft,
@@ -58,9 +58,14 @@ const isNew = (dateStr) => Date.now() - new Date(dateStr).getTime() < 7 * 864000
 function JobCard({ job }) {
     const [saved, setSaved] = useState(false);
     const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryType);
-    const location = job.districtName
-        ? `${job.districtName}, ${job.provinceName || ''}`
-        : job.provinceName || job.address || 'Toàn quốc';
+    const location = (() => {
+        const locs = job.locations;
+        if (locs && locs.length > 0) {
+            const names = locs.map(l => l.provinceName || l.districtName).filter(Boolean);
+            return names.length > 0 ? names.join(' • ') : 'Toàn quốc';
+        }
+        return job.provinceName || job.address || 'Toàn quốc';
+    })();
     const remaining = daysLeft(job.deadline);
     const updated = timeAgo(job.updatedAt || job.createdAt);
     const isPro = job.isPro;
@@ -440,31 +445,30 @@ export default function ViecLamTotNhatPage() {
             .catch(console.error);
     }, []);
 
-    const fetchJobs = useCallback(async () => {
-        setLoading(true);
-        try {
-            const params = { page, limit: 20 };
-            if (search) params.search = search;
-            if (provinceCode) params.provinceCode = provinceCode;
-            if (industryId) params.industryId = industryId;
-            const res = await jobService.getAll(params);
-            setJobs(res.data.data || []);
-            setMeta(res.data.meta || { total: 0, totalPages: 1, page: 1 });
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
+    useEffect(() => {
+        let cancelled = false;
+        const doFetch = async () => {
+            setLoading(true);
+            try {
+                const params = { page, limit: 20 };
+                if (search) params.search = search;
+                if (provinceCode) params.provinceCode = provinceCode;
+                if (industryId) params.industryId = industryId;
+                const res = await jobService.getAll(params);
+                if (!cancelled) {
+                    setJobs(res.data.data || []);
+                    setMeta(res.data.meta || { total: 0, totalPages: 1, page: 1 });
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+        doFetch();
+        return () => { cancelled = true; };
     }, [page, search, provinceCode, industryId]);
-
-    useEffect(() => {
-        fetchJobs();
-    }, [fetchJobs]);
-    useEffect(() => {
-        setPage(1);
-    }, [search, provinceCode, industryId]);
-
-    const handleSearch = () => setSearch(searchInput);
+    const handleSearch = () => { setSearch(searchInput); setPage(1); };
 
     const provinceOptions = [
         { label: 'Tất cả tỉnh/thành phố', value: '' },

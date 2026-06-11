@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -39,6 +40,20 @@ enum WorkingDays {
   CUSTOM        // Tùy chỉnh (xem workingDaysNote)
 }
 
+enum ApplicationStatus {
+  PENDING
+  REVIEWING
+  INTERVIEW
+  OFFERED
+  REJECTED
+}
+
+enum EmailTemplateType {
+  REJECTION
+  INTERVIEW_INVITE
+  OFFER_LETTER
+}
+
 model User {
   id               String   @id @default(uuid())
   email            String   @unique
@@ -63,6 +78,9 @@ model User {
   payments         Payment[]
   companyFollows   CompanyFollow[]
   companyReviews   CompanyReview[]
+  applications     Application[]
+  savedJobs        SavedJob[]
+  fcmToken         String?   @map("fcm_token")
 
   @@map("users")
 }
@@ -96,11 +114,14 @@ model EmployerProfile {
   slug        String?  @unique
   createdAt   DateTime @default(now()) @map("created_at")
 
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  industry  Industry?        @relation(fields: [industryId], references: [id])
-  jobs      Job[]
-  followers CompanyFollow[]
-  reviews   CompanyReview[]
+  emailNotificationEnabled Boolean @default(false) @map("email_notification_enabled")
+
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  industry       Industry?        @relation(fields: [industryId], references: [id])
+  jobs           Job[]
+  followers      CompanyFollow[]
+  reviews        CompanyReview[]
+  emailTemplates EmailTemplate[]
 
   @@map("employer_profiles")
 }
@@ -154,38 +175,51 @@ model JobPosition {
 }
 
 model Job {
-  id               String       @id @default(uuid())
-  employerId       String       @map("employer_id")
-  title            String
-  slug             String?      @unique @map("slug")
-  description      String
-  salaryMin        Int?         @map("salary_min")
-  salaryMax        Int?         @map("salary_max")
-  salaryType       String       @default("range") @map("salary_type")
-  address          String?
-  provinceCode     String?      @map("province_code")
-  provinceName     String?      @map("province_name")
-  districtCode     String?      @map("district_code")
-  districtName     String?      @map("district_name")
-  jobType          String?      @map("job_type")
-  experience       String?
-  level            JobLevel?
-  workingType      WorkingType? @map("working_type")
-  workingDays      WorkingDays? @map("working_days")
-  workingDaysNote  String?      @map("working_days_note")
-  quantity         Int          @default(1)
-  deadline         DateTime?
-  isActive         Boolean      @default(true) @map("is_active")
-  industryId       Int?         @map("industry_id")
-  jobPositionId    Int?         @map("job_position_id")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id              String       @id @default(uuid())
+  employerId      String       @map("employer_id")
+  title           String
+  slug            String?      @unique @map("slug")
+  description     String
+  salaryMin       Int?         @map("salary_min")
+  salaryMax       Int?         @map("salary_max")
+  salaryType      String       @default("range") @map("salary_type")
+  jobType         String?      @map("job_type")
+  experience      String?
+  level           JobLevel?
+  workingType     WorkingType? @map("working_type")
+  workingDays     WorkingDays? @map("working_days")
+  workingDaysNote String?      @map("working_days_note")
+  quantity        Int          @default(1)
+  deadline        DateTime?
+  isActive        Boolean      @default(true) @map("is_active")
+  industryId      Int?         @map("industry_id")
+  jobPositionId   Int?         @map("job_position_id")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
 
-  employer    EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
-  industry    Industry?       @relation(fields: [industryId], references: [id])
-  jobPosition JobPosition?    @relation(fields: [jobPositionId], references: [id])
+  employer      EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+  industry      Industry?       @relation(fields: [industryId], references: [id])
+  jobPosition   JobPosition?    @relation(fields: [jobPositionId], references: [id])
+  locations     JobLocation[]
+  applications  Application[]
+  savedByUsers  SavedJob[]
 
   @@map("jobs")
+}
+
+model JobLocation {
+  id           String  @id @default(uuid())
+  jobId        String  @map("job_id")
+  provinceCode String? @map("province_code")
+  provinceName String? @map("province_name")
+  districtCode String? @map("district_code")
+  districtName String? @map("district_name")
+  address      String?
+
+  job          Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applications Application[]
+
+  @@map("job_locations")
 }
 
 model Resume {
@@ -203,9 +237,62 @@ model Resume {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications Application[]
 
   @@map("resumes")
+}
+
+model Application {
+  id              String            @id @default(uuid())
+  jobId           String            @map("job_id")
+  candidateId     String            @map("candidate_id")
+  locationId      String?           @map("location_id")
+  resumeId        String?           @map("resume_id")
+  cvFileUrl       String?           @map("cv_file_url")
+  coverLetter     String?           @map("cover_letter") @db.Text
+  coverLetterId   String?           @map("cover_letter_id")
+  status          ApplicationStatus @default(PENDING)
+  note            String?           @db.Text
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  job              Job          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidate        User         @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  location         JobLocation? @relation(fields: [locationId], references: [id])
+  resume           Resume?      @relation(fields: [resumeId], references: [id])
+  coverLetterDoc   CoverLetter? @relation("ApplicationCoverLetter", fields: [coverLetterId], references: [id])
+
+  @@unique([jobId, candidateId])
+  @@map("applications")
+}
+
+model SavedJob {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  jobId     String   @map("job_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@map("saved_jobs")
+}
+
+model EmailTemplate {
+  id         String            @id @default(uuid())
+  employerId String            @map("employer_id")
+  type       EmailTemplateType
+  subject    String
+  body       String            @db.Text
+  isDefault  Boolean           @default(false) @map("is_default")
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  employer EmployerProfile @relation(fields: [employerId], references: [id], onDelete: Cascade)
+
+  @@map("email_templates")
 }
 
 model Payment {
@@ -238,7 +325,8 @@ model CoverLetter {
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications Application[] @relation("ApplicationCoverLetter")
 
   @@map("cover_letters")
 }

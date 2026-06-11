@@ -27,7 +27,7 @@ export default function TieuChuanItKNTemplate({ content = {}, color = '#00b14f',
     const baseFontSize = fontSize === 'small' ? 11 : fontSize === 'large' ? 13 : 12;
 
     return (
-        <div style={{ fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.6', background, minHeight: '100%' }}>
+        <div style={{ fontFamily: "var(--font-be-vietnam), 'Be Vietnam Pro', Arial, sans-serif", fontSize: `${baseFontSize}px`, lineHeight: '1.6', background, minHeight: '100%' }}>
             {/* Header */}
             <div style={{ background: color, color: 'white', padding: '28px 28px 20px' }}>
                 <h1 style={{ margin: '0 0 4px', fontSize: `${baseFontSize + 10}px`, fontWeight: '800', letterSpacing: '1px' }}>

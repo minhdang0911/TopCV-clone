@@ -41,7 +41,7 @@ export default function TieuChuanTemplate({ content = {}, color = '#00b14f', fon
     const baseFontSize = fontSize === 'small' ? 11 : fontSize === 'large' ? 13 : 12;
 
     return (
-        <div style={{ display: 'flex', minHeight: '100%', fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.55', background }}>
+        <div style={{ display: 'flex', minHeight: '100%', fontFamily: "var(--font-be-vietnam), 'Be Vietnam Pro', Arial, sans-serif", fontSize: `${baseFontSize}px`, lineHeight: '1.55', background }}>
             {/* LEFT SIDEBAR */}
             <div style={{ width: '200px', flexShrink: 0, background: color, padding: '24px 16px', color: 'white' }}>
                 {/* Avatar */}

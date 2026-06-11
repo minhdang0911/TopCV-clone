@@ -160,7 +160,7 @@ export default function HienDaiTemplate({ content = {}, color = '#0ea5e9', fontS
     };
 
     return (
-        <div style={{ width: '794px', minHeight: '1123px', fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
+        <div style={{ width: '794px', minHeight: '1123px', fontFamily: "var(--font-be-vietnam), 'Be Vietnam Pro', Arial, sans-serif", fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, display: 'flex', flexDirection: 'column', boxSizing: 'border-box' }}>
             {/* Top header strip */}
             <div style={{ background: color, padding: '28px 24px 24px', color: 'white' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>

@@ -167,7 +167,7 @@ export default function ThamVongTemplate({ content = {}, color = '#1e293b', font
     };
 
     return (
-        <div style={{ width: '794px', minHeight: '1123px', fontFamily: '"Helvetica Neue", Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, boxSizing: 'border-box' }}>
+        <div style={{ width: '794px', minHeight: '1123px', fontFamily: "var(--font-be-vietnam), 'Be Vietnam Pro', 'Helvetica Neue', Arial, sans-serif", fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, boxSizing: 'border-box' }}>
             {/* Full-width dark header */}
             <div style={{ background: '#1e293b', color: 'white' }}>
                 <div style={{ display: 'flex', alignItems: 'stretch' }}>

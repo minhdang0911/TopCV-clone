@@ -173,7 +173,7 @@ export default function GocCanhTemplate({ content = {}, color = '#1e293b', fontS
     };
 
     return (
-        <div style={{ width: '794px', minHeight: '1123px', fontFamily: '"Helvetica Neue", Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, display: 'flex', boxSizing: 'border-box' }}>
+        <div style={{ width: '794px', minHeight: '1123px', fontFamily: "var(--font-be-vietnam), 'Be Vietnam Pro', 'Helvetica Neue', Arial, sans-serif", fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, display: 'flex', boxSizing: 'border-box' }}>
             {/* Dark left sidebar - 30% width = ~238px */}
             <div style={{ width: '238px', flexShrink: 0, background: darkSidebar, color: 'white', padding: '32px 20px' }}>
                 {/* Avatar (square) */}

@@ -159,7 +159,7 @@ export default function ChuyenNghiepTemplate({ content = {}, color = '#1e3a5f', 
     };
 
     return (
-        <div style={{ width: '794px', minHeight: '1123px', fontFamily: 'Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, boxSizing: 'border-box' }}>
+        <div style={{ width: '794px', minHeight: '1123px', fontFamily: "var(--font-be-vietnam), 'Be Vietnam Pro', Arial, sans-serif", fontSize: `${baseFontSize}px`, lineHeight: lineSpacing, background, boxSizing: 'border-box' }}>
             {/* Colored header block */}
             <div style={{ background: color, minHeight: '120px', padding: '28px 36px 24px', color: 'white' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>

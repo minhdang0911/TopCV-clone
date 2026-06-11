@@ -2,6 +2,7 @@
 
 import { createElement, useEffect, useRef, useState } from 'react';
 import { useParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { coverLetterService } from '@/services/cover-letter.service';
 import { getCLTemplate } from '@/app/components/cover-letter/templateRegistry';
 
@@ -68,7 +69,7 @@ export default function ViewCoverLetterPage() {
                     <button
                         onClick={() => {
                             navigator.clipboard.writeText(window.location.href).catch(() => {});
-                            alert('Đã copy link!');
+                            toast.success('Đã copy link!');
                         }}
                         style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: '1px solid #ddd', borderRadius: '6px', padding: '7px 14px', fontSize: '13px', cursor: 'pointer', color: '#555', fontWeight: '500' }}
                     >

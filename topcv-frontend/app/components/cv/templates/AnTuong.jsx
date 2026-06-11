@@ -29,7 +29,7 @@ export default function AnTuongTemplate({ content = {}, color = '#1e3a5f', fontS
     const baseFontSize = fontSize === 'small' ? 11 : fontSize === 'large' ? 13 : 12;
 
     return (
-        <div style={{ fontFamily: '"Helvetica Neue", Arial, sans-serif', fontSize: `${baseFontSize}px`, lineHeight: '1.6', background, minHeight: '100%' }}>
+        <div style={{ fontFamily: "var(--font-be-vietnam), 'Be Vietnam Pro', 'Helvetica Neue', Arial, sans-serif", fontSize: `${baseFontSize}px`, lineHeight: '1.6', background, minHeight: '100%' }}>
             {/* Dark header */}
             <div style={{ background: color, color: 'white', padding: '32px 28px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>

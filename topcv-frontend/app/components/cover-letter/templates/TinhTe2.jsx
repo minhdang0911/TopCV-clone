@@ -1,4 +1,5 @@
 import { Mail, Phone, MapPin } from 'lucide-react';
+import { resolveFontFamily } from '../fontMap';
 
 const FONT_SIZE = { small: '12px', medium: '13px', large: '14px' };
 
@@ -11,7 +12,7 @@ export default function TinhTe2({ content = {}, color = '#1e3a5f', font = 'Muli'
     return (
         <div style={{
             width: '794px', minHeight: '1123px', background: 'white',
-            fontFamily: `'${font}', sans-serif`, fontSize: fs, color: '#222',
+            fontFamily: resolveFontFamily(font), fontSize: fs, color: '#222',
             position: 'relative', boxSizing: 'border-box',
         }}>
             {/* Header band */}

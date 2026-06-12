@@ -55,7 +55,7 @@ export class SavedJobsService {
               isActive: true,
               deadline: true,
               locations: true,
-              company: { select: { companyName: true, logo: true } },
+              employer: { select: { companyName: true, logoUrl: true } },
             },
           },
         },

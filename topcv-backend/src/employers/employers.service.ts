@@ -205,18 +205,20 @@ export class EmployersService {
     }
 
     const [jobs, total] = await Promise.all([
-      this.prisma.job.findMany({
+      // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+      (this.prisma.job.findMany as any)({
         where,
         select: {
           id: true,
+          slug: true,
           title: true,
           salaryMin: true,
           salaryMax: true,
           salaryType: true,
-          provinceName: true,
           workingType: true,
           deadline: true,
           createdAt: true,
+          locations: { select: { provinceName: true }, take: 1 },
         },
         orderBy: { createdAt: 'desc' },
         skip,
@@ -226,7 +228,18 @@ export class EmployersService {
     ]);
 
     return {
-      data: jobs,
+      data: (jobs as any[]).map((j) => ({
+        id: j.id,
+        slug: j.slug,
+        title: j.title,
+        salaryMin: j.salaryMin,
+        salaryMax: j.salaryMax,
+        salaryType: j.salaryType,
+        workingType: j.workingType,
+        deadline: j.deadline,
+        createdAt: j.createdAt,
+        provinceName: (j.locations as any)[0]?.provinceName ?? null,
+      })),
       meta: {
         total,
         page,

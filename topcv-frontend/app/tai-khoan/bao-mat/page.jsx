@@ -7,6 +7,7 @@ import useAuthStore from '@/stores/auth.store';
 import ProfileSidebar from '@/app/components/profile/ProfileSidebar';
 import OtpModal from '@/app/components/auth/OtpModal';
 import { authService } from '@/services/auth.service';
+import { toast } from 'sonner';
 import { userService } from '@/services/user.service';
 
 export default function SecurityPage() {
@@ -18,8 +19,6 @@ export default function SecurityPage() {
 
     const [twoFaModal, setTwoFaModal] = useState(null);
     const [twoFaLoading, setTwoFaLoading] = useState(false);
-    const [twoFaError, setTwoFaError] = useState('');
-    const [twoFaSuccess, setTwoFaSuccess] = useState('');
 
     useEffect(() => {
         if (hydrated && !isAuthenticated) {
@@ -39,8 +38,6 @@ export default function SecurityPage() {
     };
 
     const handleToggle2FA = async () => {
-        setTwoFaError('');
-        setTwoFaSuccess('');
         setTwoFaLoading(true);
         try {
             if (twoFactorEnabled) {
@@ -51,7 +48,7 @@ export default function SecurityPage() {
                 setTwoFaModal('enable');
             }
         } catch (err) {
-            setTwoFaError(err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
+            toast.error(err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
         } finally {
             setTwoFaLoading(false);
         }
@@ -62,12 +59,12 @@ export default function SecurityPage() {
             await authService.twoFaConfirm(code);
             await refreshUser();
             setTwoFaModal(null);
-            setTwoFaSuccess('Bật xác minh 2 bước thành công');
+            toast.success('Bật xác minh 2 bước thành công');
         } else if (twoFaModal === 'disable') {
             await authService.twoFaDisableConfirm(code);
             await refreshUser();
             setTwoFaModal(null);
-            setTwoFaSuccess('Tắt xác minh 2 bước thành công');
+            toast.success('Tắt xác minh 2 bước thành công');
         }
     };
 
@@ -241,34 +238,6 @@ export default function SecurityPage() {
                                 </button>
                             </div>
 
-                            {twoFaError && (
-                                <div
-                                    style={{
-                                        marginTop: '10px',
-                                        padding: '8px 12px',
-                                        background: '#fee2e2',
-                                        color: '#991b1b',
-                                        borderRadius: '6px',
-                                        fontSize: '13px',
-                                    }}
-                                >
-                                    {twoFaError}
-                                </div>
-                            )}
-                            {twoFaSuccess && (
-                                <div
-                                    style={{
-                                        marginTop: '10px',
-                                        padding: '8px 12px',
-                                        background: '#d1fae5',
-                                        color: '#065f46',
-                                        borderRadius: '6px',
-                                        fontSize: '13px',
-                                    }}
-                                >
-                                    {twoFaSuccess}
-                                </div>
-                            )}
                         </div>
 
                         {/* Privacy text */}

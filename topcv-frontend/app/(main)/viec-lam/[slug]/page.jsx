@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, use, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { MapPin, DollarSign, Briefcase, Clock, Users, GraduationCap, Building2, Heart, ChevronRight, X, FileText, ChevronDown, CheckCircle, Upload, Eye, AlertCircle } from 'lucide-react';
 import { jobService } from '@/services/job.service';
 import { resumeService } from '@/services/resume.service';
@@ -10,6 +10,7 @@ import { applicationsService, savedJobsService } from '@/services/applications.s
 import { chatService } from '@/services/chat.service';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
+import { toast } from 'sonner';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -776,6 +777,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
     const params = use(paramsPromise);
     const slug = params.slug;
     const router = useRouter();
+    const searchParams = useSearchParams();
 
     const { isAuthenticated, role } = useAuthStore();
 
@@ -786,6 +788,10 @@ export default function JobDetailPage({ params: paramsPromise }) {
     const [savingToggle, setSavingToggle] = useState(false);
     const [applied, setApplied] = useState(false);
     const [applyOpen, setApplyOpen] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('apply') === '1') setApplyOpen(true);
+    }, [searchParams]);
 
     useEffect(() => {
         if (!slug) return;
@@ -834,8 +840,12 @@ export default function JobDetailPage({ params: paramsPromise }) {
         setSavingToggle(true);
         try {
             const res = await savedJobsService.toggle(job.id);
-            setSaved(res.data?.data?.saved ?? !saved);
-        } catch {} finally {
+            const nowSaved = res.data?.data?.saved ?? !saved;
+            setSaved(nowSaved);
+            toast.success(nowSaved ? 'Đã lưu việc làm' : 'Đã bỏ lưu');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        } finally {
             setSavingToggle(false);
         }
     };

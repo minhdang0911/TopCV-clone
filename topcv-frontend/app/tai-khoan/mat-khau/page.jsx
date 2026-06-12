@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import useAuthStore from '@/stores/auth.store';
 import ProfileSidebar from '@/app/components/profile/ProfileSidebar';
 import { userService } from '@/services/user.service';
+import { toast } from 'sonner';
 
 export default function ChangePasswordPage() {
     const router = useRouter();
@@ -14,7 +15,6 @@ export default function ChangePasswordPage() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState('');
     const [error, setError] = useState('');
 
     useEffect(() => {
@@ -38,12 +38,12 @@ export default function ChangePasswordPage() {
         setSaving(true);
         try {
             await userService.changePassword({ oldPassword, newPassword, confirmPassword });
-            setSuccess('Đổi mật khẩu thành công');
+            toast.success('Đổi mật khẩu thành công');
             setOldPassword('');
             setNewPassword('');
             setConfirmPassword('');
         } catch (err) {
-            setError(err.response?.data?.message || 'Đổi mật khẩu thất bại');
+            toast.error(err.response?.data?.message || 'Đổi mật khẩu thất bại');
         } finally {
             setSaving(false);
         }
@@ -86,20 +86,6 @@ export default function ChangePasswordPage() {
                             Thay đổi mật khẩu đăng nhập
                         </h1>
 
-                        {success && (
-                            <div
-                                style={{
-                                    background: '#d1fae5',
-                                    color: '#065f46',
-                                    padding: '10px 14px',
-                                    borderRadius: '6px',
-                                    fontSize: '13px',
-                                    marginBottom: '16px',
-                                }}
-                            >
-                                {success}
-                            </div>
-                        )}
                         {error && (
                             <div
                                 style={{

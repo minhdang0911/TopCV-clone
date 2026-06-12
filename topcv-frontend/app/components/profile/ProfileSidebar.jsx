@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
@@ -44,7 +45,10 @@ export default function ProfileSidebar() {
             await api.patch('/users/me/profile', { isLookingForJob: !isLooking });
             const res = await api.get('/users/me');
             setUser(res.data);
-        } catch {}
+            toast.success(!isLooking ? 'Đã bật tìm việc' : 'Đã tắt tìm việc');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        }
         setToggling(false);
     };
 

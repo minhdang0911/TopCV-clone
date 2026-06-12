@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Save, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
 
@@ -35,22 +36,18 @@ export default function HoSoCongTyPage() {
         taxCode: profile?.taxCode || '',
     });
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
 
     const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(''); setSuccess(false);
         setSaving(true);
         try {
             const res = await api.patch('/users/me/profile', form);
             setUser({ ...user, employerProfile: { ...profile, ...res.data } });
-            setSuccess(true);
-            setTimeout(() => setSuccess(false), 3000);
+            toast.success('Cập nhật thành công!');
         } catch (err) {
-            setError(err?.response?.data?.message || 'Có lỗi xảy ra');
+            toast.error(err?.response?.data?.message || 'Có lỗi xảy ra');
         } finally {
             setSaving(false);
         }
@@ -129,8 +126,6 @@ export default function HoSoCongTyPage() {
 
                     {/* Save */}
                     <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                        {error && <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626', marginBottom: '12px' }}>{error}</div>}
-                        {success && <div style={{ background: '#dcfce7', border: '1px solid #86efac', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#059669', marginBottom: '12px' }}>Cập nhật thành công!</div>}
                         <button type="submit" disabled={saving} style={{
                             width: '100%', background: saving ? '#86efac' : GREEN, color: 'white',
                             border: 'none', borderRadius: '8px', padding: '11px', fontSize: '14px',

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import useAuthStore from '@/stores/auth.store';
 import ProfileSidebar from '@/app/components/profile/ProfileSidebar';
 import { userService } from '@/services/user.service';
+import { toast } from 'sonner';
 
 export default function PersonalInfoPage() {
     const router = useRouter();
@@ -13,8 +14,6 @@ export default function PersonalInfoPage() {
     const [fullName, setFullName] = useState('');
     const [phone, setPhone] = useState('');
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState('');
-    const [error, setError] = useState('');
 
     useEffect(() => {
         if (hydrated && !isAuthenticated) {
@@ -31,16 +30,14 @@ export default function PersonalInfoPage() {
 
     const handleSave = async (e) => {
         e.preventDefault();
-        setSuccess('');
-        setError('');
         setSaving(true);
         try {
             await userService.updateInfo({ fullName, phone });
             const res = await userService.getMe();
             setUser(res.data);
-            setSuccess('Cập nhật thông tin thành công');
+            toast.success('Cập nhật thông tin thành công');
         } catch (err) {
-            setError(err.response?.data?.message || 'Cập nhật thất bại');
+            toast.error(err.response?.data?.message || 'Cập nhật thất bại');
         } finally {
             setSaving(false);
         }
@@ -74,35 +71,6 @@ export default function PersonalInfoPage() {
                         <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px' }}>
                             (*) Các thông tin bắt buộc
                         </p>
-
-                        {success && (
-                            <div
-                                style={{
-                                    background: '#d1fae5',
-                                    color: '#065f46',
-                                    padding: '10px 14px',
-                                    borderRadius: '6px',
-                                    fontSize: '13px',
-                                    marginBottom: '16px',
-                                }}
-                            >
-                                {success}
-                            </div>
-                        )}
-                        {error && (
-                            <div
-                                style={{
-                                    background: '#fee2e2',
-                                    color: '#991b1b',
-                                    padding: '10px 14px',
-                                    borderRadius: '6px',
-                                    fontSize: '13px',
-                                    marginBottom: '16px',
-                                }}
-                            >
-                                {error}
-                            </div>
-                        )}
 
                         <form onSubmit={handleSave}>
                             <div style={{ marginBottom: '16px' }}>

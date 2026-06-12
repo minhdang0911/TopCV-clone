@@ -16,8 +16,11 @@ import {
     Filter,
 } from 'lucide-react';
 import { jobService } from '@/services/job.service';
+import { savedJobsService } from '@/services/applications.service';
 import { provinceService } from '@/services/province.service';
+import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
+import { toast } from 'sonner';
 
 type Job = {
     id: string;
@@ -95,8 +98,7 @@ const formatSalary = (min: number, max: number, type: string) => {
 const isNew = (dateStr: string) => Date.now() - new Date(dateStr).getTime() < 7 * 86400000;
 
 /* ─── JobCard ─── */
-function JobCard({ job }: { job: Job }) {
-    const [saved, setSaved] = useState(false);
+function JobCard({ job, saved, onToggleSave }: { job: Job; saved: boolean; onToggleSave: () => void }) {
     const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryType);
     const location = job.districtName
         ? `${job.districtName}, ${job.provinceName || ''}`
@@ -289,7 +291,8 @@ function JobCard({ job }: { job: Job }) {
                 <button
                     onClick={(e) => {
                         e.preventDefault();
-                        setSaved(!saved);
+                        e.stopPropagation();
+                        onToggleSave();
                     }}
                     style={{
                         background: 'none',
@@ -935,10 +938,45 @@ export default function BestJobsSection({
         industryId: initialIndustryId,
     });
 
+    const { isAuthenticated } = useAuthStore();
+    // Separate from savedJobIds so we can derive an empty set when logged out
+    // without calling setState inside an effect.
+    const [loadedSavedIds, setLoadedSavedIds] = useState<Set<string>>(new Set());
+    const savedJobIds = isAuthenticated ? loadedSavedIds : (new Set<string>());
+
     const [provinces, setProvinces] = useState<Province[]>([]);
     const [districts, setDistricts] = useState<District[]>([]);
     const [loadingDistricts, setLoadingDistricts] = useState(false);
     const [industries, setIndustries] = useState<Industry[]>([]);
+
+    /* Load saved job IDs */
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        savedJobsService.getMy({ limit: 200 })
+            .then((res: { data?: { data?: Array<{ jobId: string }> } }) => {
+                setLoadedSavedIds(new Set((res.data?.data || []).map(i => i.jobId)));
+            })
+            .catch(() => {});
+    }, [isAuthenticated]);
+
+    async function handleToggleSave(jobId: string) {
+        if (!isAuthenticated) return;
+        const willSave = !loadedSavedIds.has(jobId);
+        setLoadedSavedIds(prev => {
+            const next = new Set(prev);
+            if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+            return next;
+        });
+        toast.success(willSave ? 'Đã lưu việc làm' : 'Đã bỏ lưu');
+        try { await savedJobsService.toggle(jobId); } catch {
+            setLoadedSavedIds(prev => {
+                const next = new Set(prev);
+                if (next.has(jobId)) next.delete(jobId); else next.add(jobId);
+                return next;
+            });
+            toast.error('Có lỗi xảy ra');
+        }
+    }
 
     /* Load provinces + industries */
     useEffect(() => {
@@ -1152,7 +1190,14 @@ export default function BestJobsSection({
                     {loading ? (
                         Array.from({ length: limit }).map((_, i) => <JobCardSkeleton key={i} />)
                     ) : jobs.length > 0 ? (
-                        jobs.map((job) => <JobCard key={job.id} job={job} />)
+                        jobs.map((job) => (
+                            <JobCard
+                                key={job.id}
+                                job={job}
+                                saved={savedJobIds.has(job.id)}
+                                onToggleSave={() => handleToggleSave(job.id)}
+                            />
+                        ))
                     ) : (
                         <div
                             style={{

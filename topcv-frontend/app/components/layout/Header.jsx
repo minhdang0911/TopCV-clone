@@ -44,8 +44,8 @@ import { useRouter } from 'next/navigation';
 import { paymentService } from '@/services/payment.service';
 
 const PLAN_META = {
-    FREE:    { label: null,      color: null,      bg: null },
-    PRO:     { label: 'Pro',     color: '#00b14f', bg: '#dcfce7' },
+    FREE: { label: null, color: null, bg: null },
+    PRO: { label: 'Pro', color: '#00b14f', bg: '#dcfce7' },
     PREMIUM: { label: 'Premium', color: '#d97706', bg: '#fef3c7' },
 };
 
@@ -53,7 +53,7 @@ const PLAN_META = {
 const VIEC_LAM_ITEMS = [
     { label: 'Tìm việc làm', href: '/viec-lam', Icon: Briefcase },
     { label: 'Việc làm đã lưu', href: '/viec-lam/da-luu', Icon: Bookmark },
-    { label: 'Việc làm đã ứng tuyển', href: '/viec-lam/da-ung-tuyen', Icon: CheckSquare },
+    { label: 'Việc làm đã ứng tuyển', href: '/viec-da-ung-tuyen', Icon: CheckSquare },
     { label: 'Việc làm phù hợp', href: '/viec-lam/phu-hop', Icon: Star },
 ];
 const CONG_TY_ITEMS = [
@@ -140,7 +140,7 @@ const USER_MENU_SECTIONS = [
         label: 'Quản lý tìm việc',
         items: [
             { label: 'Việc làm đã lưu', href: '/viec-lam/da-luu' },
-            { label: 'Việc làm đã ứng tuyển', href: '/viec-lam/da-ung-tuyen' },
+            { label: 'Việc làm đã ứng tuyển', href: '/viec-da-ung-tuyen' },
             { label: 'Việc làm phù hợp với bạn', href: '/viec-lam/phu-hop' },
             { label: 'Cài đặt gợi ý việc làm', href: '#' },
         ],
@@ -281,8 +281,9 @@ export default function Header() {
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        paymentService.getMyPlan()
-            .then(res => setPlanInfo(res.data))
+        paymentService
+            .getMyPlan()
+            .then((res) => setPlanInfo(res.data))
             .catch(() => {});
     }, [isAuthenticated]);
 
@@ -474,20 +475,39 @@ export default function Header() {
                                     </div>
                                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '4px' }}>
                                         {user.isVerified && (
-                                            <span style={{ fontSize: '10px', color: '#059669', background: '#d1fae5', padding: '1px 7px', borderRadius: '4px', fontWeight: '600' }}>
+                                            <span
+                                                style={{
+                                                    fontSize: '10px',
+                                                    color: '#059669',
+                                                    background: '#d1fae5',
+                                                    padding: '1px 7px',
+                                                    borderRadius: '4px',
+                                                    fontWeight: '600',
+                                                }}
+                                            >
                                                 Đã xác thực
                                             </span>
                                         )}
-                                        {planInfo && (() => {
-                                            const plan = planInfo.plan ?? 'FREE';
-                                            const meta = PLAN_META[plan];
-                                            if (!meta?.label) return null;
-                                            return (
-                                                <span style={{ fontSize: '10px', color: meta.color, background: meta.bg, padding: '1px 7px', borderRadius: '4px', fontWeight: '700' }}>
-                                                    {meta.label}
-                                                </span>
-                                            );
-                                        })()}
+                                        {planInfo &&
+                                            (() => {
+                                                const plan = planInfo.plan ?? 'FREE';
+                                                const meta = PLAN_META[plan];
+                                                if (!meta?.label) return null;
+                                                return (
+                                                    <span
+                                                        style={{
+                                                            fontSize: '10px',
+                                                            color: meta.color,
+                                                            background: meta.bg,
+                                                            padding: '1px 7px',
+                                                            borderRadius: '4px',
+                                                            fontWeight: '700',
+                                                        }}
+                                                    >
+                                                        {meta.label}
+                                                    </span>
+                                                );
+                                            })()}
                                     </div>
                                 </div>
                             </div>
@@ -712,7 +732,13 @@ export default function Header() {
                 <MobileSection title="CÔNG CỤ" items={CONG_CU_ITEMS} onClose={onMobileClose} />
             </>
         ),
-        'cam-nang': <MobileSection title="" items={CAM_NANG_ITEMS.map((i) => ({ ...i, Icon: BarChart2 }))} onClose={onMobileClose} />,
+        'cam-nang': (
+            <MobileSection
+                title=""
+                items={CAM_NANG_ITEMS.map((i) => ({ ...i, Icon: BarChart2 }))}
+                onClose={onMobileClose}
+            />
+        ),
     };
 
     /* ─── Desktop dropdown content ─── */
@@ -1122,7 +1148,8 @@ export default function Header() {
                             }}
                         >
                             <NotificationBell />
-                            <button
+                            <Link
+                                href="/tin-nhan"
                                 style={{
                                     background: 'none',
                                     border: 'none',
@@ -1130,10 +1157,11 @@ export default function Header() {
                                     cursor: 'pointer',
                                     padding: '4px',
                                     display: 'flex',
+                                    textDecoration: 'none',
                                 }}
                             >
                                 <MessageSquare size={20} />
-                            </button>
+                            </Link>
                             <div style={{ width: '1px', height: '24px', background: '#e5e7eb', margin: '0 4px' }} />
                             {renderAuthSection()}
                             {!isMobile && (

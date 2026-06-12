@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Eye, ClipboardList, CheckCircle, RotateCcw } from 'lucide-react';
+import { ChevronDown, Eye, ClipboardList, CheckCircle, RotateCcw, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { applicationsService } from '@/services/applications.service';
+import { chatService } from '@/services/chat.service';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
 import useAuthStore from '@/stores/auth.store';
 
@@ -637,6 +639,7 @@ function RejectedEmailModal({ application, companyName, logoUrl, onClose, onConf
 // ─── Application Row ──────────────────────────────────────────────────────────
 
 function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onViewDetail, onModalStatus }) {
+    const router = useRouter();
     const candidate = item.candidate || {};
     const profile = candidate.candidateProfile || {};
     const job = item.job || {};
@@ -726,15 +729,35 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
 
             {/* Actions */}
             <td className="ap-td ap-td-actions" style={{ padding: '12px 16px', textAlign: 'center' }}>
-                <button
-                    onClick={() => onViewDetail(item)}
-                    title="Xem chi tiết"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
-                    onMouseEnter={e => e.currentTarget.style.color = GREEN}
-                    onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
-                >
-                    <Eye size={16} />
-                </button>
+                <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                    <button
+                        onClick={() => onViewDetail(item)}
+                        title="Xem chi tiết"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
+                        onMouseEnter={e => e.currentTarget.style.color = GREEN}
+                        onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                    >
+                        <Eye size={16} />
+                    </button>
+                    <button
+                        onClick={async () => {
+                            try {
+                                const res = await chatService.findOrCreate({
+                                    candidateUserId: item.candidateId,
+                                    employerProfileId: item.job?.employerId,
+                                });
+                                const convId = res.data?.data?.id;
+                                if (convId) router.push(`/nha-tuyen-dung/tin-nhan?conv=${convId}`);
+                            } catch {}
+                        }}
+                        title="Nhắn tin"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
+                        onMouseEnter={e => e.currentTarget.style.color = GREEN}
+                        onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                    >
+                        <MessageSquare size={16} />
+                    </button>
+                </div>
             </td>
         </tr>
     );

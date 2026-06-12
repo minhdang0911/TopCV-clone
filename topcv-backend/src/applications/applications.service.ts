@@ -129,8 +129,9 @@ export class ApplicationsService {
               salaryMax: true,
               salaryType: true,
               jobType: true,
+              industryId: true,
               locations: true,
-              employer: { select: { companyName: true, logoUrl: true } },
+              employer: { select: { id: true, companyName: true, logoUrl: true } },
             },
           },
           resume: { select: { id: true, title: true } },
@@ -232,7 +233,7 @@ export class ApplicationsService {
         take: Number(limit),
         orderBy: { createdAt: 'desc' },
         include: {
-          job: { select: { id: true, title: true } },
+          job: { select: { id: true, title: true, employerId: true } },
           candidate: {
             select: {
               id: true,

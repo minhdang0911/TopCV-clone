@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, MapPin, DollarSign, Clock, ChevronRight, Trash2 } from 'lucide-react';
+import { Building2, MapPin, DollarSign, Clock, MessageSquare, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { applicationsService } from '@/services/applications.service';
+import { chatService } from '@/services/chat.service';
+import api from '@/lib/axios';
 import useAuthStore from '@/stores/auth.store';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -48,12 +50,24 @@ const FILTER_TABS = [
 // ─── Application Card ────────────────────────────────────────────────────────
 
 function ApplicationCard({ item, onWithdraw }) {
+    const router = useRouter();
     const job = item.job || {};
-    const employer = { companyName: job.employer?.companyName, logo: job.employer?.logoUrl };
+    const employer = { id: job.employer?.id, companyName: job.employer?.companyName, logo: job.employer?.logoUrl };
     const status = STATUS_CONFIG[item.status] || STATUS_CONFIG.PENDING;
     const locationText = job.locations?.length > 0
         ? job.locations.map(l => l.provinceName).filter(Boolean).join(' • ')
         : null;
+
+    const handleChat = async () => {
+        if (!employer.id) return;
+        try {
+            const res = await chatService.findOrCreate({ employerProfileId: employer.id });
+            const convId = res.data?.data?.id;
+            if (convId) router.push(`/tin-nhan?conv=${convId}`);
+        } catch (e) {
+            toast.error(e?.response?.data?.message || 'Không thể mở chat');
+        }
+    };
 
     return (
         <div style={{
@@ -136,17 +150,35 @@ function ApplicationCard({ item, onWithdraw }) {
             </div>
 
             {/* Actions */}
-            {item.status === 'PENDING' && (
-                <button
-                    onClick={() => onWithdraw(item.id)}
-                    title="Rút đơn ứng tuyển"
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px', flexShrink: 0 }}
-                    onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
-                    onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
-                >
-                    <Trash2 size={16} />
-                </button>
-            )}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, alignItems: 'flex-end' }}>
+                {employer.id && (
+                    <button
+                        onClick={handleChat}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                            padding: '5px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                            border: '1.5px solid #00b14f', background: 'white', color: '#00b14f',
+                            cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = '#00b14f'; e.currentTarget.style.color = 'white'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.color = '#00b14f'; }}
+                    >
+                        <MessageSquare size={12} />
+                        Nhắn tin
+                    </button>
+                )}
+                {item.status === 'PENDING' && (
+                    <button
+                        onClick={() => onWithdraw(item.id)}
+                        title="Rút đơn ứng tuyển"
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
+                        onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                        onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                )}
+            </div>
         </div>
     );
 }
@@ -163,6 +195,7 @@ export default function AppliedJobsPage() {
     const [loading, setLoading] = useState(true);
     const [activeStatus, setActiveStatus] = useState('');
     const [withdrawing, setWithdrawing] = useState(null);
+    const [suggestions, setSuggestions] = useState([]);
 
     const LIMIT = 10;
 
@@ -190,6 +223,31 @@ export default function AppliedJobsPage() {
         if (!isAuthenticated) return;
         fetchApplications();
     }, [page, activeStatus, isAuthenticated]);
+
+    // Fetch suggested jobs based on industry IDs from applied jobs (page 1 only)
+    useEffect(() => {
+        if (!isAuthenticated || page !== 1 || activeStatus) return;
+        if (items.length === 0) return;
+        const appliedIds = new Set(items.map(i => i.job?.id).filter(Boolean));
+        const industryIds = [...new Set(items.map(i => i.job?.industryId).filter(Boolean))];
+        if (!industryIds.length) return;
+        // Fetch up to 8 jobs per industry, then deduplicate, then exclude already-applied
+        Promise.all(
+            industryIds.slice(0, 2).map(id =>
+                api.get(`/jobs?industryId=${id}&limit=8&page=1`)
+                    .then(r => r.data?.data || [])
+                    .catch(() => [])
+            )
+        ).then(results => {
+            const seen = new Set();
+            const merged = results.flat().filter(j => {
+                if (appliedIds.has(j.id) || seen.has(j.id)) return false;
+                seen.add(j.id);
+                return true;
+            });
+            setSuggestions(merged.slice(0, 8));
+        });
+    }, [items, isAuthenticated, page, activeStatus]);
 
     const handleWithdraw = async (id) => {
         if (!confirm('Bạn có chắc muốn rút đơn ứng tuyển này?')) return;
@@ -304,6 +362,72 @@ export default function AppliedJobsPage() {
                                 {p}
                             </button>
                         ))}
+                    </div>
+                )}
+
+                {/* Suggested jobs */}
+                {suggestions.length > 0 && (
+                    <div style={{ marginTop: '40px' }}>
+                        <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#111827', margin: '0 0 16px' }}>
+                            Việc làm tương tự việc bạn đã ứng tuyển
+                        </h2>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {suggestions.map(job => {
+                                const ep = job.employer || {};
+                                const salary = (() => {
+                                    if (job.salaryType === 'negotiable' || (!job.salaryMin && !job.salaryMax)) return 'Thỏa thuận';
+                                    const fmt = n => (n / 1_000_000).toFixed(0) + 'tr';
+                                    if (job.salaryMin && job.salaryMax) return `${fmt(job.salaryMin)} - ${fmt(job.salaryMax)}`;
+                                    if (job.salaryMin) return `Từ ${fmt(job.salaryMin)}`;
+                                    return `Đến ${fmt(job.salaryMax)}`;
+                                })();
+                                const location = job.locations?.[0]?.provinceName || '';
+                                return (
+                                    <a
+                                        key={job.id}
+                                        href={`/viec-lam/${job.slug || job.id}`}
+                                        style={{ textDecoration: 'none' }}
+                                    >
+                                        <div style={{
+                                            background: 'white', borderRadius: '10px', border: '1px solid #e5e7eb',
+                                            padding: '14px 16px', display: 'flex', gap: '12px', alignItems: 'center',
+                                            transition: 'border-color 0.15s, box-shadow 0.15s',
+                                        }}
+                                            onMouseEnter={e => { e.currentTarget.style.borderColor = '#00b14f'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,177,79,0.08)'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.borderColor = '#e5e7eb'; e.currentTarget.style.boxShadow = 'none'; }}
+                                        >
+                                            <div style={{ width: '44px', height: '44px', borderRadius: '8px', border: '1px solid #e5e7eb', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f9fafb' }}>
+                                                {ep.logoUrl
+                                                    ? <img src={ep.logoUrl} alt={ep.companyName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                    : <Building2 size={18} color="#9ca3af" />
+                                                }
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827', marginBottom: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{job.title}</div>
+                                                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '6px' }}>{ep.companyName}</div>
+                                                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                                    <span style={{ fontSize: '12px', color: '#00b14f', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                        <DollarSign size={11} />{salary}
+                                                    </span>
+                                                    {location && (
+                                                        <span style={{ fontSize: '12px', color: '#6b7280', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                                                            <MapPin size={11} />{location}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <span style={{
+                                                flexShrink: 0, fontSize: '12px', fontWeight: '600',
+                                                padding: '4px 12px', borderRadius: '20px',
+                                                background: '#f0fdf4', color: '#00b14f', border: '1px solid #bbf7d0',
+                                            }}>
+                                                Ứng tuyển
+                                            </span>
+                                        </div>
+                                    </a>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
             </div>

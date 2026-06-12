@@ -7,6 +7,7 @@ import { jobService } from '@/services/job.service';
 import { resumeService } from '@/services/resume.service';
 import { coverLetterService } from '@/services/cover-letter.service';
 import { applicationsService, savedJobsService } from '@/services/applications.service';
+import { chatService } from '@/services/chat.service';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
 
@@ -1034,7 +1035,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
 
                         {applied && <AppliedBanner />}
 
-                        <div style={{ display: 'flex', gap: '12px' }}>
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                             {applied ? (
                                 <button style={{ ...btnPrimary, background: '#9ca3af', cursor: 'default' }} disabled>
                                     Đã ứng tuyển
@@ -1042,6 +1043,20 @@ export default function JobDetailPage({ params: paramsPromise }) {
                             ) : (
                                 <button style={btnPrimary} onClick={handleApply}>
                                     Ứng tuyển ngay
+                                </button>
+                            )}
+                            {applied && (
+                                <button
+                                    style={{ ...btnSecondary, color: '#00b14f', borderColor: '#00b14f' }}
+                                    onClick={async () => {
+                                        try {
+                                            const res = await chatService.findOrCreate({ employerProfileId: employer.id });
+                                            const convId = res.data?.data?.id;
+                                            if (convId) router.push(`/tin-nhan?conv=${convId}`);
+                                        } catch {}
+                                    }}
+                                >
+                                    Nhắn tin
                                 </button>
                             )}
                             <button

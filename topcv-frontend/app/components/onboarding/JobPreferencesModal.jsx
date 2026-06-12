@@ -2,10 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { X, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import useAuthStore from '@/stores/auth.store';
 import { userService } from '@/services/user.service';
 import { provinceService } from '@/services/province.service';
 import api from '@/lib/axios';
+
+const GREEN = '#00b14f';
 
 const SALARY_OPTIONS = [
     { label: 'Dưới 5 triệu', min: 0, max: 5000000 },
@@ -17,8 +21,25 @@ const SALARY_OPTIONS = [
     { label: 'Thương lượng', min: null, max: null },
 ];
 
+const EXPERIENCE_OPTIONS = [
+    { label: 'Chưa có kinh nghiệm', value: 'chua-co' },
+    { label: '1 năm trở xuống', value: '1-nam-tro-xuong' },
+    { label: '1 năm', value: '1-nam' },
+    { label: '2 năm', value: '2-nam' },
+    { label: '3 năm', value: '3-nam' },
+    { label: 'Từ 4-5 năm', value: '4-5-nam' },
+    { label: 'Trên 5 năm', value: 'tren-5-nam' },
+];
+
+const STEP_TITLES = [
+    'Bạn muốn tìm việc ngành gì?',
+    'Kinh nghiệm và mức lương',
+    'Bạn muốn làm việc ở đâu?',
+];
+
 export default function JobPreferencesModal({ onClose }) {
     const { user, setUser } = useAuthStore();
+    const router = useRouter();
     const [step, setStep] = useState(1);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
@@ -26,15 +47,15 @@ export default function JobPreferencesModal({ onClose }) {
     const [industries, setIndustries] = useState([]);
     const [provinces, setProvinces] = useState([]);
     const [selectedIndustryIds, setSelectedIndustryIds] = useState([]);
-    const [desiredPosition, setDesiredPosition] = useState('');
+    const [gender, setGender] = useState('');
+    const [experience, setExperience] = useState('');
     const [selectedSalary, setSelectedSalary] = useState(null);
-    const [selectedProvinceCode, setSelectedProvinceCode] = useState(null);
+    const [selectedProvinceCodes, setSelectedProvinceCodes] = useState([]);
 
     useEffect(() => {
         api.get('/industries?limit=100').then((res) => {
             setIndustries(Array.isArray(res.data) ? res.data : (res.data?.data || []));
         }).catch(() => setIndustries([]));
-
         provinceService.getAll().then((data) => {
             setProvinces(Array.isArray(data) ? data : []);
         }).catch(() => setProvinces([]));
@@ -46,21 +67,16 @@ export default function JobPreferencesModal({ onClose }) {
         );
     };
 
-    const updateUserState = (jobPreferences) => {
-        if (!user) return;
-        setUser({
-            ...user,
-            candidateProfile: {
-                ...user.candidateProfile,
-                jobPreferences,
-            },
-        });
+    const toggleProvince = (code) => {
+        setSelectedProvinceCodes((prev) =>
+            prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code],
+        );
     };
 
     const handleSkip = async () => {
         try {
             await userService.updateJobPreferences({ skipped: true });
-            updateUserState({ skipped: true });
+            if (user) setUser({ ...user, candidateProfile: { ...user.candidateProfile, jobPreferences: { skipped: true } } });
         } catch {}
         onClose();
     };
@@ -70,14 +86,18 @@ export default function JobPreferencesModal({ onClose }) {
         setError('');
         try {
             const jobPreferences = {
+                gender,
                 industryIds: selectedIndustryIds,
-                desiredPosition: desiredPosition.trim(),
+                experience,
                 salary: selectedSalary,
-                provinceCode: selectedProvinceCode,
+                provinceCodes: selectedProvinceCodes,
+                provinceCode: selectedProvinceCodes[0] || null,
             };
             await userService.updateJobPreferences(jobPreferences);
-            updateUserState(jobPreferences);
+            if (user) setUser({ ...user, candidateProfile: { ...user.candidateProfile, jobPreferences } });
+            toast.success('Đã lưu thành công!');
             onClose();
+            router.push('/cai-dat-goi-y-viec-lam');
         } catch {
             setError('Có lỗi xảy ra. Vui lòng thử lại.');
         } finally {
@@ -86,41 +106,16 @@ export default function JobPreferencesModal({ onClose }) {
     };
 
     return (
-        <div
-            style={{
-                position: 'fixed',
-                inset: 0,
-                background: 'rgba(0,0,0,0.55)',
-                zIndex: 9999,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '16px',
-            }}
-        >
-            <div
-                style={{
-                    background: 'white',
-                    borderRadius: '16px',
-                    width: '100%',
-                    maxWidth: '520px',
-                    maxHeight: '90vh',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: '0 24px 80px rgba(0,0,0,0.25)',
-                }}
-            >
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '520px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 80px rgba(0,0,0,0.25)' }}>
                 {/* Header */}
                 <div style={{ padding: '24px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#00b14f', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '600', color: GREEN, textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '4px' }}>
                             Bước {step}/3
                         </div>
                         <h2 style={{ fontSize: '20px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                            {step === 1 && 'Bạn muốn tìm việc ngành gì?'}
-                            {step === 2 && 'Vị trí và mức lương mong muốn'}
-                            {step === 3 && 'Bạn muốn làm việc ở đâu?'}
+                            {STEP_TITLES[step - 1]}
                         </h2>
                         <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>
                             TopCV sẽ gợi ý công việc phù hợp hơn cho bạn
@@ -134,17 +129,16 @@ export default function JobPreferencesModal({ onClose }) {
                 {/* Progress bar */}
                 <div style={{ padding: '16px 24px 0' }}>
                     <div style={{ height: '4px', background: '#e5e7eb', borderRadius: '2px' }}>
-                        <div style={{ height: '100%', width: `${(step / 3) * 100}%`, background: '#00b14f', borderRadius: '2px', transition: 'width 0.3s' }} />
+                        <div style={{ height: '100%', width: `${(step / 3) * 100}%`, background: GREEN, borderRadius: '2px', transition: 'width 0.3s' }} />
                     </div>
                 </div>
 
                 {/* Content */}
                 <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+                    {/* Step 1: Industries */}
                     {step === 1 && (
                         <div>
-                            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                                Chọn một hoặc nhiều ngành nghề
-                            </p>
+                            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>Chọn một hoặc nhiều ngành nghề</p>
                             {industries.length === 0 ? (
                                 <div style={{ color: '#9ca3af', fontSize: '13px' }}>Đang tải ngành nghề...</div>
                             ) : (
@@ -152,21 +146,7 @@ export default function JobPreferencesModal({ onClose }) {
                                     {industries.map((ind) => {
                                         const selected = selectedIndustryIds.includes(ind.id);
                                         return (
-                                            <button
-                                                key={ind.id}
-                                                onClick={() => toggleIndustry(ind.id)}
-                                                style={{
-                                                    padding: '7px 14px',
-                                                    borderRadius: '20px',
-                                                    border: selected ? '1.5px solid #00b14f' : '1.5px solid #e5e7eb',
-                                                    background: selected ? '#f0fdf4' : 'white',
-                                                    color: selected ? '#00b14f' : '#374151',
-                                                    fontSize: '13px',
-                                                    fontWeight: selected ? '600' : '400',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.15s',
-                                                }}
-                                            >
+                                            <button key={ind.id} onClick={() => toggleIndustry(ind.id)} style={{ padding: '7px 14px', borderRadius: '20px', border: selected ? `1.5px solid ${GREEN}` : '1.5px solid #e5e7eb', background: selected ? '#f0fdf4' : 'white', color: selected ? GREEN : '#374151', fontSize: '13px', fontWeight: selected ? '600' : '400', cursor: 'pointer', transition: 'all 0.15s' }}>
                                                 {ind.name}
                                             </button>
                                         );
@@ -176,50 +156,47 @@ export default function JobPreferencesModal({ onClose }) {
                         </div>
                     )}
 
+                    {/* Step 2: Gender + Experience + Salary */}
                     {step === 2 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                            {/* Gender */}
                             <div>
-                                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                                    Vị trí mong muốn
-                                </label>
-                                <input
-                                    type="text"
-                                    placeholder="VD: Frontend Developer, Kế toán tổng hợp..."
-                                    value={desiredPosition}
-                                    onChange={(e) => setDesiredPosition(e.target.value)}
-                                    style={{
-                                        width: '100%',
-                                        padding: '10px 12px',
-                                        border: '1px solid #d1d5db',
-                                        borderRadius: '8px',
-                                        fontSize: '14px',
-                                        outline: 'none',
-                                        boxSizing: 'border-box',
-                                    }}
-                                />
+                                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '8px' }}>Giới tính</label>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {[{ label: 'Nữ', val: 'FEMALE' }, { label: 'Nam', val: 'MALE' }, { label: 'Không xác định', val: 'OTHER' }].map(opt => {
+                                        const sel = gender === opt.val;
+                                        return (
+                                            <button key={opt.val} onClick={() => setGender(opt.val)} style={{ padding: '7px 14px', borderRadius: '20px', border: sel ? `1.5px solid ${GREEN}` : '1.5px solid #e5e7eb', background: sel ? '#f0fdf4' : 'white', color: sel ? GREEN : '#374151', fontSize: '13px', fontWeight: sel ? '600' : '400', cursor: 'pointer' }}>
+                                                {opt.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                             </div>
+
+                            {/* Experience */}
                             <div>
-                                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '8px' }}>
-                                    Mức lương mong muốn
-                                </label>
+                                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '8px' }}>Kinh nghiệm</label>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {EXPERIENCE_OPTIONS.map(opt => {
+                                        const sel = experience === opt.value;
+                                        return (
+                                            <button key={opt.value} onClick={() => setExperience(opt.value)} style={{ padding: '7px 14px', borderRadius: '20px', border: sel ? `1.5px solid ${GREEN}` : '1.5px solid #e5e7eb', background: sel ? '#f0fdf4' : 'white', color: sel ? GREEN : '#374151', fontSize: '13px', fontWeight: sel ? '600' : '400', cursor: 'pointer' }}>
+                                                {opt.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {/* Salary */}
+                            <div>
+                                <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '8px' }}>Mức lương mong muốn</label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                                     {SALARY_OPTIONS.map((opt) => {
                                         const selected = selectedSalary?.label === opt.label;
                                         return (
-                                            <button
-                                                key={opt.label}
-                                                onClick={() => setSelectedSalary(opt)}
-                                                style={{
-                                                    padding: '7px 14px',
-                                                    borderRadius: '20px',
-                                                    border: selected ? '1.5px solid #00b14f' : '1.5px solid #e5e7eb',
-                                                    background: selected ? '#f0fdf4' : 'white',
-                                                    color: selected ? '#00b14f' : '#374151',
-                                                    fontSize: '13px',
-                                                    fontWeight: selected ? '600' : '400',
-                                                    cursor: 'pointer',
-                                                }}
-                                            >
+                                            <button key={opt.label} onClick={() => setSelectedSalary(opt)} style={{ padding: '7px 14px', borderRadius: '20px', border: selected ? `1.5px solid ${GREEN}` : '1.5px solid #e5e7eb', background: selected ? '#f0fdf4' : 'white', color: selected ? GREEN : '#374151', fontSize: '13px', fontWeight: selected ? '600' : '400', cursor: 'pointer' }}>
                                                 {opt.label}
                                             </button>
                                         );
@@ -229,33 +206,18 @@ export default function JobPreferencesModal({ onClose }) {
                         </div>
                     )}
 
+                    {/* Step 3: Multi-province */}
                     {step === 3 && (
                         <div>
-                            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                                Chọn tỉnh/thành phố bạn muốn làm việc
-                            </p>
+                            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>Chọn tỉnh/thành phố bạn muốn làm việc (có thể chọn nhiều)</p>
                             {provinces.length === 0 ? (
                                 <div style={{ color: '#9ca3af', fontSize: '13px' }}>Đang tải danh sách tỉnh thành...</div>
                             ) : (
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
                                     {provinces.map((prov) => {
-                                        const selected = selectedProvinceCode === prov.code;
+                                        const selected = selectedProvinceCodes.includes(prov.code);
                                         return (
-                                            <button
-                                                key={prov.code}
-                                                onClick={() => setSelectedProvinceCode(prov.code)}
-                                                style={{
-                                                    padding: '7px 14px',
-                                                    borderRadius: '20px',
-                                                    border: selected ? '1.5px solid #00b14f' : '1.5px solid #e5e7eb',
-                                                    background: selected ? '#f0fdf4' : 'white',
-                                                    color: selected ? '#00b14f' : '#374151',
-                                                    fontSize: '13px',
-                                                    fontWeight: selected ? '600' : '400',
-                                                    cursor: 'pointer',
-                                                    whiteSpace: 'nowrap',
-                                                }}
-                                            >
+                                            <button key={prov.code} onClick={() => toggleProvince(prov.code)} style={{ padding: '7px 14px', borderRadius: '20px', border: selected ? `1.5px solid ${GREEN}` : '1.5px solid #e5e7eb', background: selected ? '#f0fdf4' : 'white', color: selected ? GREEN : '#374151', fontSize: '13px', fontWeight: selected ? '600' : '400', cursor: 'pointer', whiteSpace: 'nowrap' }}>
                                                 {prov.name}
                                             </button>
                                         );
@@ -275,55 +237,21 @@ export default function JobPreferencesModal({ onClose }) {
                 {/* Footer */}
                 <div style={{ padding: '16px 24px', borderTop: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     {step > 1 ? (
-                        <button
-                            onClick={() => setStep(step - 1)}
-                            style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}
-                        >
+                        <button onClick={() => setStep(step - 1)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '14px', cursor: 'pointer', fontWeight: '500' }}>
                             Quay lại
                         </button>
                     ) : (
-                        <button
-                            onClick={handleSkip}
-                            style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '14px', cursor: 'pointer' }}
-                        >
+                        <button onClick={handleSkip} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: '14px', cursor: 'pointer' }}>
                             Bỏ qua
                         </button>
                     )}
 
                     {step < 3 ? (
-                        <button
-                            onClick={() => setStep(step + 1)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                padding: '10px 24px',
-                                background: '#00b14f',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                cursor: 'pointer',
-                            }}
-                        >
+                        <button onClick={() => setStep(step + 1)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '10px 24px', background: GREEN, color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                             Tiếp theo <ChevronRight size={16} />
                         </button>
                     ) : (
-                        <button
-                            onClick={handleSubmit}
-                            disabled={saving}
-                            style={{
-                                padding: '10px 28px',
-                                background: saving ? '#9ca3af' : '#00b14f',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                fontSize: '14px',
-                                fontWeight: '600',
-                                cursor: saving ? 'not-allowed' : 'pointer',
-                            }}
-                        >
+                        <button onClick={handleSubmit} disabled={saving} style={{ padding: '10px 28px', background: saving ? '#9ca3af' : GREEN, color: 'white', border: 'none', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: saving ? 'not-allowed' : 'pointer' }}>
                             {saving ? 'Đang lưu...' : 'Hoàn thành'}
                         </button>
                     )}

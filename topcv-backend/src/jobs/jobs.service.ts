@@ -671,9 +671,13 @@ export class JobsService {
 
     if (prefs && !prefs.skipped) {
       const hasIndustry = Array.isArray(prefs.industryIds) && prefs.industryIds.length > 0;
-      const hasProvince = !!prefs.provinceCode;
       const industryIds = hasIndustry ? prefs.industryIds.map(Number) : [];
-      const provinceCode = hasProvince ? String(prefs.provinceCode) : null;
+
+      // Support both old single provinceCode and new multiple provinceCodes
+      const rawCodes: string[] = Array.isArray(prefs.provinceCodes) && prefs.provinceCodes.length > 0
+        ? prefs.provinceCodes.map(String)
+        : prefs.provinceCode ? [String(prefs.provinceCode)] : [];
+      const hasProvince = rawCodes.length > 0;
 
       // Tier 1: industry + province
       if (hasIndustry && hasProvince) {
@@ -682,7 +686,7 @@ export class JobsService {
             isActive: true,
             industryId: { in: industryIds },
             // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
-            locations: { some: { provinceCode } },
+            locations: { some: { provinceCode: { in: rawCodes } } },
           },
           take: 9,
           orderBy: { createdAt: 'desc' },
@@ -715,7 +719,7 @@ export class JobsService {
           where: {
             isActive: true,
             // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
-            locations: { some: { provinceCode } },
+            locations: { some: { provinceCode: { in: rawCodes } } },
           },
           take: 9,
           orderBy: { createdAt: 'desc' },

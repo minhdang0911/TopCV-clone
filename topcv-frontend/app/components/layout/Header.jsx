@@ -52,7 +52,7 @@ const PLAN_META = {
 /* ─── Icon map for mobile menus ─── */
 const VIEC_LAM_ITEMS = [
     { label: 'Tìm việc làm', href: '/viec-lam', Icon: Briefcase },
-    { label: 'Việc làm đã lưu', href: '/viec-lam/da-luu', Icon: Bookmark },
+    { label: 'Việc làm đã lưu', href: '/viec-lam-da-luu', Icon: Bookmark },
     { label: 'Việc làm đã ứng tuyển', href: '/viec-da-ung-tuyen', Icon: CheckSquare },
     { label: 'Việc làm phù hợp', href: '/viec-lam/phu-hop', Icon: Star },
 ];
@@ -139,10 +139,10 @@ const USER_MENU_SECTIONS = [
         key: 'tim-viec',
         label: 'Quản lý tìm việc',
         items: [
-            { label: 'Việc làm đã lưu', href: '/viec-lam/da-luu' },
+            { label: 'Việc làm đã lưu', href: '/viec-lam-da-luu' },
             { label: 'Việc làm đã ứng tuyển', href: '/viec-da-ung-tuyen' },
             { label: 'Việc làm phù hợp với bạn', href: '/viec-lam/phu-hop' },
-            { label: 'Cài đặt gợi ý việc làm', href: '#' },
+            { label: 'Cài đặt gợi ý việc làm', href: '/cai-dat-goi-y-viec-lam' },
         ],
     },
     {

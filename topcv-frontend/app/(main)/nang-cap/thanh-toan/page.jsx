@@ -2,7 +2,11 @@
 
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { paymentService } from '@/services/payment.service';
+import momoLogo from '@/app/assests/img/momo.png';
+import zalopayLogo from '@/app/assests/img/zalopay.png';
+import vnpayLogo from '@/app/assests/img/vnpay.png';
 
 const PLAN_INFO = {
     pro: { label: 'Tài khoản Pro', price: '50.000 VNĐ', duration: '1 tháng', color: '#00b14f' },
@@ -10,9 +14,9 @@ const PLAN_INFO = {
 };
 
 const GATEWAYS = [
-    { key: 'MOMO', label: 'Thanh toán bằng Ví MoMo', color: '#a50064', logo: '💜' },
-    { key: 'ZALOPAY', label: 'Thanh toán bằng ZaloPay', color: '#0068ff', logo: '💙' },
-    { key: 'VNPAY', label: 'Thanh toán bằng VNPay', color: '#e31837', logo: '❤️' },
+    { key: 'MOMO', label: 'Thanh toán bằng Ví MoMo', color: '#a50064', logo: momoLogo },
+    { key: 'ZALOPAY', label: 'Thanh toán bằng ZaloPay', color: '#0068ff', logo: zalopayLogo },
+    { key: 'VNPAY', label: 'Thanh toán bằng VNPay', color: '#e31837', logo: vnpayLogo },
 ];
 
 function ThanhToanContent() {
@@ -77,7 +81,7 @@ function ThanhToanContent() {
                                     style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', border: `2px solid ${gateway === gw.key ? gw.color : '#e5e7eb'}`, borderRadius: '8px', cursor: 'pointer', background: gateway === gw.key ? '#fafafa' : 'white', transition: 'border-color 0.15s' }}
                                 >
                                     <input type="radio" name="gateway" value={gw.key} checked={gateway === gw.key} onChange={() => setGateway(gw.key)} style={{ accentColor: gw.color, width: '16px', height: '16px' }} />
-                                    <span style={{ fontSize: '20px' }}>{gw.logo}</span>
+                                    <Image src={gw.logo} alt={gw.key} width={32} height={32} style={{ objectFit: 'contain', borderRadius: '4px' }} />
                                     <span style={{ fontSize: '14px', fontWeight: '500', color: '#1a1a1a' }}>{gw.label}</span>
                                 </label>
                             ))}

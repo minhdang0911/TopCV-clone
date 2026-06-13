@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, DollarSign, Clock, Bookmark, Settings2, Sparkles } from 'lucide-react';
+import { MapPin, DollarSign, Clock, Bookmark, Settings2, Sparkles, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { jobService } from '@/services/job.service';
 import { savedJobsService } from '@/services/applications.service';
@@ -21,7 +21,7 @@ function formatSalary(min, max, type) {
     return 'Thương lượng';
 }
 
-function JobCard({ job, saved, onToggleSave }) {
+function JobCard({ job, saved, onToggleSave, onDismiss }) {
     const router = useRouter();
     const logo = job.employer?.logoUrl || job.company?.logo;
     const companyName = job.employer?.companyName || job.company?.companyName || '';
@@ -36,10 +36,18 @@ function JobCard({ job, saved, onToggleSave }) {
             onMouseLeave={e => { e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = '#e5e7eb'; }}
             onClick={() => router.push(`/viec-lam/${job.slug}`)}
         >
+            {/* Dismiss button */}
+            <button
+                onClick={e => { e.preventDefault(); e.stopPropagation(); onDismiss(); }}
+                style={{ position: 'absolute', top: '10px', right: '36px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: '#d1d5db', lineHeight: 0 }}
+                title="Không quan tâm"
+            >
+                <X size={15} />
+            </button>
             {/* Save button */}
             <button
                 onClick={e => { e.preventDefault(); e.stopPropagation(); onToggleSave(); }}
-                style={{ position: 'absolute', top: '12px', right: '12px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: saved ? GREEN : '#d1d5db', lineHeight: 0 }}
+                style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', color: saved ? GREEN : '#d1d5db', lineHeight: 0 }}
                 title={saved ? 'Bỏ lưu' : 'Lưu việc làm'}
             >
                 <Bookmark size={18} fill={saved ? GREEN : 'none'} />
@@ -128,6 +136,17 @@ export default function ViecLamPhuHopPage() {
         }
     };
 
+    const handleDismiss = async (jobId) => {
+        if (!isAuthenticated) return;
+        setJobs(prev => prev.filter(j => j.id !== jobId));
+        try {
+            await jobService.dismissSuggestion(jobId);
+            toast.success('Đã ẩn gợi ý này');
+        } catch {
+            toast.error('Có lỗi xảy ra');
+        }
+    };
+
     if (!hydrated || loading) {
         return (
             <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 16px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>
@@ -196,6 +215,7 @@ export default function ViecLamPhuHopPage() {
                             job={job}
                             saved={savedIds.has(job.id)}
                             onToggleSave={() => handleToggleSave(job.id)}
+                            onDismiss={() => handleDismiss(job.id)}
                         />
                     ))}
                 </div>

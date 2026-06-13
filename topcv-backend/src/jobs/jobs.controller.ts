@@ -68,6 +68,13 @@ export class JobsController {
     return this.jobsService.getJobSuggestions(req.user.sub);
   }
 
+  @Delete('suggestions/dismiss/:jobId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CANDIDATE')
+  dismissSuggestion(@Req() req: any, @Param('jobId') jobId: string) {
+    return this.jobsService.dismissJobSuggestion(req.user.sub, jobId);
+  }
+
   @Get('backfill-slugs')
   backfillSlugs() {
     return this.jobsService.backfillSlugs();

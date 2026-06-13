@@ -657,17 +657,51 @@ export class JobsService {
 
   // â”€â”€â”€ JOB SUGGESTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+  async dismissJobSuggestion(userId: string, jobId: string) {
+    await this.prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS dismissed_job_suggestions (
+        user_id TEXT NOT NULL,
+        job_id  TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (user_id, job_id)
+      )
+    `);
+    await this.prisma.$executeRawUnsafe(
+      `INSERT INTO dismissed_job_suggestions (user_id, job_id)
+       VALUES ($1, $2) ON CONFLICT (user_id, job_id) DO NOTHING`,
+      userId,
+      jobId,
+    );
+    return { dismissed: true };
+  }
+
+  private async getDismissedJobIds(userId: string): Promise<string[]> {
+    try {
+      const rows = await this.prisma.$queryRawUnsafe<{ job_id: string }[]>(
+        `SELECT job_id FROM dismissed_job_suggestions WHERE user_id = $1`,
+        userId,
+      );
+      return rows.map((r) => r.job_id);
+    } catch {
+      return [];
+    }
+  }
+
   async getJobSuggestions(userId: string) {
-    const profile = await this.prisma.candidateProfile.findUnique({
-      where: { userId },
-      select: { jobPreferences: true },
-    });
+    const [profile, dismissedIds] = await Promise.all([
+      this.prisma.candidateProfile.findUnique({
+        where: { userId },
+        select: { jobPreferences: true },
+      }),
+      this.getDismissedJobIds(userId),
+    ]);
 
     const prefs = profile?.jobPreferences as any;
     const include = {
       employer: { select: { companyName: true, logoUrl: true, slug: true } },
       industry: { select: { name: true } },
     };
+    const notDismissed = dismissedIds.length > 0 ? { id: { notIn: dismissedIds } } : {};
 
     if (prefs && !prefs.skipped) {
       const hasIndustry = Array.isArray(prefs.industryIds) && prefs.industryIds.length > 0;
@@ -687,30 +721,24 @@ export class JobsService {
             industryId: { in: industryIds },
             // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
             locations: { some: { provinceCode: { in: rawCodes } } },
+            ...notDismissed,
           },
           take: 9,
           orderBy: { createdAt: 'desc' },
           include,
         });
-        if (jobs.length >= 1) {
-          return { data: jobs, isPersonalized: true };
-        }
+        if (jobs.length >= 1) return { data: jobs, isPersonalized: true };
       }
 
       // Tier 2: industry only
       if (hasIndustry) {
         const jobs = await this.prisma.job.findMany({
-          where: {
-            isActive: true,
-            industryId: { in: industryIds },
-          },
+          where: { isActive: true, industryId: { in: industryIds }, ...notDismissed },
           take: 9,
           orderBy: { createdAt: 'desc' },
           include,
         });
-        if (jobs.length >= 1) {
-          return { data: jobs, isPersonalized: true };
-        }
+        if (jobs.length >= 1) return { data: jobs, isPersonalized: true };
       }
 
       // Tier 3: province only
@@ -720,19 +748,18 @@ export class JobsService {
             isActive: true,
             // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
             locations: { some: { provinceCode: { in: rawCodes } } },
+            ...notDismissed,
           },
           take: 9,
           orderBy: { createdAt: 'desc' },
           include,
         });
-        if (jobs.length >= 1) {
-          return { data: jobs, isPersonalized: true };
-        }
+        if (jobs.length >= 1) return { data: jobs, isPersonalized: true };
       }
     }
 
     const fallback = await this.prisma.job.findMany({
-      where: { isActive: true },
+      where: { isActive: true, ...notDismissed },
       take: 9,
       orderBy: { createdAt: 'desc' },
       include,

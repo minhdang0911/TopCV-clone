@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -54,6 +53,13 @@ enum EmailTemplateType {
   OFFER_LETTER
 }
 
+enum ConnectStatus {
+  PENDING
+  CONNECTED
+  REJECTED
+  SKIPPED
+}
+
 model User {
   id               String   @id @default(uuid())
   email            String   @unique
@@ -82,8 +88,9 @@ model User {
   savedJobs        SavedJob[]
   fcmToken         String?   @map("fcm_token")
 
-  conversationsAsCandidate Conversation[] @relation("CandidateConversations")
-  sentMessages             Message[]      @relation("SentMessages")
+  conversationsAsCandidate Conversation[]             @relation("CandidateConversations")
+  sentMessages             Message[]                   @relation("SentMessages")
+  connectsAsCandidate      EmployerCandidateConnect[]  @relation("ConnectCandidate")
 
   @@map("users")
 }
@@ -93,12 +100,14 @@ model CandidateProfile {
   userId              String   @unique @map("user_id")
   fullName            String   @map("full_name")
   avatarUrl           String?  @map("avatar_url")
-  isLookingForJob     Boolean  @default(true) @map("is_looking_for_job")
+  isLookingForJob     Boolean  @default(false) @map("is_looking_for_job")
   allowEmployerSearch Boolean  @default(true) @map("allow_employer_search")
   jobPreferences      Json?    @map("job_preferences")
+  defaultCvId         String?  @map("default_cv_id")
   createdAt           DateTime @default(now()) @map("created_at")
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultCv Resume? @relation("CandidateDefaultCv", fields: [defaultCvId], references: [id], onDelete: SetNull)
 
   @@map("candidate_profiles")
 }
@@ -119,13 +128,14 @@ model EmployerProfile {
 
   emailNotificationEnabled Boolean @default(false) @map("email_notification_enabled")
 
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  industry       Industry?        @relation(fields: [industryId], references: [id])
+  user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  industry       Industry?                  @relation(fields: [industryId], references: [id])
   jobs           Job[]
   followers      CompanyFollow[]
   reviews        CompanyReview[]
   emailTemplates EmailTemplate[]
   conversations  Conversation[]
+  connects       EmployerCandidateConnect[]
 
   @@map("employer_profiles")
 }
@@ -237,12 +247,14 @@ model Resume {
   lineSpacing Float    @default(1.5) @map("line_spacing")
   background  String   @default("white")
   content     Json
+  fileUrl     String?  @map("file_url")
   isPublic    Boolean  @default(false) @map("is_public")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  applications Application[]
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications        Application[]
+  defaultForCandidates CandidateProfile[] @relation("CandidateDefaultCv")
 
   @@map("resumes")
 }
@@ -391,4 +403,19 @@ model AuditLog {
   user User @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+model EmployerCandidateConnect {
+  id                String        @id @default(uuid())
+  employerProfileId String        @map("employer_profile_id")
+  candidateUserId   String        @map("candidate_user_id")
+  status            ConnectStatus @default(PENDING)
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  employer  EmployerProfile @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+  candidate User            @relation("ConnectCandidate", fields: [candidateUserId], references: [id], onDelete: Cascade)
+
+  @@unique([employerProfileId, candidateUserId])
+  @@map("employer_candidate_connects")
 }

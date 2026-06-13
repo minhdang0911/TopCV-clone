@@ -120,13 +120,14 @@ export class UsersService {
       avatarUrl?: string;
       isLookingForJob?: boolean;
       allowEmployerSearch?: boolean;
+      defaultCvId?: string | null;
     },
   ) {
     const cleanData = Object.fromEntries(
       Object.entries(data).filter(([_, v]) => v !== undefined),
     );
 
-    return this.prisma.candidateProfile.upsert({
+    return (this.prisma.candidateProfile as any).upsert({
       where: { userId },
       update: cleanData,
       create: {

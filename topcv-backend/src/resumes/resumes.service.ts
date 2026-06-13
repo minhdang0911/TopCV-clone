@@ -78,16 +78,20 @@ export class ResumesService {
       fontSize?: string;
       lineSpacing?: number;
       content?: any;
+      fileUrl?: string;
     },
   ) {
-    const plan = await this.getUserPlan(userId);
-    const limit = PLAN_LIMITS[plan]?.cv ?? 6;
-    const count = await this.prisma.resume.count({ where: { userId, type: 'resume' } });
-    if (count >= limit) {
-      throw new ForbiddenException(`Bạn đã đạt giới hạn ${limit} CV. Nâng cấp tài khoản để tạo thêm.`);
+    const isUploaded = data.type === 'uploaded';
+    if (!isUploaded) {
+      const plan = await this.getUserPlan(userId);
+      const limit = PLAN_LIMITS[plan]?.cv ?? 6;
+      const count = await this.prisma.resume.count({ where: { userId, type: 'resume' } });
+      if (count >= limit) {
+        throw new ForbiddenException(`Bạn đã đạt giới hạn ${limit} CV. Nâng cấp tài khoản để tạo thêm.`);
+      }
     }
 
-    return this.prisma.resume.create({
+    return (this.prisma.resume as any).create({
       data: {
         userId,
         type: data.type ?? 'resume',
@@ -96,7 +100,8 @@ export class ResumesService {
         color: data.color ?? '#00b14f',
         fontSize: data.fontSize ?? 'medium',
         lineSpacing: data.lineSpacing ?? 1.5,
-        content: data.content ?? DEFAULT_CONTENT,
+        content: data.content ?? (isUploaded ? {} : DEFAULT_CONTENT),
+        ...(data.fileUrl ? { fileUrl: data.fileUrl } : {}),
       },
     });
   }

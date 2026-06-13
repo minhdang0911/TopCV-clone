@@ -45,11 +45,12 @@ export class UsersController {
         description,
       });
     }
-    const { avatarUrl, isLookingForJob, allowEmployerSearch } = body;
+    const { avatarUrl, isLookingForJob, allowEmployerSearch, defaultCvId } = body;
     return this.usersService.updateCandidateProfile(req.user.sub, {
       avatarUrl,
       isLookingForJob,
       allowEmployerSearch,
+      defaultCvId,
     });
   }
 

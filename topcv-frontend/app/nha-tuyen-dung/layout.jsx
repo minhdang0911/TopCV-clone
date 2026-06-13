@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { LayoutDashboard, Briefcase, PlusCircle, Building2, ChevronRight, LogOut, Menu, X, Users, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Briefcase, PlusCircle, Building2, ChevronRight, LogOut, Menu, X, Users, MessageSquare, UserPlus } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
 import NotificationBell from '@/app/components/NotificationBell';
@@ -18,6 +18,7 @@ const NAV = [
     { href: '/nha-tuyen-dung/ho-so-ung-vien', label: 'Hồ sơ ứng viên', icon: Users },
     { href: '/nha-tuyen-dung/dang-tin', label: 'Đăng tin mới', icon: PlusCircle },
     { href: '/nha-tuyen-dung/ho-so-cong-ty', label: 'Hồ sơ công ty', icon: Building2 },
+    { href: '/nha-tuyen-dung/ket-noi', label: 'Kết nối ứng viên', icon: UserPlus },
     { href: '/nha-tuyen-dung/tin-nhan', label: 'Tin nhắn', icon: MessageSquare },
 ];
 

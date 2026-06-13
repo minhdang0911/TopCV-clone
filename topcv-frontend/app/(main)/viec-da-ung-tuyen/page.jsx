@@ -8,6 +8,8 @@ import { applicationsService } from '@/services/applications.service';
 import { chatService } from '@/services/chat.service';
 import api from '@/lib/axios';
 import useAuthStore from '@/stores/auth.store';
+import ProfileSidebar from '@/app/components/profile/ProfileSidebar';
+import toppyEmpty from '@/app/assests/img/toppy-empty.webp';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -187,7 +189,7 @@ function ApplicationCard({ item, onWithdraw }) {
 
 export default function AppliedJobsPage() {
     const router = useRouter();
-    const { isAuthenticated, role, hydrated } = useAuthStore();
+    const { user, isAuthenticated, role, hydrated } = useAuthStore();
 
     const [items, setItems] = useState([]);
     const [total, setTotal] = useState(0);
@@ -224,30 +226,45 @@ export default function AppliedJobsPage() {
         fetchApplications();
     }, [page, activeStatus, isAuthenticated]);
 
-    // Fetch suggested jobs based on industry IDs from applied jobs (page 1 only)
+    // Fetch suggested jobs — runs after loading finishes, independent of status filter
     useEffect(() => {
-        if (!isAuthenticated || page !== 1 || activeStatus) return;
-        if (items.length === 0) return;
+        if (!isAuthenticated || page !== 1 || loading) return;
         const appliedIds = new Set(items.map(i => i.job?.id).filter(Boolean));
-        const industryIds = [...new Set(items.map(i => i.job?.industryId).filter(Boolean))];
-        if (!industryIds.length) return;
-        // Fetch up to 8 jobs per industry, then deduplicate, then exclude already-applied
-        Promise.all(
-            industryIds.slice(0, 2).map(id =>
-                api.get(`/jobs?industryId=${id}&limit=8&page=1`)
-                    .then(r => r.data?.data || [])
-                    .catch(() => [])
-            )
-        ).then(results => {
-            const seen = new Set();
-            const merged = results.flat().filter(j => {
-                if (appliedIds.has(j.id) || seen.has(j.id)) return false;
-                seen.add(j.id);
-                return true;
+        const industryIds = [...new Set(items.map(i => i.job?.industryId).filter(Boolean))].slice(0, 2);
+        if (industryIds.length > 0) {
+            Promise.all(
+                industryIds.map(id =>
+                    api.get(`/jobs?industryId=${id}&limit=8&page=1`)
+                        .then(r => r.data?.data || [])
+                        .catch(() => [])
+                )
+            ).then(results => {
+                const seen = new Set();
+                setSuggestions(results.flat().filter(j => {
+                    if (appliedIds.has(j.id) || seen.has(j.id)) return false;
+                    seen.add(j.id);
+                    return true;
+                }).slice(0, 8));
             });
-            setSuggestions(merged.slice(0, 8));
-        });
-    }, [items, isAuthenticated, page, activeStatus]);
+        } else {
+            const prefIds = (user?.candidateProfile?.jobPreferences?.industryIds || []).slice(0, 2);
+            if (!prefIds.length) return;
+            Promise.all(
+                prefIds.map(id =>
+                    api.get(`/jobs?industryId=${id}&limit=8&page=1`)
+                        .then(r => r.data?.data || [])
+                        .catch(() => [])
+                )
+            ).then(results => {
+                const seen = new Set();
+                setSuggestions(results.flat().filter(j => {
+                    if (seen.has(j.id)) return false;
+                    seen.add(j.id);
+                    return true;
+                }).slice(0, 8));
+            }).catch(() => {});
+        }
+    }, [items, isAuthenticated, page, loading, user]);
 
     const handleWithdraw = async (id) => {
         if (!confirm('Bạn có chắc muốn rút đơn ứng tuyển này?')) return;
@@ -267,8 +284,9 @@ export default function AppliedJobsPage() {
     const totalPages = Math.ceil(total / LIMIT);
 
     return (
-        <div style={{ minHeight: '80vh', padding: '24px 0' }}>
-            <div style={{ maxWidth: '860px', margin: '0 auto', padding: '0 16px' }}>
+        <div style={{ minHeight: '80vh', padding: '24px 0', background: '#f9fafb' }}>
+            <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' }}>
+            <div>
 
                 {/* Header */}
                 <div style={{ marginBottom: '24px' }}>
@@ -312,7 +330,7 @@ export default function AppliedJobsPage() {
                         textAlign: 'center', padding: '60px 20px',
                         background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb',
                     }}>
-                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>📋</div>
+                        <img src={toppyEmpty.src} alt="" style={{ width: '120px', height: '120px', objectFit: 'contain', display: 'block', margin: '0 auto 12px' }} />
                         <p style={{ fontSize: '16px', fontWeight: '600', color: '#374151', margin: '0 0 8px' }}>
                             {activeStatus ? 'Không có đơn nào ở trạng thái này' : 'Bạn chưa ứng tuyển vị trí nào'}
                         </p>
@@ -430,6 +448,8 @@ export default function AppliedJobsPage() {
                         </div>
                     </div>
                 )}
+            </div>
+            <ProfileSidebar />
             </div>
         </div>
     );

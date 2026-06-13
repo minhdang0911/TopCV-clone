@@ -40,7 +40,7 @@ import logo from '@/app/assests/img/logo-home.png';
 import api from '@/lib/axios';
 import useAuthStore from '@/stores/auth.store';
 import NotificationBell from '@/app/components/NotificationBell';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { paymentService } from '@/services/payment.service';
 
 const PLAN_META = {
@@ -113,6 +113,30 @@ const NAV_ITEMS = [
     { key: 'cam-nang', label: 'Cẩm nang nghề nghiệp', href: '#' },
 ];
 
+/* ─── Active nav detection ─── */
+const NAV_SECTION_PATHS = {
+    'viec-lam': [
+        '/viec-lam',
+        '/viec-lam-da-luu',
+        '/viec-da-ung-tuyen',
+        '/viec-lam/phu-hop',
+        '/cai-dat-goi-y-viec-lam',
+    ],
+    'tao-cv': [
+        '/tao-cv',
+        '/quan-ly-cv',
+        '/connect-to-employer',
+        '/xem-ho-so',
+    ],
+    'cong-ty': ['/cong-ty'],
+};
+
+function checkNavActive(item, pathname) {
+    if (!pathname || item.href === '#') return false;
+    const paths = NAV_SECTION_PATHS[item.key] || [item.href];
+    return paths.some((p) => pathname === p || pathname.startsWith(p + '/'));
+}
+
 /* ─── Shared styles ─── */
 const GREEN = '#00b14f';
 const sectionLabel = {
@@ -151,8 +175,8 @@ const USER_MENU_SECTIONS = [
         items: [
             { label: 'CV của tôi', href: '/quan-ly-cv' },
             { label: 'Cover Letter của tôi', href: '/quan-ly-cv?type=cover-letter' },
-            { label: 'Nhà tuyển dụng muốn kết nối với bạn', href: '#' },
-            { label: 'Nhà tuyển dụng xem hồ sơ', href: '#' },
+            { label: 'Nhà tuyển dụng muốn kết nối với bạn', href: '/connect-to-employer/list' },
+            { label: 'Nhà tuyển dụng xem hồ sơ', href: '/xem-ho-so' },
         ],
     },
     {
@@ -259,6 +283,8 @@ export default function Header() {
     const [industries, setIndustries] = useState([]);
     const [activeMenu, setActiveMenu] = useState(null);
     const menuTimeoutRef = useRef(null);
+    const pathname = usePathname();
+    const isNavActive = (item) => checkNavActive(item, pathname);
 
     const openMenu = (key) => {
         if (menuTimeoutRef.current) clearTimeout(menuTimeoutRef.current);
@@ -548,7 +574,9 @@ export default function Header() {
                                             </button>
                                             {isOpen && (
                                                 <div style={{ paddingBottom: '6px' }}>
-                                                    {section.items.map((item) => (
+                                                    {section.items.map((item) => {
+                                                        const activeItem = item.href !== '#' && (pathname === item.href || pathname.startsWith(item.href + '/'));
+                                                        return (
                                                         <Link
                                                             key={item.label}
                                                             href={item.href}
@@ -559,7 +587,8 @@ export default function Header() {
                                                                 justifyContent: 'space-between',
                                                                 padding: '7px 16px 7px 20px',
                                                                 fontSize: '13px',
-                                                                color: '#4b5563',
+                                                                color: activeItem ? GREEN : '#4b5563',
+                                                                fontWeight: activeItem ? '600' : '400',
                                                                 textDecoration: 'none',
                                                                 transition: 'background 0.12s',
                                                             }}
@@ -593,7 +622,7 @@ export default function Header() {
                                                                 ) : null;
                                                             })()}
                                                         </Link>
-                                                    ))}
+                                                    ); })}
                                                 </div>
                                             )}
                                         </div>
@@ -764,17 +793,20 @@ export default function Header() {
             >
                 <div>
                     <p style={sectionLabel}>VIỆC LÀM</p>
-                    {VIEC_LAM_ITEMS.map((item) => (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            style={navLinkStyle}
-                            onMouseEnter={hoverGreen}
-                            onMouseLeave={hoverGray}
-                        >
-                            {item.label}
-                        </Link>
-                    ))}
+                    {VIEC_LAM_ITEMS.map((item) => {
+                        const active = pathname === item.href || pathname.startsWith(item.href + '/');
+                        return (
+                            <Link
+                                key={item.href}
+                                href={item.href}
+                                style={{ ...navLinkStyle, color: active ? GREEN : '#374151', fontWeight: active ? '600' : 'normal' }}
+                                onMouseEnter={hoverGreen}
+                                onMouseLeave={active ? (e) => (e.currentTarget.style.color = GREEN) : hoverGray}
+                            >
+                                {item.label}
+                            </Link>
+                        );
+                    })}
                     <p style={{ ...sectionLabel, margin: '16px 0 10px' }}>CÔNG TY</p>
                     <Link href="/cong-ty" style={navLinkStyle} onMouseEnter={hoverGreen} onMouseLeave={hoverGray}>
                         Danh sách công ty
@@ -1011,6 +1043,7 @@ export default function Header() {
                 .hdr-hamburger{display:flex!important}
                 .hdr-desktop-nav{display:none!important}
               }
+              .hdr-nav-active{color:#00b14f!important}
             `}</style>
             {/* ══════════════ HEADER ══════════════ */}
             <header
@@ -1086,11 +1119,12 @@ export default function Header() {
                                         <div style={{ display: 'flex', alignItems: 'center' }}>
                                             <Link
                                                 href={navItem.href}
+                                                className={(activeMenu === navItem.key || isNavActive(navItem)) ? 'hdr-nav-active' : ''}
                                                 style={{
                                                     padding: '8px 4px 8px 12px',
                                                     fontSize: '15px',
                                                     fontWeight: '600',
-                                                    color: activeMenu === navItem.key ? GREEN : '#374151',
+                                                    color: (activeMenu === navItem.key || isNavActive(navItem)) ? GREEN : '#374151',
                                                     textDecoration: 'none',
                                                     whiteSpace: 'nowrap',
                                                     lineHeight: '1',
@@ -1099,9 +1133,10 @@ export default function Header() {
                                                 {navItem.label}
                                             </Link>
                                             <span
+                                                className={(activeMenu === navItem.key || isNavActive(navItem)) ? 'hdr-nav-active' : ''}
                                                 style={{
                                                     padding: '8px 8px 8px 2px',
-                                                    color: activeMenu === navItem.key ? GREEN : '#374151',
+                                                    color: (activeMenu === navItem.key || isNavActive(navItem)) ? GREEN : '#374151',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     cursor: 'default',
@@ -1315,7 +1350,7 @@ export default function Header() {
                                         padding: '16px',
                                         fontSize: '15px',
                                         fontWeight: '600',
-                                        color: '#111827',
+                                        color: isNavActive(item) ? GREEN : '#111827',
                                         textDecoration: 'none',
                                     }}
                                 >

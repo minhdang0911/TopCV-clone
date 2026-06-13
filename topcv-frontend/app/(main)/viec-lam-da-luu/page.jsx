@@ -205,7 +205,7 @@ export default function SavedJobsPage() {
                     <img
                         src={emptyImg.src}
                         alt=""
-                        style={{ width: '180px', height: '180px', objectFit: 'contain', marginBottom: '20px' }}
+                        style={{ width: '180px', height: '180px', objectFit: 'contain', display: 'block', margin: '0 auto 20px' }}
                     />
                     <p style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '8px' }}>
                         Bạn chưa lưu công việc nào!

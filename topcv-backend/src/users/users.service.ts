@@ -91,23 +91,30 @@ export class UsersService {
   // ─── PERSONAL INFO ───────────────────────────────────
   async updatePersonalInfo(
     userId: string,
-    data: { fullName?: string; phone?: string },
+    data: { fullName?: string; phone?: string; gender?: string; dob?: string },
   ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new BadRequestException('Người dùng không tồn tại');
 
-    if (data.phone) {
+    if (data.phone !== undefined) {
       await this.prisma.user.update({
         where: { id: userId },
         data: { phone: data.phone },
       });
     }
 
-    if (data.fullName && user.role === Role.CANDIDATE) {
-      await this.prisma.candidateProfile.update({
-        where: { userId },
-        data: { fullName: data.fullName },
-      });
+    if (user.role === Role.CANDIDATE) {
+      const profileUpdate: Record<string, any> = {};
+      if (data.fullName) profileUpdate.fullName = data.fullName;
+      if (data.gender !== undefined) profileUpdate.gender = data.gender || null;
+      if (data.dob !== undefined) profileUpdate.dob = data.dob ? new Date(data.dob) : null;
+
+      if (Object.keys(profileUpdate).length > 0) {
+        await this.prisma.candidateProfile.update({
+          where: { userId },
+          data: profileUpdate,
+        });
+      }
     }
 
     return { message: 'Cập nhật thông tin thành công' };
@@ -149,18 +156,26 @@ export class UsersService {
       companyName?: string;
       companySize?: string;
       industryId?: number;
+      industryIds?: number[];
       website?: string;
       address?: string;
       logoUrl?: string;
       description?: string;
     },
   ) {
-    const cleanData = Object.fromEntries(
-      Object.entries(data).filter(([_, v]) => v !== undefined),
+    const { industryIds, ...rest } = data;
+    const cleanData: Record<string, any> = Object.fromEntries(
+      Object.entries(rest).filter(([_, v]) => v !== undefined),
     );
 
     if (cleanData.industryId !== undefined) {
       cleanData.industryId = Number(cleanData.industryId);
+    }
+
+    if (industryIds !== undefined) {
+      cleanData.industryIds = Array.isArray(industryIds)
+        ? industryIds.map(Number)
+        : [];
     }
 
     const existing = await this.prisma.employerProfile.findUnique({

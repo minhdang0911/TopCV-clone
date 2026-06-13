@@ -103,8 +103,10 @@ model CandidateProfile {
   isLookingForJob     Boolean  @default(false) @map("is_looking_for_job")
   allowEmployerSearch Boolean  @default(true) @map("allow_employer_search")
   jobPreferences      Json?    @map("job_preferences")
-  defaultCvId         String?  @map("default_cv_id")
-  createdAt           DateTime @default(now()) @map("created_at")
+  defaultCvId         String?   @map("default_cv_id")
+  gender              String?
+  dob                 DateTime? @db.Date
+  createdAt           DateTime  @default(now()) @map("created_at")
 
   user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   defaultCv Resume? @relation("CandidateDefaultCv", fields: [defaultCvId], references: [id], onDelete: SetNull)
@@ -119,6 +121,7 @@ model EmployerProfile {
   logoUrl     String?  @map("logo_url")
   companySize String?  @map("company_size")
   industryId  Int?     @map("industry_id")
+  industryIds Json?    @map("industry_ids")
   website     String?
   address     String?
   description String?

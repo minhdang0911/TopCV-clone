@@ -46,7 +46,28 @@ export class ConnectController {
     return this.connectService.mySentRequests(req.user.sub, query);
   }
 
+  @Get('candidate/:candidateUserId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYER')
+  getCandidateDetail(@Req() req: any, @Param('candidateUserId') candidateUserId: string) {
+    return this.connectService.getCandidateDetail(req.user.sub, candidateUserId);
+  }
+
+  @Post('view/:candidateUserId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYER')
+  recordView(@Req() req: any, @Param('candidateUserId') candidateUserId: string) {
+    return this.connectService.recordProfileView(req.user.sub, candidateUserId);
+  }
+
   // ─── CANDIDATE ──────────────────────────────────────────────────────────────
+
+  @Get('profile-viewers')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CANDIDATE')
+  getProfileViewers(@Req() req: any, @Query() query: any) {
+    return this.connectService.getProfileViewers(req.user.sub, query);
+  }
 
   @Get('my-requests')
   @UseGuards(JwtAuthGuard, RolesGuard)

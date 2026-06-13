@@ -1,7 +1,6 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -22,7 +21,7 @@ export class ConnectService {
   // ─── EMPLOYER: get candidate suggestions ─────────────────────────────────────
   async getSuggestions(
     employerUserId: string,
-    query: { page?: string; limit?: string },
+    query: { page?: string; limit?: string; mode?: string },
   ) {
     const employer = await (this.prisma as any).employerProfile.findUnique({
       where: { userId: employerUserId },
@@ -30,49 +29,222 @@ export class ConnectService {
     });
     if (!employer) throw new NotFoundException('Employer profile not found');
 
+    await this.ensureGenderDobColumns();
+    await this.ensureEmployerIndustryIdsColumn();
+
     const limit = Math.min(Number(query.limit) || 10, 50);
     const page = Number(query.page) || 1;
     const offset = (page - 1) * limit;
 
-    // Candidates who: isLookingForJob=true, have defaultCvId, allowEmployerSearch=true
-    // and employer hasn't yet connected/skipped them
-    const rows = await this.sql`
-      SELECT
-        cp.id            AS profile_id,
-        cp.user_id,
-        cp.full_name,
-        cp.avatar_url,
-        cp.default_cv_id,
-        cp.job_preferences,
-        r.title          AS cv_title,
-        r.type           AS cv_type,
-        r.file_url       AS cv_file_url
-      FROM candidate_profiles cp
-      LEFT JOIN resumes r ON r.id = cp.default_cv_id
-      WHERE cp.is_looking_for_job = true
-        AND cp.default_cv_id IS NOT NULL
-        AND cp.allow_employer_search = true
-        AND NOT EXISTS (
-          SELECT 1 FROM employer_candidate_connects ecc
-          WHERE ecc.employer_profile_id = ${employer.id}
-            AND ecc.candidate_user_id = cp.user_id
-        )
-      ORDER BY cp.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
+    // Combine single industryId + industryIds array for multi-industry matching
+    const empIdsRows = await this.sql`
+      SELECT industry_ids FROM employer_profiles WHERE user_id = ${employerUserId}
     `;
+    const rawIds: number[] = (empIdsRows[0]?.industry_ids as number[]) || [];
+    const combinedIds = [
+      ...new Set([
+        ...(employer.industryId ? [employer.industryId] : []),
+        ...rawIds,
+      ]),
+    ];
 
-    const countRows = await this.sql`
-      SELECT COUNT(*)::int AS total
-      FROM candidate_profiles cp
-      WHERE cp.is_looking_for_job = true
-        AND cp.default_cv_id IS NOT NULL
-        AND cp.allow_employer_search = true
-        AND NOT EXISTS (
-          SELECT 1 FROM employer_candidate_connects ecc
-          WHERE ecc.employer_profile_id = ${employer.id}
-            AND ecc.candidate_user_id = cp.user_id
-        )
-    `;
+    // mode='view'  → xem hồ sơ: chỉ cần industry match
+    // mode='connect' (default) → kết nối: cần is_looking_for_job + CV + industry match
+    const isViewMode = query.mode === 'view';
+    const hasIndustry = combinedIds.length > 0;
+
+    // Pass employer industryIds as JSON string; EXISTS checks overlap with candidate's preferences
+    const industryJsonbArray = hasIndustry
+      ? JSON.stringify(combinedIds)
+      : null;
+
+    const rows = isViewMode
+      ? hasIndustry
+        ? await this.sql`
+            SELECT
+              cp.id            AS profile_id,
+              cp.user_id,
+              cp.full_name,
+              cp.avatar_url,
+              cp.gender,
+              cp.dob,
+              cp.default_cv_id,
+              cp.job_preferences,
+              r.title          AS cv_title,
+              r.type           AS cv_type,
+              r.file_url       AS cv_file_url
+            FROM candidate_profiles cp
+            LEFT JOIN resumes r ON r.id = cp.default_cv_id
+            WHERE cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+              AND (
+                cp.job_preferences IS NULL
+                OR (cp.job_preferences->'industryIds') IS NULL
+                OR jsonb_array_length(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) = 0
+                OR EXISTS (
+                  SELECT 1 FROM jsonb_array_elements(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) cid
+                  WHERE ${industryJsonbArray}::jsonb @> cid
+                )
+              )
+            ORDER BY cp.created_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+          `
+        : await this.sql`
+            SELECT
+              cp.id            AS profile_id,
+              cp.user_id,
+              cp.full_name,
+              cp.avatar_url,
+              cp.gender,
+              cp.dob,
+              cp.default_cv_id,
+              cp.job_preferences,
+              r.title          AS cv_title,
+              r.type           AS cv_type,
+              r.file_url       AS cv_file_url
+            FROM candidate_profiles cp
+            LEFT JOIN resumes r ON r.id = cp.default_cv_id
+            WHERE cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+            ORDER BY cp.created_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+          `
+      : hasIndustry
+        ? await this.sql`
+            SELECT
+              cp.id            AS profile_id,
+              cp.user_id,
+              cp.full_name,
+              cp.avatar_url,
+              cp.gender,
+              cp.dob,
+              cp.default_cv_id,
+              cp.job_preferences,
+              r.title          AS cv_title,
+              r.type           AS cv_type,
+              r.file_url       AS cv_file_url
+            FROM candidate_profiles cp
+            LEFT JOIN resumes r ON r.id = cp.default_cv_id
+            WHERE cp.is_looking_for_job = true
+              AND cp.default_cv_id IS NOT NULL
+              AND cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+              AND (
+                cp.job_preferences IS NULL
+                OR (cp.job_preferences->'industryIds') IS NULL
+                OR jsonb_array_length(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) = 0
+                OR EXISTS (
+                  SELECT 1 FROM jsonb_array_elements(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) cid
+                  WHERE ${industryJsonbArray}::jsonb @> cid
+                )
+              )
+            ORDER BY cp.created_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+          `
+        : await this.sql`
+            SELECT
+              cp.id            AS profile_id,
+              cp.user_id,
+              cp.full_name,
+              cp.avatar_url,
+              cp.gender,
+              cp.dob,
+              cp.default_cv_id,
+              cp.job_preferences,
+              r.title          AS cv_title,
+              r.type           AS cv_type,
+              r.file_url       AS cv_file_url
+            FROM candidate_profiles cp
+            LEFT JOIN resumes r ON r.id = cp.default_cv_id
+            WHERE cp.is_looking_for_job = true
+              AND cp.default_cv_id IS NOT NULL
+              AND cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+            ORDER BY cp.created_at DESC
+            LIMIT ${limit} OFFSET ${offset}
+          `;
+
+    const countRows = isViewMode
+      ? hasIndustry
+        ? await this.sql`
+            SELECT COUNT(*)::int AS total
+            FROM candidate_profiles cp
+            WHERE cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+              AND (
+                cp.job_preferences IS NULL
+                OR (cp.job_preferences->'industryIds') IS NULL
+                OR jsonb_array_length(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) = 0
+                OR EXISTS (
+                  SELECT 1 FROM jsonb_array_elements(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) cid
+                  WHERE ${industryJsonbArray}::jsonb @> cid
+                )
+              )
+          `
+        : await this.sql`
+            SELECT COUNT(*)::int AS total
+            FROM candidate_profiles cp
+            WHERE cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+          `
+      : hasIndustry
+        ? await this.sql`
+            SELECT COUNT(*)::int AS total
+            FROM candidate_profiles cp
+            WHERE cp.is_looking_for_job = true
+              AND cp.default_cv_id IS NOT NULL
+              AND cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+              AND (
+                cp.job_preferences IS NULL
+                OR (cp.job_preferences->'industryIds') IS NULL
+                OR jsonb_array_length(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) = 0
+                OR EXISTS (
+                  SELECT 1 FROM jsonb_array_elements(COALESCE(cp.job_preferences->'industryIds', '[]'::jsonb)) cid
+                  WHERE ${industryJsonbArray}::jsonb @> cid
+                )
+              )
+          `
+        : await this.sql`
+            SELECT COUNT(*)::int AS total
+            FROM candidate_profiles cp
+            WHERE cp.is_looking_for_job = true
+              AND cp.default_cv_id IS NOT NULL
+              AND cp.allow_employer_search = true
+              AND NOT EXISTS (
+                SELECT 1 FROM employer_candidate_connects ecc
+                WHERE ecc.employer_profile_id = ${employer.id}
+                  AND ecc.candidate_user_id = cp.user_id
+              )
+          `;
 
     return {
       data: rows.map((r: any) => ({
@@ -80,6 +252,8 @@ export class ConnectService {
         userId: r.user_id,
         fullName: r.full_name,
         avatarUrl: r.avatar_url,
+        gender: r.gender,
+        dob: r.dob,
         defaultCvId: r.default_cv_id,
         cvTitle: r.cv_title,
         cvType: r.cv_type,
@@ -332,6 +506,150 @@ export class ConnectService {
     `;
 
     return { rejected: true };
+  }
+
+  // ─── EMPLOYER: record profile view ──────────────────────────────────────────
+  private genderDobEnsured = false;
+  private async ensureGenderDobColumns() {
+    if (this.genderDobEnsured) return;
+    await this.sql`
+      ALTER TABLE candidate_profiles
+      ADD COLUMN IF NOT EXISTS gender TEXT,
+      ADD COLUMN IF NOT EXISTS dob DATE
+    `;
+    this.genderDobEnsured = true;
+  }
+
+  private employerIndustryEnsured = false;
+  private async ensureEmployerIndustryIdsColumn() {
+    if (this.employerIndustryEnsured) return;
+    await this.sql`
+      ALTER TABLE employer_profiles
+      ADD COLUMN IF NOT EXISTS industry_ids JSONB DEFAULT '[]'::jsonb
+    `;
+    this.employerIndustryEnsured = true;
+  }
+
+  // ─── EMPLOYER: get full candidate detail ─────────────────────────────────────
+  async getCandidateDetail(employerUserId: string, candidateUserId: string) {
+    await this.ensureGenderDobColumns();
+    const employer = await (this.prisma as any).employerProfile.findUnique({
+      where: { userId: employerUserId },
+      select: { id: true },
+    });
+    if (!employer) throw new NotFoundException('Employer profile not found');
+
+    const rows = await this.sql`
+      SELECT
+        cp.user_id,
+        cp.full_name,
+        cp.avatar_url,
+        cp.gender,
+        cp.dob,
+        cp.job_preferences,
+        cp.default_cv_id,
+        u.email,
+        u.phone,
+        r.title    AS cv_title,
+        r.type     AS cv_type,
+        r.file_url AS cv_file_url
+      FROM candidate_profiles cp
+      JOIN users u ON u.id = cp.user_id
+      LEFT JOIN resumes r ON r.id = cp.default_cv_id
+      WHERE cp.user_id = ${candidateUserId}
+        AND cp.allow_employer_search = true
+    `;
+
+    if (rows.length === 0) throw new NotFoundException('Candidate not found');
+    const r = rows[0] as any;
+
+    return {
+      userId: r.user_id,
+      fullName: r.full_name,
+      avatarUrl: r.avatar_url,
+      gender: r.gender,
+      dob: r.dob,
+      phone: r.phone ? r.phone.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : null,
+      jobPreferences: r.job_preferences,
+      defaultCvId: r.default_cv_id,
+      cvTitle: r.cv_title,
+      cvType: r.cv_type,
+      cvFileUrl: r.cv_file_url,
+    };
+  }
+
+  private async ensureProfileViewsTable() {
+    await this.sql`
+      CREATE TABLE IF NOT EXISTS employer_profile_views (
+        id TEXT DEFAULT gen_random_uuid()::TEXT,
+        employer_user_id TEXT NOT NULL,
+        candidate_user_id TEXT NOT NULL,
+        viewed_at TIMESTAMPTZ DEFAULT NOW(),
+        PRIMARY KEY (id),
+        UNIQUE(employer_user_id, candidate_user_id)
+      )
+    `;
+  }
+
+  async recordProfileView(employerUserId: string, candidateUserId: string) {
+    await this.ensureProfileViewsTable();
+    await this.sql`
+      INSERT INTO employer_profile_views (id, employer_user_id, candidate_user_id, viewed_at)
+      VALUES (gen_random_uuid()::text, ${employerUserId}, ${candidateUserId}, NOW())
+      ON CONFLICT (employer_user_id, candidate_user_id) DO UPDATE SET viewed_at = NOW()
+    `;
+    return { recorded: true };
+  }
+
+  // ─── CANDIDATE: list employers who viewed profile ────────────────────────────
+  async getProfileViewers(
+    candidateUserId: string,
+    query: { page?: string; limit?: string },
+  ) {
+    await this.ensureProfileViewsTable();
+    const limit = Math.min(Number(query.limit) || 10, 50);
+    const page = Number(query.page) || 1;
+    const offset = (page - 1) * limit;
+
+    const rows = await this.sql`
+      SELECT
+        epv.viewed_at,
+        ep.id           AS employer_profile_id,
+        ep.company_name,
+        ep.logo_url,
+        ep.slug         AS employer_slug,
+        ep.description
+      FROM employer_profile_views epv
+      JOIN employer_profiles ep ON ep.user_id = epv.employer_user_id
+      WHERE epv.candidate_user_id = ${candidateUserId}
+      ORDER BY epv.viewed_at DESC
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    const countRows = await this.sql`
+      SELECT COUNT(*)::int AS total
+      FROM employer_profile_views
+      WHERE candidate_user_id = ${candidateUserId}
+    `;
+
+    return {
+      data: rows.map((r: any) => ({
+        viewedAt: r.viewed_at,
+        employer: {
+          id: r.employer_profile_id,
+          companyName: r.company_name,
+          logoUrl: r.logo_url,
+          slug: r.employer_slug,
+          description: r.description,
+        },
+      })),
+      meta: {
+        total: countRows[0].total,
+        page,
+        limit,
+        totalPages: Math.ceil(countRows[0].total / limit),
+      },
+    };
   }
 
   // ─── EMPLOYER: list sent requests ────────────────────────────────────────────

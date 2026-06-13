@@ -1,12 +1,31 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { neon } from '@neondatabase/serverless';
 import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
-export class NotificationsService {
+export class NotificationsService implements OnModuleInit {
   private sql = neon(process.env.DATABASE_URL!);
 
   constructor(private gateway: NotificationsGateway) {}
+
+  async onModuleInit() {
+    await this.sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id     UUID        NOT NULL,
+        type        TEXT        NOT NULL,
+        title       TEXT        NOT NULL,
+        body        TEXT        NOT NULL,
+        url         TEXT,
+        data        JSONB,
+        is_read     BOOLEAN     NOT NULL DEFAULT false,
+        created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+      )
+    `;
+    await this.sql`
+      CREATE INDEX IF NOT EXISTS notifications_user_id_idx ON notifications (user_id)
+    `;
+  }
 
   private map(row: any) {
     return {

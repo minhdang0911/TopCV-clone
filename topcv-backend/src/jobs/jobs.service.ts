@@ -797,6 +797,38 @@ export class JobsService {
   // â”€â”€â”€ EMPLOYER DASHBOARD STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // GET /jobs/my-stats â€” statistics for the logged-in employer
 
+  async getMyReport(userId: string) {
+    const employer = await this.prisma.employerProfile.findUnique({ where: { userId } });
+    if (!employer) throw new BadRequestException('Không tìm thấy thông tin công ty');
+
+    const now = new Date();
+    const jobs = await this.prisma.job.findMany({
+      where: { employerId: employer.id },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true, title: true, isActive: true, deadline: true, createdAt: true,
+        _count: { select: { applications: true } },
+      },
+    });
+
+    const totalJobs = jobs.length;
+    const activeJobs = jobs.filter(j => j.isActive && (!j.deadline || new Date(j.deadline) >= now)).length;
+    const inactiveJobs = jobs.filter(j => !j.isActive).length;
+    const expiredJobs = jobs.filter(j => j.isActive && j.deadline && new Date(j.deadline) < now).length;
+    const totalApplications = jobs.reduce((s, j) => s + j._count.applications, 0);
+
+    const topJobs = jobs
+      .map(j => ({
+        id: j.id, title: j.title, isActive: j.isActive,
+        deadline: j.deadline, applicationCount: j._count.applications, createdAt: j.createdAt,
+      }))
+      .sort((a, b) => b.applicationCount - a.applicationCount)
+      .slice(0, 10);
+
+    return { overview: { totalJobs, activeJobs, inactiveJobs, expiredJobs, totalApplications }, topJobs };
+  }
+
   async getMyStats(userId: string) {
     const employer = await this.prisma.employerProfile.findUnique({
       where: { userId },

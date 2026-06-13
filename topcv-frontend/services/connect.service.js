@@ -11,4 +11,11 @@ export const connectService = {
     getMyRequests: (params) => api.get('/connect/my-requests', { params }),
     accept: (connectId) => api.post(`/connect/accept/${connectId}`),
     reject: (connectId) => api.post(`/connect/reject/${connectId}`),
+    getProfileViewers: (params) => api.get('/connect/profile-viewers', { params }),
+
+    // Employer records view when expanding a candidate card
+    recordView: (candidateUserId) => api.post(`/connect/view/${candidateUserId}`),
+
+    // Employer fetches full candidate profile detail
+    getCandidateDetail: (candidateUserId) => api.get(`/connect/candidate/${candidateUserId}`),
 };

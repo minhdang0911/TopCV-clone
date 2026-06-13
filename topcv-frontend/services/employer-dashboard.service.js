@@ -11,4 +11,5 @@ export const employerDashboardService = {
   toggleActive: (id) => api.patch(`/jobs/${id}/toggle-active`),
   deleteJob: (id) => api.delete(`/jobs/${id}`),
   getJobById: (id) => api.get(`/jobs/${id}`),
+  getMyReport: () => api.get('/jobs/my-report'),
 };

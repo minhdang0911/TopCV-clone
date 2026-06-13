@@ -708,7 +708,7 @@ export default function Header() {
                         {jobPositions.map((pos) => (
                             <MobileSubItem
                                 key={pos.id}
-                                href={`/tim-viec-lam-${pos.slug}`}
+                                href={`/tim-viec-lam/${pos.slug}`}
                                 label={`Việc làm ${pos.name}`}
                                 onClose={onMobileClose}
                             />
@@ -721,7 +721,7 @@ export default function Header() {
                         {industries.map((ind) => (
                             <MobileSubItem
                                 key={ind.id}
-                                href={`/tim-viec-lam-moi-nhat?company_field=${ind.id}&type_keyword=1&sba=1&saturday_status=0`}
+                                href={`/tim-viec-lam/${ind.slug}`}
                                 label={`Việc làm ${ind.name}`}
                                 onClose={onMobileClose}
                             />
@@ -826,7 +826,7 @@ export default function Header() {
                         {[...posCol1, ...posCol2].map((pos) => (
                             <Link
                                 key={pos.id}
-                                href={`/tim-viec-lam-${pos.slug}`}
+                                href={`/tim-viec-lam/${pos.slug}`}
                                 style={navLinkStyle}
                                 onMouseEnter={hoverGreen}
                                 onMouseLeave={hoverGray}
@@ -841,7 +841,7 @@ export default function Header() {
                     {industries.map((ind) => (
                         <Link
                             key={ind.id}
-                            href={`/tim-viec-lam-moi-nhat?company_field=${ind.id}&type_keyword=1&sba=1&saturday_status=0`}
+                            href={`/tim-viec-lam/${ind.slug}`}
                             style={navLinkStyle}
                             onMouseEnter={hoverGreen}
                             onMouseLeave={hoverGray}

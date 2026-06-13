@@ -71,6 +71,7 @@ interface JobFilterProps {
     industries: Industry[];
     jobPositions: JobPosition[];
     activeIndustryId?: string;
+    activeJobPositionId?: string;
 }
 
 function FilterSection({
@@ -159,7 +160,7 @@ function CheckItem({ label, checked, onChange }: { label: string; checked: boole
     );
 }
 
-export default function JobFilter({ industries, jobPositions, activeIndustryId }: JobFilterProps) {
+export default function JobFilter({ industries, jobPositions, activeIndustryId, activeJobPositionId }: JobFilterProps) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
@@ -173,7 +174,9 @@ export default function JobFilter({ industries, jobPositions, activeIndustryId }
     const [industryIds, setIndustryIds] = useState<string[]>(
         activeIndustryId ? [activeIndustryId] : getMulti('industryId'),
     );
-    const [jobPositionIds, setJobPositionIds] = useState<string[]>(getMulti('jobPositionId'));
+    const [jobPositionIds, setJobPositionIds] = useState<string[]>(
+        activeJobPositionId ? [activeJobPositionId] : getMulti('jobPositionId'),
+    );
     const [workingTypes, setWorkingTypes] = useState<string[]>(getMulti('workingType'));
     const [workingDays, setWorkingDays] = useState<string[]>(getMulti('workingDays'));
     const [levels, setLevels] = useState<string[]>(getMulti('level'));

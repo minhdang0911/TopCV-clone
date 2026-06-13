@@ -146,7 +146,7 @@ function IndustryCard({ industry }) {
     const [hover, setHover] = useState(false);
     return (
         <a
-            href={`/viec-lam?industryId=${industry.id}`}
+            href={industry.slug ? `/tim-viec-lam/${industry.slug}` : `/viec-lam?industryId=${industry.id}`}
             style={{ textDecoration: 'none' }}
         >
             <div

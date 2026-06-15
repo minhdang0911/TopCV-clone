@@ -183,7 +183,7 @@ const USER_MENU_SECTIONS = [
         key: 'thong-bao',
         label: 'Cài đặt email & thông báo',
         items: [
-            { label: 'Cài đặt thông báo việc làm', href: '#' },
+            { label: 'Cài đặt thông báo việc làm', href: '/cai-dat-thong-bao-viec-lam' },
             { label: 'Cài đặt nhận email', href: '#' },
         ],
     },

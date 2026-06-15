@@ -413,7 +413,7 @@ export default function IndustryCategoryPage() {
                     </div>
                     <button
                         style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '8px 14px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', cursor: 'pointer', fontSize: '13px', color: '#374151', fontWeight: '500', whiteSpace: 'nowrap', flexShrink: 0 }}
-                        onClick={() => toast.info('Tính năng sắp ra mắt')}
+                        onClick={() => router.push('/cai-dat-thong-bao-viec-lam')}
                     >
                         <Bell size={14} />
                         Tạo thông báo việc làm

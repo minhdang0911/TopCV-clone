@@ -91,6 +91,7 @@ model User {
   conversationsAsCandidate Conversation[]             @relation("CandidateConversations")
   sentMessages             Message[]                   @relation("SentMessages")
   connectsAsCandidate      EmployerCandidateConnect[]  @relation("ConnectCandidate")
+  jobAlerts                JobAlert[]
 
   @@map("users")
 }
@@ -421,4 +422,30 @@ model EmployerCandidateConnect {
 
   @@unique([employerProfileId, candidateUserId])
   @@map("employer_candidate_connects")
+}
+
+model JobAlert {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  keyword       String
+  provinceCode  String?   @map("province_code")
+  districtCode  String?   @map("district_code")
+  provinceName  String?   @map("province_name")
+  districtName  String?   @map("district_name")
+  salaryMin     Int?      @map("salary_min")
+  salaryMax     Int?      @map("salary_max")
+  experience    String?
+  industryId    Int?      @map("industry_id")
+  jobPositionId Int?      @map("job_position_id")
+  workingType   String?   @map("working_type")
+  frequency     String    @default("DAILY")
+  channel       String    @default("BOTH")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastSentAt    DateTime? @map("last_sent_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("job_alerts")
 }

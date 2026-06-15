@@ -1,6 +1,7 @@
 import { MailModule } from './mail/mail.module';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
@@ -19,10 +20,12 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
 import { ConnectModule } from './connect/connect.module';
+import { JobAlertsModule } from './job-alerts/job-alerts.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -42,6 +45,7 @@ import { ConnectModule } from './connect/connect.module';
     NotificationsModule,
     ChatModule,
     ConnectModule,
+    JobAlertsModule,
   ],
 })
 export class AppModule {}

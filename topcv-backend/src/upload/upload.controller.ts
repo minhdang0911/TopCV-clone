@@ -118,6 +118,18 @@ export class UploadController {
     return { data: { url } };
   }
 
+  @Post('doc')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  async uploadDoc(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    const userId = req.user.sub;
+    const me = await this.usersService.getMe(userId);
+    const companyName = me?.employerProfile?.companyName || userId;
+    const folder = `topcv-clone/${slugify(companyName)}/docs`;
+    const url = await this.uploadService.uploadDoc(file, folder, `doc-${Date.now()}`);
+    return { data: { url } };
+  }
+
   @Post('logo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', { storage: undefined }))

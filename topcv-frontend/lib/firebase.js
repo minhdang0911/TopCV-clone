@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
   apiKey: 'AIzaSyAQKOwBNQG49rxU00mf3ZWWAVsh8XMCaMg',
@@ -39,6 +40,10 @@ export async function requestFcmToken() {
     console.warn('FCM token error:', err);
     return null;
   }
+}
+
+export function getFirebaseAuth() {
+  return getAuth(app);
 }
 
 export { onMessage, getMessagingInstance as messaging };

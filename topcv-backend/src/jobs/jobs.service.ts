@@ -284,7 +284,14 @@ export class JobsService {
       });
 
       if (!employer) {
-        throw new BadRequestException('KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin cÃ´ng ty');
+        throw new BadRequestException('Không tìm thấy thông tin công ty');
+      }
+
+      const infoComplete = !!(employer.companyName && employer.address && employer.taxCode);
+      if (!employer.phoneVerified || !infoComplete || employer.businessDocStatus !== 'APPROVED') {
+        throw new BadRequestException(
+          'Tài khoản chưa được xác thực đầy đủ. Vui lòng hoàn thành 3 bước xác thực trước khi đăng tin.',
+        );
       }
 
       const { locations, ...jobData } = data;

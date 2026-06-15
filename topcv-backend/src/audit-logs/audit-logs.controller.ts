@@ -13,7 +13,7 @@ export class AuditLogsController {
   @UseGuards(JwtAuthGuard)
   getMyLogs(
     @Req() req: any,
-    @Query() query: { page?: number; limit?: number; entity?: string; action?: string },
+    @Query() query: { page?: number; limit?: number; entity?: string; action?: string; from?: string; to?: string },
   ) {
     return this.auditLogsService.findAll({ ...query, userId: req.user.sub });
   }

@@ -43,8 +43,9 @@ export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  register(@Body() dto: RegisterDto, @Req() req: any) {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    return this.authService.register(dto, ip);
   }
 
   @Post('dev/seed-employers')
@@ -53,8 +54,9 @@ export class AuthController {
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  login(@Body() dto: LoginDto, @Req() req: any) {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    return this.authService.login(dto, ip);
   }
 
   @Post('verify-otp')
@@ -85,8 +87,9 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Body('refreshToken') token: string) {
-    return this.authService.logout(token);
+  logout(@Body('refreshToken') token: string, @Req() req: any) {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    return this.authService.logout(token, ip);
   }
 
   // ─── 2FA ──────────────────────────────────────────
@@ -122,7 +125,8 @@ export class AuthController {
   @Get('google/callback')
   @UseGuards(GoogleGuard)
   async googleCallback(@Req() req: any, @Res() res: any) {
-    const result = await this.authService.loginSocial(req.user);
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    const result = await this.authService.loginSocial(req.user, ip);
 
     const { accessToken, refreshToken, role } = result.data;
 
@@ -139,7 +143,8 @@ export class AuthController {
   @Get('facebook/callback')
   @UseGuards(FacebookGuard)
   async facebookCallback(@Req() req: any, @Res() res: any) {
-    const result = await this.authService.loginSocial(req.user);
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    const result = await this.authService.loginSocial(req.user, ip);
 
     const { accessToken, refreshToken, role } = result.data;
 
@@ -161,7 +166,8 @@ export class AuthController {
   @Get('linkedin/callback')
   @UseGuards(LinkedinGuard)
   async linkedinCallback(@Req() req: any, @Res() res: any) {
-    const result = await this.authService.loginSocial(req.user);
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    const result = await this.authService.loginSocial(req.user, ip);
 
     const { accessToken, refreshToken, role } = result.data;
 

@@ -161,6 +161,7 @@ export class UsersService {
       address?: string;
       logoUrl?: string;
       description?: string;
+      taxCode?: string;
     },
   ) {
     const { industryIds, ...rest } = data;

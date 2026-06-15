@@ -2,9 +2,13 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { Redis } from '@upstash/redis';
+
+const SPEEDSMS_ENDPOINT = 'https://api.speedsms.vn/index.php/sms/send';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -39,13 +43,12 @@ export class EmployersService {
     return this._redis;
   }
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+  ) {}
 
-  async findAll(query: {
-    industryId?: string;
-    limit?: string;
-    page?: string;
-  }) {
+  async findAll(query: { industryId?: string; limit?: string; page?: string }) {
     const limit = Math.min(Number(query.limit) || 12, 50);
     const page = Number(query.page) || 1;
     const skip = (page - 1) * limit;
@@ -298,6 +301,174 @@ export class EmployersService {
       avgRating: stats._avg.rating,
       reviewCount: stats._count.rating,
     };
+  }
+
+  // ── VERIFICATION ─────────────────────────────────────────────────────────
+
+  private isCompanyInfoComplete(employer: any): boolean {
+    return !!(employer.companyName && employer.address && employer.taxCode);
+  }
+
+  async getVerificationStatus(userId: string) {
+    const employer = await this.prisma.employerProfile.findUnique({
+      where: { userId },
+    });
+    if (!employer) throw new NotFoundException('Không tìm thấy hồ sơ công ty');
+
+    const step1 = employer.phoneVerified;
+    const step2 = this.isCompanyInfoComplete(employer);
+    const step3 = employer.businessDocStatus === 'APPROVED';
+
+    return {
+      step1: { done: step1, label: 'Xác thực số điện thoại' },
+      step2: {
+        done: step2,
+        label: 'Cập nhật thông tin công ty',
+        hint: 'Điền đầy đủ: tên công ty, địa chỉ, mã số thuế',
+      },
+      step3: {
+        done: step3,
+        label: 'Xác thực Giấy đăng ký doanh nghiệp',
+        status: employer.businessDocStatus ?? null,
+        docType: employer.businessDocType ?? null,
+        docUrl: employer.businessDocUrl ?? null,
+        docUrl2: employer.businessDocUrl2 ?? null,
+        rejectReason: employer.businessDocRejectReason ?? null,
+      },
+      canPostJob: step1 && step2 && step3,
+      level: [step1, step2, step3].filter(Boolean).length,
+    };
+  }
+
+  private generateOtp(): string {
+    return String(Math.floor(100000 + Math.random() * 900000));
+  }
+
+  async sendPhoneOtp(userId: string, phone: string) {
+    const digits = phone.replace(/\D/g, '').replace(/^0/, '');
+    if (digits.length < 9)
+      throw new BadRequestException('Số điện thoại không hợp lệ');
+
+    const otp = this.generateOtp();
+    await this.redis.set(
+      `otp:employer:${userId}`,
+      { otp, digits },
+      { ex: 300 },
+    );
+
+    const token = process.env.SPEEDSMS_TOKEN!;
+    const res = await fetch(SPEEDSMS_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + Buffer.from(token + ':x').toString('base64'),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        to: ['0' + digits],
+        content: `Ma OTP TopCV cua ban la: ${otp}. Co hieu luc 5 phut.`,
+        sms_type: 5,
+        sender: process.env.SPEEDSMS_DEVICE_ID,
+      }),
+    });
+
+    const data: any = await res.json();
+    console.log('[SpeedSMS]', JSON.stringify(data));
+    if (!res.ok || data.status === 'error') {
+      throw new BadRequestException(
+        'Không thể gửi OTP: ' + (data.message || JSON.stringify(data)),
+      );
+    }
+
+    return { success: true, message: 'OTP đã được gửi' };
+  }
+
+  async verifyPhone(userId: string, code: string) {
+    const stored = await this.redis.get(`otp:employer:${userId}`);
+    if (!stored)
+      throw new BadRequestException('OTP đã hết hạn, vui lòng gửi lại');
+
+    const { otp, digits } = stored as any;
+    if (code !== otp) throw new BadRequestException('Mã OTP không đúng');
+
+    const phone = '+84' + digits;
+    await this.prisma.user.update({ where: { id: userId }, data: { phone } });
+    await this.prisma.employerProfile.update({
+      where: { userId },
+      data: { phoneVerified: true },
+    });
+    await this.redis.del(`otp:employer:${userId}`);
+
+    return { success: true, phone };
+  }
+
+  async uploadBusinessDoc(userId: string, docType: string, docUrl: string, docUrl2?: string) {
+    await this.prisma.employerProfile.update({
+      where: { userId },
+      data: {
+        businessDocType: docType,
+        businessDocUrl: docUrl,
+        businessDocUrl2: docUrl2 ?? null,
+        businessDocStatus: 'PENDING',
+        businessDocRejectReason: null,
+      },
+    });
+    return { success: true, message: 'Đã gửi tài liệu, đang chờ admin duyệt' };
+  }
+
+  async adminGetDocs(status?: string) {
+    const where: any = { businessDocUrl: { not: null } };
+    if (status) where.businessDocStatus = status;
+
+    const rows = await this.prisma.employerProfile.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        companyName: true,
+        logoUrl: true,
+        taxCode: true,
+        address: true,
+        businessDocStatus: true,
+        businessDocType: true,
+        businessDocUrl: true,
+        businessDocUrl2: true,
+        businessDocRejectReason: true,
+        createdAt: true,
+      },
+    });
+
+    return rows;
+  }
+
+  async adminApproveDoc(employerProfileId: string, approve: boolean, rejectReason?: string) {
+    const employer = await this.prisma.employerProfile.findUnique({
+      where: { id: employerProfileId },
+    });
+    if (!employer) throw new NotFoundException();
+    if (!employer.businessDocUrl)
+      throw new BadRequestException('Chưa có tài liệu nào');
+
+    await this.prisma.employerProfile.update({
+      where: { id: employerProfileId },
+      data: {
+        businessDocStatus: approve ? 'APPROVED' : 'REJECTED',
+        businessDocRejectReason: approve ? null : (rejectReason ?? 'Tài liệu không hợp lệ'),
+      },
+    });
+
+    await this.notifications.create(employer.userId, approve ? {
+      type: 'DOC_APPROVED',
+      title: 'Tài liệu đã được phê duyệt',
+      body: 'Giấy đăng ký doanh nghiệp của bạn đã được xác thực thành công. Tài khoản đã đủ điều kiện đăng tin tuyển dụng.',
+      url: '/nha-tuyen-dung/ho-so-cong-ty/giay-dkkd',
+    } : {
+      type: 'DOC_REJECTED',
+      title: 'Tài liệu bị từ chối',
+      body: `Giấy đăng ký doanh nghiệp của bạn bị từ chối. Lý do: ${rejectReason ?? 'Tài liệu không hợp lệ'}. Vui lòng upload lại.`,
+      url: '/nha-tuyen-dung/ho-so-cong-ty/giay-dkkd',
+    });
+
+    return { success: true, status: approve ? 'APPROVED' : 'REJECTED' };
   }
 
   async getReviews(idOrSlug: string) {

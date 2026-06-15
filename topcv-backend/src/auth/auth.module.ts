@@ -5,6 +5,7 @@ import { AuthService } from './auth.service'
 import { AuthController } from './auth.controller'
 import { UsersModule } from '../users/users.module'
 import { MailModule } from '../mail/mail.module'
+import { AuditLogsModule } from '../audit-logs/audit-logs.module'
 import { GoogleStrategy } from './strategies/google.strategy'
 import { FacebookStrategy } from './strategies/facebook.strategy'
 import { LinkedinStrategy } from './strategies/linkedin.strategy'
@@ -14,6 +15,7 @@ import { JwtStrategy } from './strategies/jwt.strategy'
   imports: [
     UsersModule,
     MailModule,
+    AuditLogsModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
@@ -22,7 +24,7 @@ import { JwtStrategy } from './strategies/jwt.strategy'
       }),
     }),
   ],
- providers: [AuthService, GoogleStrategy, FacebookStrategy, LinkedinStrategy, JwtStrategy],
+  providers: [AuthService, GoogleStrategy, FacebookStrategy, LinkedinStrategy, JwtStrategy],
   controllers: [AuthController],
 })
 export class AuthModule {}

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
     LayoutDashboard, Briefcase, PlusCircle, Building2, ChevronRight,
-    LogOut, Menu, X, Users, MessageSquare, UserPlus, Eye, BarChart2,
+    LogOut, Menu, X, Users, MessageSquare, UserPlus, Eye, BarChart2, History,
 } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
@@ -25,6 +25,7 @@ const NAV = [
     { href: '/nha-tuyen-dung/ket-noi', label: 'Kết nối ứng viên', icon: UserPlus },
     { href: '/nha-tuyen-dung/bao-cao', label: 'Báo cáo', icon: BarChart2 },
     { href: '/nha-tuyen-dung/tin-nhan', label: 'Tin nhắn', icon: MessageSquare },
+    { href: '/nha-tuyen-dung/lich-su-hoat-dong', label: 'Lịch sử hoạt động', icon: History },
 ];
 
 function Sidebar({ company, logoUrl, isActive, onNavClick, onLogout }) {
@@ -225,8 +226,12 @@ export default function EmployerDashboardLayout({ children }) {
                             border: '2px solid #a7f3d0',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             fontSize: '13px', fontWeight: '800', color: GREEN, flexShrink: 0,
+                            overflow: 'hidden',
                         }}>
-                            {company[0]?.toUpperCase()}
+                            {logoUrl
+                                ? <Image src={logoUrl} alt={company} width={32} height={32} unoptimized style={{ objectFit: 'contain', width: '100%', height: '100%' }} />
+                                : company[0]?.toUpperCase()
+                            }
                         </div>
                         <span className="topbar-company" style={{ fontSize: '13px', color: '#374151', fontWeight: '600', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {company}

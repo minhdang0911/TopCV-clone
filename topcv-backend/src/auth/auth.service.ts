@@ -10,6 +10,7 @@ import { LoginDto } from './dto/login.dto';
 import { Redis } from '@upstash/redis';
 import * as argon2 from 'argon2';
 import { MailService } from '../mail/mail.service';
+import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -33,10 +34,11 @@ export class AuthService {
     private jwtService: JwtService,
     private mailService: MailService,
     private prisma: PrismaService,
+    private auditLogs: AuditLogsService,
   ) {}
 
   // ─── REGISTER ───────────────────────────────────────
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, ip?: string) {
     if (dto.password !== dto.confirmPassword)
       throw new BadRequestException('Mật khẩu xác nhận không khớp');
 
@@ -54,13 +56,15 @@ export class AuthService {
     await this.usersService.createProfile(user.id, dto.fullName, dto.role);
     await this.sendOtp(user.id, user.email, 'verify_email');
 
+    this.auditLogs.create({ userId: user.id, action: 'REGISTER', entity: 'auth', entityId: user.id, ipAddress: ip }).catch((e) => console.error('[AuditLog]', e?.message));
+
     return {
       message: 'Đăng ký thành công, vui lòng kiểm tra email để xác thực',
     };
   }
 
   // ─── LOGIN ───────────────────────────────────────────
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ip?: string) {
     const user = await this.usersService.findByEmail(dto.email);
     if (!user)
       throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
@@ -92,6 +96,7 @@ export class AuthService {
       };
     }
 
+    this.auditLogs.create({ userId: user.id, action: 'LOGIN', entity: 'auth', entityId: user.id, ipAddress: ip }).catch((e) => console.error('[AuditLog]', e?.message));
     return this.generateTokens(user.id, user.email, user.role);
   }
 
@@ -190,8 +195,12 @@ export class AuthService {
   }
 
   // ─── LOGOUT ──────────────────────────────────────────
-  async logout(token: string) {
+  async logout(token: string, ip?: string) {
+    const rt = await this.prisma.refreshToken.findUnique({ where: { token }, select: { userId: true } });
     await this.prisma.refreshToken.deleteMany({ where: { token } });
+    if (rt?.userId) {
+      this.auditLogs.create({ userId: rt.userId, action: 'LOGOUT', entity: 'auth', entityId: rt.userId, ipAddress: ip }).catch((e) => console.error('[AuditLog]', e?.message));
+    }
     return { message: 'Đăng xuất thành công' };
   }
 
@@ -268,7 +277,7 @@ export class AuthService {
     fullName: string;
     avatar?: string;
     provider: string;
-  }) {
+  }, ip?: string) {
     if (!profile.email)
       throw new BadRequestException('Không lấy được email từ tài khoản social');
 
@@ -297,6 +306,7 @@ export class AuthService {
 
     if (!user.isActive) throw new UnauthorizedException('Tài khoản đã bị khóa');
 
+    this.auditLogs.create({ userId: user.id, action: 'LOGIN', entity: 'auth', entityId: user.id, ipAddress: ip }).catch((e) => console.error('[AuditLog]', e?.message));
     return this.generateTokens(user.id, user.email, user.role);
   }
 

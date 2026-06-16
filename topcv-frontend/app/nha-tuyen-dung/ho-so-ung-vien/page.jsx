@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Eye, ClipboardList, CheckCircle, RotateCcw, MessageSquare } from 'lucide-react';
+import { ChevronDown, Eye, ClipboardList, CheckCircle, RotateCcw, MessageSquare, Video, Copy, X, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { applicationsService } from '@/services/applications.service';
 import { chatService } from '@/services/chat.service';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
+import { meetingsService } from '@/services/meetings.service';
 import useAuthStore from '@/stores/auth.store';
 import { cn } from '@/lib/utils';
 
@@ -621,8 +622,145 @@ function RejectedEmailModal({ application, companyName, logoUrl, onClose, onConf
     );
 }
 
+// ─── Create Meeting Modal ─────────────────────────────────────────────────────
+function CreateMeetingModal({ application, onClose }) {
+    const [title, setTitle] = useState('');
+    const [scheduledAt, setScheduledAt] = useState('');
+    const [creating, setCreating] = useState(false);
+    const [result, setResult] = useState(null);
+
+    const candidate = application.candidate || {};
+    const profile = candidate.candidateProfile || {};
+    const candidateName = profile.fullName || candidate.email || 'Ứng viên';
+
+    const handleCreate = async () => {
+        setCreating(true);
+        try {
+            const res = await meetingsService.create({
+                candidateId: application.candidateId,
+                applicationId: application.id,
+                title: title.trim() || `Phỏng vấn: ${application.job?.title || ''}`,
+                scheduledAt: scheduledAt || undefined,
+            });
+            setResult(res.data?.data);
+        } catch (e) {
+            toast.error(e?.response?.data?.message || 'Không thể tạo phòng họp');
+        } finally {
+            setCreating(false);
+        }
+    };
+
+    const copyLink = () => {
+        if (!result) return;
+        navigator.clipboard.writeText(`${window.location.origin}/meet/${result.roomCode}`);
+        toast.success('Đã sao chép link');
+    };
+
+    return (
+        <div className="fixed inset-0 z-[2000] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-xl w-full max-w-[460px] shadow-[0_8px_32px_rgba(0,0,0,0.18)] overflow-hidden"
+                onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: GREEN }}>
+                            <Video size={16} className="text-white" />
+                        </div>
+                        <div>
+                            <p className="text-sm font-bold text-slate-900">Tạo cuộc họp video</p>
+                            <p className="text-xs text-slate-500">Với {candidateName}</p>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="bg-transparent border-none cursor-pointer text-slate-400 text-xl leading-none">×</button>
+                </div>
+
+                <div className="px-5 py-5">
+                    {result ? (
+                        /* Success state */
+                        <div className="flex flex-col items-center text-center gap-4">
+                            <div className="w-14 h-14 rounded-full bg-green-50 flex items-center justify-center">
+                                <CheckCircle size={28} className="text-green-500" />
+                            </div>
+                            <div>
+                                <p className="font-bold text-slate-900 mb-1">Phòng họp đã được tạo!</p>
+                                <p className="text-sm text-slate-500">Đã gửi thông báo đến {candidateName}</p>
+                            </div>
+
+                            {/* Room code display */}
+                            <div className="w-full bg-slate-50 rounded-xl p-4 border border-slate-200">
+                                <p className="text-xs text-slate-500 mb-2 font-semibold">Mã phòng họp</p>
+                                <p className="text-2xl font-mono font-bold tracking-widest text-slate-900 mb-3">{result.roomCode}</p>
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={copyLink}
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border border-slate-200 bg-white text-[13px] font-semibold text-slate-700 cursor-pointer hover:bg-slate-50 transition-colors"
+                                    >
+                                        <Copy size={13} /> Sao chép link
+                                    </button>
+                                    <a
+                                        href={`/meet/${result.roomCode}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg border-none text-[13px] font-bold text-white cursor-pointer no-underline"
+                                        style={{ background: GREEN }}
+                                    >
+                                        <Video size={13} /> Vào phòng họp
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Create form */
+                        <div className="flex flex-col gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                    Tiêu đề cuộc họp <span className="font-normal text-slate-400">(tùy chọn)</span>
+                                </label>
+                                <input
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    placeholder={`Phỏng vấn: ${application.job?.title || 'vị trí tuyển dụng'}`}
+                                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-[13px] text-slate-700 outline-none box-border"
+                                    style={{ fontFamily: 'inherit' }}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                                    <Calendar size={11} className="inline mr-1" />
+                                    Thời gian dự kiến <span className="font-normal text-slate-400">(tùy chọn)</span>
+                                </label>
+                                <input
+                                    type="datetime-local"
+                                    value={scheduledAt}
+                                    onChange={e => setScheduledAt(e.target.value)}
+                                    className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-[13px] text-slate-700 outline-none box-border"
+                                    style={{ fontFamily: 'inherit' }}
+                                />
+                            </div>
+                            <div className="bg-blue-50 rounded-lg px-3.5 py-2.5 text-xs text-blue-700 border border-blue-100">
+                                Thông báo sẽ tự động gửi đến <strong>{candidateName}</strong> khi tạo phòng.
+                            </div>
+                            <div className="flex gap-2 pt-1">
+                                <button onClick={onClose}
+                                    className="flex-1 py-2.5 border border-slate-200 rounded-lg bg-white text-[13px] cursor-pointer text-slate-700 font-medium">
+                                    Hủy
+                                </button>
+                                <button onClick={handleCreate} disabled={creating}
+                                    className="flex-[2] py-2.5 border-none rounded-lg text-white text-[13px] font-bold cursor-pointer disabled:opacity-60"
+                                    style={{ background: GREEN }}>
+                                    {creating ? 'Đang tạo...' : 'Tạo phòng họp'}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Application Row ──────────────────────────────────────────────────────────
-function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onViewDetail, onModalStatus }) {
+function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onViewDetail, onModalStatus, onCreateMeeting }) {
     const router = useRouter();
     const candidate = item.candidate || {};
     const profile = candidate.candidateProfile || {};
@@ -717,6 +855,13 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
                         className="bg-transparent border-none cursor-pointer text-slate-400 p-1 hover:text-green-600 transition-colors"
                     >
                         <MessageSquare size={16} />
+                    </button>
+                    <button
+                        onClick={() => onCreateMeeting(item)}
+                        title="Tạo cuộc họp video"
+                        className="bg-transparent border-none cursor-pointer text-slate-400 p-1 hover:text-blue-600 transition-colors"
+                    >
+                        <Video size={16} />
                     </button>
                 </div>
             </td>
@@ -891,6 +1036,7 @@ export default function CandidateProfilesPage() {
     const [offerItem, setOfferItem] = useState(null);
     const [rejectItem, setRejectItem] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
+    const [meetingItem, setMeetingItem] = useState(null);
 
     const LIMIT = 20;
 
@@ -986,6 +1132,9 @@ export default function CandidateProfilesPage() {
             `}</style>
 
             {/* Modals */}
+            {meetingItem && (
+                <CreateMeetingModal application={meetingItem} onClose={() => setMeetingItem(null)} />
+            )}
             {detailItem && (
                 <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onStatusChange={handleStatusChange} onModalStatus={openStatusModal} />
             )}
@@ -1105,6 +1254,7 @@ export default function CandidateProfilesPage() {
                                         onStatusChange={handleStatusChange}
                                         onViewDetail={setDetailItem}
                                         onModalStatus={openStatusModal}
+                                        onCreateMeeting={setMeetingItem}
                                     />
                                 ))
                             )}

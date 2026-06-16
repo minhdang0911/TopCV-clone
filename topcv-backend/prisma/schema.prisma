@@ -93,6 +93,7 @@ model User {
   connectsAsCandidate      EmployerCandidateConnect[]  @relation("ConnectCandidate")
   jobAlerts                JobAlert[]
   feedbacks                Feedback[]
+  meetingsAsCandidate      Meeting[]                   @relation("MeetingCandidate")
 
   @@map("users")
 }
@@ -148,6 +149,7 @@ model EmployerProfile {
   emailTemplates EmailTemplate[]
   conversations  Conversation[]
   connects       EmployerCandidateConnect[]
+  meetings       Meeting[]
 
   @@map("employer_profiles")
 }
@@ -458,6 +460,24 @@ model JobAlert {
 
   @@map("job_alerts")
 }
+model Meeting {
+  id             String    @id @default(cuid())
+  roomCode       String    @unique @map("room_code")
+  dailyRoomName  String    @unique @map("daily_room_name")
+  applicationId  String?   @map("application_id")
+  hostEmployerId String    @map("host_employer_id")
+  candidateId    String    @map("candidate_id")
+  title          String?
+  scheduledAt    DateTime? @map("scheduled_at")
+  status         String    @default("active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  hostEmployer EmployerProfile @relation(fields: [hostEmployerId], references: [id], onDelete: Cascade)
+  candidate    User            @relation("MeetingCandidate", fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@map("meetings")
+}
+
 model Feedback {
   id          String    @id @default(uuid())
   userId      String    @map("user_id")

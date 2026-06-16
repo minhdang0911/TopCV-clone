@@ -14,6 +14,12 @@ export class FeedbackController {
     return this.feedbackService.create(req.user.sub, body);
   }
 
+  @Get('my')
+  @UseGuards(JwtAuthGuard)
+  findMy(@Req() req: any, @Query() query: { page?: number; limit?: number }) {
+    return this.feedbackService.findMy(req.user.sub, query);
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')

@@ -16,6 +16,28 @@ export class FeedbackService {
     return { data: feedback };
   }
 
+  async findMy(userId: string, query: { page?: number; limit?: number }) {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [data, total] = await Promise.all([
+      this.prisma.feedback.findMany({
+        where: { userId },
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true, topic: true, description: true, rating: true,
+          createdAt: true, replyText: true, repliedAt: true,
+        },
+      }),
+      this.prisma.feedback.count({ where: { userId } }),
+    ]);
+
+    return { data, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } };
+  }
+
   async findAll(query: { page?: number; limit?: number }) {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 20;

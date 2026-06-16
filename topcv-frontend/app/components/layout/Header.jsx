@@ -200,6 +200,7 @@ const USER_MENU_SECTIONS = [
                 badgeFn: (u) => (u?.twoFactorEnabled ? null : 'Chưa kích hoạt'),
             },
             { label: 'Gửi phản hồi', href: '/phan-hoi' },
+            { label: 'Lịch sử phản hồi', href: '/lich-su-phan-hoi' },
         ],
     },
     {

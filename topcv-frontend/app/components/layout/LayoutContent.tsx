@@ -6,6 +6,7 @@ import Header from './Header';
 import Footer from './Footer';
 import SeoKeywords from '@/app/components/SeoKeywords';
 import JobPreferencesModal from '@/app/components/onboarding/JobPreferencesModal';
+import FloatingActions from '@/components/FloatingActions';
 import useAuthStore from '@/stores/auth.store';
 
 const HIDDEN_ROUTES = [
@@ -55,6 +56,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                 {!hideHeader && <Footer />}
             </div>
             {showOnboarding && <JobPreferencesModal onClose={() => setShowOnboarding(false)} />}
+            {!isEmployerDashboard && !isCvEditor && !isViewer && <FloatingActions />}
         </>
     );
 }

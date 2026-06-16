@@ -23,20 +23,18 @@ export default function EditJobPage() {
     }, [id]);
 
     if (loading) return (
-        <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-            <div style={{ width: '36px', height: '36px', border: `3px solid #e5e7eb`, borderTopColor: GREEN, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-            <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div className="flex justify-center py-16">
+            <div className="w-9 h-9 border-[3px] border-slate-200 border-t-green-500 rounded-full animate-spin" />
         </div>
     );
 
     if (notFound) return (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#6b7280' }}>
-            <p style={{ fontSize: '16px', fontWeight: '600', color: '#374151' }}>Không tìm thấy tin tuyển dụng</p>
-            <Link href="/nha-tuyen-dung/quan-ly-tin" style={{ color: GREEN, textDecoration: 'none', fontWeight: '600' }}>← Quay lại danh sách</Link>
+        <div className="text-center py-16 text-slate-500">
+            <p className="text-base font-semibold text-slate-700 mb-2">Không tìm thấy tin tuyển dụng</p>
+            <Link href="/nha-tuyen-dung/quan-ly-tin" className="font-semibold no-underline" style={{ color: GREEN }}>← Quay lại danh sách</Link>
         </div>
     );
 
-    // Convert API data to form-compatible format
     const initialData = {
         title: job.title || '',
         description: job.description || '',
@@ -58,14 +56,14 @@ export default function EditJobPage() {
 
     return (
         <div>
-            <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Link href="/nha-tuyen-dung/quan-ly-tin" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#6b7280', textDecoration: 'none' }}>
+            <div className="mb-6 flex items-center gap-3">
+                <Link href="/nha-tuyen-dung/quan-ly-tin" className="flex items-center gap-1.5 text-[13px] text-slate-500 no-underline">
                     <ArrowLeft size={16} /> Quay lại
                 </Link>
-                <div style={{ width: '1px', height: '18px', background: '#e5e7eb' }} />
+                <div className="w-px h-4.5 bg-slate-200" />
                 <div>
-                    <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', margin: 0 }}>Chỉnh sửa tin tuyển dụng</h1>
-                    <p style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0' }}>{job.title}</p>
+                    <h1 className="text-[22px] font-extrabold text-slate-900">Chỉnh sửa tin tuyển dụng</h1>
+                    <p className="text-[13px] text-slate-500 mt-1">{job.title}</p>
                 </div>
             </div>
             <JobForm jobId={id} initialData={initialData} />

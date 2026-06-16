@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Save, Bold, Italic, Strikethrough, List, ListOrdered, Quote, Code, Eye, AlignLeft, PlusCircle, X } from 'lucide-react';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
 import { provinceService } from '@/services/province.service';
+import { cn } from '@/lib/utils';
 
 const GREEN = '#00b14f';
 
@@ -59,6 +60,9 @@ const EMPTY = {
     level: 'NHAN_VIEN', quantity: 1, deadline: '',
     industryId: '', jobPositionId: '', isActive: true,
 };
+
+const inputCls = 'w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm text-slate-900 outline-none bg-white box-border';
+const selectCls = cn(inputCls, 'cursor-pointer');
 
 function renderMarkdown(md) {
     if (!md) return '';
@@ -117,30 +121,21 @@ function MarkdownEditor({ value, onChange }) {
             type="button"
             onClick={onClick}
             title={title}
-            style={{
-                background: active ? '#e5e7eb' : 'none',
-                border: 'none', cursor: 'pointer',
-                padding: '4px 7px', borderRadius: '4px',
-                fontSize: '11px', fontWeight: '700',
-                color: '#374151', lineHeight: 1,
-                display: 'flex', alignItems: 'center', gap: '3px',
-            }}
+            className={cn(
+                'flex items-center gap-0.5 px-1.5 py-1 rounded text-[11px] font-bold text-slate-700 border-none cursor-pointer',
+                active ? 'bg-slate-200' : 'bg-transparent hover:bg-slate-100'
+            )}
         >
             {children}
         </button>
     );
 
-    const Sep = () => (
-        <div style={{ width: '1px', height: '18px', background: '#e5e7eb', margin: '0 3px', flexShrink: 0 }} />
-    );
+    const Sep = () => <div className="w-px h-[18px] bg-slate-200 mx-0.5 shrink-0" />;
 
     return (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+        <div className="border border-slate-200 rounded-lg overflow-hidden">
             {/* Toolbar */}
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: '2px', flexWrap: 'wrap',
-                padding: '6px 10px', background: '#f9fafb', borderBottom: '1px solid #e5e7eb',
-            }}>
+            <div className="flex items-center gap-0.5 flex-wrap px-2.5 py-1.5 bg-slate-50 border-b border-slate-200">
                 <Btn onClick={() => prependLine('# ')} title="Tiêu đề 1">H1</Btn>
                 <Btn onClick={() => prependLine('## ')} title="Tiêu đề 2">H2</Btn>
                 <Btn onClick={() => prependLine('### ')} title="Tiêu đề 3">H3</Btn>
@@ -156,10 +151,8 @@ function MarkdownEditor({ value, onChange }) {
                 <Btn onClick={() => wrapSel('`')} title="Code nội tuyến"><Code size={13} /></Btn>
                 <Btn onClick={() => wrapSel('```\n', '\n```')} title="Code block"><AlignLeft size={13} /></Btn>
 
-                <div style={{ marginLeft: 'auto', display: 'flex', gap: '4px', borderLeft: '1px solid #e5e7eb', paddingLeft: '8px' }}>
-                    <Btn onClick={() => setShowPreview(false)} active={!showPreview} title="Soạn thảo">
-                        Soạn thảo
-                    </Btn>
+                <div className="ml-auto flex gap-1 border-l border-slate-200 pl-2">
+                    <Btn onClick={() => setShowPreview(false)} active={!showPreview} title="Soạn thảo">Soạn thảo</Btn>
                     <Btn onClick={() => setShowPreview(true)} active={showPreview} title="Xem trước">
                         <Eye size={13} /> Xem trước
                     </Btn>
@@ -168,11 +161,10 @@ function MarkdownEditor({ value, onChange }) {
 
             {showPreview ? (
                 <div
-                    className="md-preview"
+                    className="md-preview px-5 py-4 min-h-[260px] text-sm text-slate-700 leading-relaxed"
                     dangerouslySetInnerHTML={{
                         __html: renderMarkdown(value) || '<p style="color:#9ca3af">Chưa có nội dung...</p>',
                     }}
-                    style={{ padding: '16px 20px', minHeight: '260px', fontSize: '14px', color: '#374151', lineHeight: 1.7 }}
                 />
             ) : (
                 <textarea
@@ -181,12 +173,8 @@ function MarkdownEditor({ value, onChange }) {
                     onChange={e => onChange(e.target.value)}
                     rows={12}
                     placeholder={`## Mô tả công việc\n- Phát triển tính năng mới...\n\n## Yêu cầu\n- Kinh nghiệm 2+ năm...\n\n## Quyền lợi\n- Lương cạnh tranh...`}
-                    style={{
-                        width: '100%', padding: '12px 16px', border: 'none', outline: 'none',
-                        resize: 'vertical', minHeight: '260px', boxSizing: 'border-box',
-                        fontFamily: '"Fira Code", "SF Mono", Consolas, monospace',
-                        fontSize: '13px', color: '#374151', lineHeight: 1.7, background: 'white',
-                    }}
+                    className="w-full px-4 py-3 border-none outline-none resize-y min-h-[260px] box-border text-[13px] text-slate-700 leading-relaxed bg-white"
+                    style={{ fontFamily: '"Fira Code", "SF Mono", Consolas, monospace' }}
                 />
             )}
 
@@ -233,46 +221,57 @@ function LocationRow({ loc, provinces, index, onChange, onRemove, canRemove }) {
     };
 
     return (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', marginBottom: '10px', background: '#f9fafb', position: 'relative' }}>
+        <div className="border border-slate-200 rounded-lg p-3 mb-2.5 bg-slate-50 relative">
             {canRemove && (
-                <button type="button" onClick={onRemove} style={{ position: 'absolute', top: '8px', right: '8px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px' }}>
+                <button type="button" onClick={onRemove} className="absolute top-2 right-2 bg-transparent border-none cursor-pointer text-slate-400 p-0.5">
                     <X size={14} />
                 </button>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '8px' }}>
-                <select value={loc.provinceCode || ''} onChange={e => handleProvince(e.target.value)} style={selectStyle}>
+            <div className="grid grid-cols-2 gap-2.5 mb-2">
+                <select value={loc.provinceCode || ''} onChange={e => handleProvince(e.target.value)} className={selectCls}>
                     <option value="">-- Tỉnh/Thành phố --</option>
                     {provinces.map(p => <option key={p.code} value={p.code}>{p.name}</option>)}
                 </select>
-                <select value={loc.districtCode || ''} onChange={e => handleDistrict(e.target.value)} disabled={!loc.provinceCode || loadingDistricts} style={{ ...selectStyle, opacity: !loc.provinceCode ? 0.5 : 1 }}>
+                <select
+                    value={loc.districtCode || ''}
+                    onChange={e => handleDistrict(e.target.value)}
+                    disabled={!loc.provinceCode || loadingDistricts}
+                    className={cn(selectCls, !loc.provinceCode ? 'opacity-50' : '')}
+                >
                     <option value="">-- Quận/Huyện --</option>
                     {districts.map(d => <option key={d.code} value={String(d.code)}>{d.name}</option>)}
                 </select>
             </div>
-            <input value={loc.address || ''} onChange={e => onChange({ ...loc, address: e.target.value })} placeholder="Địa chỉ cụ thể (tòa nhà, đường phố...)" style={{ ...inputStyle, marginBottom: 0 }} />
+            <input
+                value={loc.address || ''}
+                onChange={e => onChange({ ...loc, address: e.target.value })}
+                placeholder="Địa chỉ cụ thể (tòa nhà, đường phố...)"
+                className={inputCls}
+            />
         </div>
     );
 }
 
 function Field({ label, required, children, hint }) {
     return (
-        <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                {label} {required && <span style={{ color: '#ef4444' }}>*</span>}
+        <div className="mb-5">
+            <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">
+                {label} {required && <span className="text-red-500">*</span>}
             </label>
             {children}
-            {hint && <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{hint}</p>}
+            {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
         </div>
     );
 }
 
-const inputStyle = {
-    width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb',
-    borderRadius: '8px', fontSize: '14px', color: '#111827',
-    outline: 'none', background: 'white', boxSizing: 'border-box',
-};
-
-const selectStyle = { ...inputStyle, cursor: 'pointer' };
+function Section({ title, children }) {
+    return (
+        <div className="bg-white rounded-xl px-6 py-5 border border-slate-200 mb-4">
+            <h3 className="text-[15px] font-bold text-slate-900 mb-4 pb-3 border-b border-slate-100">{title}</h3>
+            {children}
+        </div>
+    );
+}
 
 export default function JobForm({ jobId, initialData }) {
     const router = useRouter();
@@ -315,7 +314,6 @@ export default function JobForm({ jobId, initialData }) {
     };
 
     const addLocation = () => setForm(f => ({ ...f, locations: [...f.locations, { ...EMPTY_LOC }] }));
-
     const removeLocation = (index) => setForm(f => ({ ...f, locations: f.locations.filter((_, i) => i !== index) }));
 
     const handleSubmit = async (e) => {
@@ -353,15 +351,14 @@ export default function JobForm({ jobId, initialData }) {
     const salaryInMillion = (val) => val ? val / 1_000_000 : '';
 
     return (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '24px', alignItems: 'flex-start' }} className="job-form-layout">
+        <form onSubmit={handleSubmit} className="flex flex-col min-[900px]:flex-row gap-6 items-start">
             {/* Main */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="flex-1 min-w-0">
                 {/* Basic info */}
                 <Section title="Thông tin cơ bản">
                     <Field label="Tiêu đề công việc" required>
-                        <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="VD: Lập trình viên React Senior" style={inputStyle} />
+                        <input value={form.title} onChange={e => set('title', e.target.value)} placeholder="VD: Lập trình viên React Senior" className={inputCls} />
                     </Field>
-
                     <Field label="Mô tả công việc" required hint="Hỗ trợ Markdown: **in đậm**, *in nghiêng*, ## tiêu đề, - danh sách.">
                         <MarkdownEditor value={form.description} onChange={v => set('description', v)} />
                     </Field>
@@ -370,17 +367,21 @@ export default function JobForm({ jobId, initialData }) {
                 {/* Salary */}
                 <Section title="Mức lương">
                     <Field label="Hình thức lương">
-                        <select value={form.salaryType} onChange={e => set('salaryType', e.target.value)} style={selectStyle}>
+                        <select value={form.salaryType} onChange={e => set('salaryType', e.target.value)} className={selectCls}>
                             {SALARY_TYPES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                         </select>
                     </Field>
                     {form.salaryType !== 'negotiable' && (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="grid grid-cols-2 gap-3">
                             <Field label="Từ (triệu VNĐ)">
-                                <input type="number" min="0" value={form.salaryMin === '' ? '' : salaryInMillion(form.salaryMin)} onChange={e => set('salaryMin', e.target.value ? Number(e.target.value) * 1_000_000 : '')} placeholder="VD: 10" style={inputStyle} />
+                                <input type="number" min="0" value={form.salaryMin === '' ? '' : salaryInMillion(form.salaryMin)}
+                                    onChange={e => set('salaryMin', e.target.value ? Number(e.target.value) * 1_000_000 : '')}
+                                    placeholder="VD: 10" className={inputCls} />
                             </Field>
                             <Field label="Đến (triệu VNĐ)">
-                                <input type="number" min="0" value={form.salaryMax === '' ? '' : salaryInMillion(form.salaryMax)} onChange={e => set('salaryMax', e.target.value ? Number(e.target.value) * 1_000_000 : '')} placeholder="VD: 20" style={inputStyle} />
+                                <input type="number" min="0" value={form.salaryMax === '' ? '' : salaryInMillion(form.salaryMax)}
+                                    onChange={e => set('salaryMax', e.target.value ? Number(e.target.value) * 1_000_000 : '')}
+                                    placeholder="VD: 20" className={inputCls} />
                             </Field>
                         </div>
                     )}
@@ -388,7 +389,7 @@ export default function JobForm({ jobId, initialData }) {
 
                 {/* Location */}
                 <Section title="Địa điểm làm việc">
-                    <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '-8px', marginBottom: '12px' }}>
+                    <p className="text-xs text-slate-400 -mt-2 mb-3">
                         Có thể thêm nhiều địa điểm nếu công ty có nhiều chi nhánh tuyển dụng cùng lúc.
                     </p>
                     {form.locations.map((loc, i) => (
@@ -402,115 +403,112 @@ export default function JobForm({ jobId, initialData }) {
                             canRemove={form.locations.length > 1}
                         />
                     ))}
-                    <button type="button" onClick={addLocation} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: `1px dashed ${GREEN}`, borderRadius: '8px', padding: '8px 14px', color: GREEN, fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%', justifyContent: 'center' }}>
+                    <button
+                        type="button"
+                        onClick={addLocation}
+                        className="flex items-center justify-center gap-1.5 w-full border border-dashed rounded-lg px-3.5 py-2 text-[13px] font-semibold cursor-pointer bg-transparent"
+                        style={{ borderColor: GREEN, color: GREEN }}
+                    >
                         <PlusCircle size={15} /> Thêm địa điểm
                     </button>
                 </Section>
 
                 {/* Work details */}
                 <Section title="Yêu cầu & Hình thức làm việc">
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <Field label="Loại hình">
-                            <select value={form.jobType} onChange={e => set('jobType', e.target.value)} style={selectStyle}>
+                            <select value={form.jobType} onChange={e => set('jobType', e.target.value)} className={selectCls}>
                                 {JOB_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                             </select>
                         </Field>
                         <Field label="Hình thức làm việc">
-                            <select value={form.workingType} onChange={e => set('workingType', e.target.value)} style={selectStyle}>
+                            <select value={form.workingType} onChange={e => set('workingType', e.target.value)} className={selectCls}>
                                 {WORKING_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                             </select>
                         </Field>
                         <Field label="Ngày làm việc">
-                            <select value={form.workingDays} onChange={e => set('workingDays', e.target.value)} style={selectStyle}>
+                            <select value={form.workingDays} onChange={e => set('workingDays', e.target.value)} className={selectCls}>
                                 {WORKING_DAYS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                             </select>
                         </Field>
                         <Field label="Cấp bậc">
-                            <select value={form.level} onChange={e => set('level', e.target.value)} style={selectStyle}>
+                            <select value={form.level} onChange={e => set('level', e.target.value)} className={selectCls}>
                                 {LEVELS.map(l => <option key={l.value} value={l.value}>{l.label}</option>)}
                             </select>
                         </Field>
                     </div>
                     {form.workingDays === 'CUSTOM' && (
                         <Field label="Ghi chú ngày làm việc">
-                            <input value={form.workingDaysNote} onChange={e => set('workingDaysNote', e.target.value)} placeholder="VD: Thứ 2, 4, 6" style={inputStyle} />
+                            <input value={form.workingDaysNote} onChange={e => set('workingDaysNote', e.target.value)}
+                                placeholder="VD: Thứ 2, 4, 6" className={inputCls} />
                         </Field>
                     )}
                 </Section>
             </div>
 
             {/* Sidebar */}
-            <div style={{ width: '280px', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: '16px' }} className="job-form-sidebar">
+            <div className="w-full min-[900px]:w-[280px] shrink-0 flex flex-col gap-4">
                 {/* Publish */}
-                <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#111827', margin: '0 0 14px' }}>Xuất bản</h3>
+                <div className="bg-white rounded-xl p-5 border border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-900 mb-3.5">Xuất bản</h3>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                        <span style={{ fontSize: '13px', color: '#374151' }}>Hiển thị ngay</span>
-                        <button type="button" onClick={() => set('isActive', !form.isActive)}
-                            style={{ width: '40px', height: '22px', borderRadius: '11px', background: form.isActive ? GREEN : '#d1d5db', border: 'none', cursor: 'pointer', position: 'relative', transition: 'background 0.2s' }}>
-                            <span style={{ position: 'absolute', top: '3px', left: form.isActive ? '21px' : '3px', width: '16px', height: '16px', borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+                    <div className="flex items-center justify-between mb-3.5">
+                        <span className="text-[13px] text-slate-700">Hiển thị ngay</span>
+                        <button
+                            type="button"
+                            onClick={() => set('isActive', !form.isActive)}
+                            className="w-10 h-[22px] rounded-full border-none cursor-pointer relative transition-colors"
+                            style={{ background: form.isActive ? GREEN : '#d1d5db' }}
+                        >
+                            <span
+                                className="absolute top-[3px] w-4 h-4 rounded-full bg-white shadow-sm transition-all"
+                                style={{ left: form.isActive ? '21px' : '3px' }}
+                            />
                         </button>
                     </div>
 
                     <Field label="Số lượng tuyển">
-                        <input type="number" min="1" value={form.quantity} onChange={e => set('quantity', e.target.value)} style={inputStyle} />
+                        <input type="number" min="1" value={form.quantity} onChange={e => set('quantity', e.target.value)} className={inputCls} />
                     </Field>
 
                     <Field label="Hạn nộp hồ sơ">
-                        <input type="date" value={form.deadline ? form.deadline.slice(0, 10) : ''} onChange={e => set('deadline', e.target.value)} style={inputStyle} />
+                        <input type="date" value={form.deadline ? form.deadline.slice(0, 10) : ''} onChange={e => set('deadline', e.target.value)} className={inputCls} />
                     </Field>
 
                     {error && (
-                        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626', marginBottom: '12px' }}>
+                        <div className="bg-red-50 border border-red-300 rounded-lg px-3 py-2.5 text-[13px] text-red-600 mb-3">
                             {error}
                         </div>
                     )}
 
-                    <button type="submit" disabled={saving} style={{
-                        width: '100%', background: saving ? '#86efac' : GREEN, color: 'white',
-                        border: 'none', borderRadius: '8px', padding: '11px', fontSize: '14px',
-                        fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
-                    }}>
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="w-full text-white border-none rounded-lg py-[11px] text-sm font-bold flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed transition-opacity"
+                        style={{ background: saving ? '#86efac' : GREEN }}
+                    >
                         <Save size={16} />
                         {saving ? 'Đang lưu...' : jobId ? 'Cập nhật tin' : 'Đăng tin ngay'}
                     </button>
                 </div>
 
                 {/* Classification */}
-                <div style={{ background: 'white', borderRadius: '12px', padding: '20px', border: '1px solid #e5e7eb' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#111827', margin: '0 0 14px' }}>Phân loại</h3>
+                <div className="bg-white rounded-xl p-5 border border-slate-200">
+                    <h3 className="text-sm font-bold text-slate-900 mb-3.5">Phân loại</h3>
                     <Field label="Ngành nghề">
-                        <select value={form.industryId} onChange={e => set('industryId', e.target.value)} style={selectStyle}>
+                        <select value={form.industryId} onChange={e => set('industryId', e.target.value)} className={selectCls}>
                             <option value="">-- Chọn ngành nghề --</option>
                             {industries.map(i => <option key={i.id} value={i.id}>{i.name}</option>)}
                         </select>
                     </Field>
                     <Field label="Vị trí công việc">
-                        <select value={form.jobPositionId} onChange={e => set('jobPositionId', e.target.value)} style={selectStyle}>
+                        <select value={form.jobPositionId} onChange={e => set('jobPositionId', e.target.value)} className={selectCls}>
                             <option value="">-- Chọn vị trí --</option>
                             {jobPositions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
                         </select>
                     </Field>
                 </div>
             </div>
-
-            <style>{`
-                @media (max-width: 900px) {
-                    .job-form-layout { flex-direction: column !important; }
-                    .job-form-sidebar { width: 100% !important; }
-                }
-            `}</style>
         </form>
-    );
-}
-
-function Section({ title, children }) {
-    return (
-        <div style={{ background: 'white', borderRadius: '12px', padding: '20px 24px', border: '1px solid #e5e7eb', marginBottom: '16px' }}>
-            <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#111827', margin: '0 0 16px', paddingBottom: '12px', borderBottom: '1px solid #f3f4f6' }}>{title}</h3>
-            {children}
-        </div>
     );
 }

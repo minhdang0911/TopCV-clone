@@ -8,6 +8,7 @@ import { applicationsService } from '@/services/applications.service';
 import { chatService } from '@/services/chat.service';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
 import useAuthStore from '@/stores/auth.store';
+import { cn } from '@/lib/utils';
 
 const GREEN = '#00b14f';
 
@@ -35,7 +36,6 @@ function timeAgo(iso) {
 // ─── Status Dropdown ──────────────────────────────────────────────────────────
 // Uses position:fixed + getBoundingClientRect so it never gets clipped by
 // ancestor overflow:hidden on the table wrapper.
-
 function StatusDropdown({ current, applicationId, onUpdate, onModalStatus }) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -54,12 +54,10 @@ function StatusDropdown({ current, applicationId, onUpdate, onModalStatus }) {
     const handleSelect = async (status) => {
         if (status === current) { setOpen(false); return; }
         setOpen(false);
-
         if (['INTERVIEW', 'OFFERED', 'REJECTED'].includes(status) && onModalStatus) {
             onModalStatus(status);
             return;
         }
-
         setLoading(true);
         try {
             await applicationsService.updateStatus(applicationId, { status });
@@ -72,20 +70,13 @@ function StatusDropdown({ current, applicationId, onUpdate, onModalStatus }) {
     };
 
     return (
-        <div style={{ position: 'relative', display: 'inline-block' }}>
+        <div className="relative inline-block">
             <button
                 ref={btnRef}
                 onClick={handleOpen}
                 disabled={loading}
-                style={{
-                    display: 'flex', alignItems: 'center', gap: '6px',
-                    fontSize: '12px', fontWeight: '600',
-                    color: cfg.color, background: cfg.bg,
-                    border: `1px solid ${cfg.border}`,
-                    borderRadius: '20px', padding: '4px 10px 4px 12px',
-                    cursor: 'pointer', whiteSpace: 'nowrap',
-                    opacity: loading ? 0.7 : 1,
-                }}
+                className="flex items-center gap-1.5 text-xs font-semibold rounded-full px-3 py-1 pr-2.5 cursor-pointer whitespace-nowrap border"
+                style={{ color: cfg.color, background: cfg.bg, borderColor: cfg.border, opacity: loading ? 0.7 : 1 }}
             >
                 {cfg.label}
                 <ChevronDown size={12} />
@@ -93,28 +84,19 @@ function StatusDropdown({ current, applicationId, onUpdate, onModalStatus }) {
 
             {open && (
                 <>
-                    <div style={{ position: 'fixed', inset: 0, zIndex: 9998 }} onClick={() => setOpen(false)} />
-                    <div style={{
-                        position: 'fixed',
-                        top: pos.top,
-                        right: pos.right,
-                        zIndex: 9999,
-                        background: 'white',
-                        borderRadius: '10px',
-                        boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                        border: '1px solid #e5e7eb',
-                        overflow: 'hidden',
-                        minWidth: '160px',
-                    }}>
+                    <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
+                    <div
+                        className="fixed z-[9999] bg-white rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] border border-slate-200 overflow-hidden min-w-[160px]"
+                        style={{ top: pos.top, right: pos.right }}
+                    >
                         {STATUS_OPTIONS.map(s => {
                             const c = STATUS_CONFIG[s];
                             return (
                                 <button key={s} onClick={() => handleSelect(s)}
+                                    className="block w-full text-left px-3.5 py-2.5 border-none cursor-pointer text-[13px] transition-colors"
                                     style={{
-                                        display: 'block', width: '100%', textAlign: 'left',
-                                        padding: '9px 14px', border: 'none', cursor: 'pointer',
-                                        fontSize: '13px', fontWeight: s === current ? '700' : '400',
                                         color: c.color,
+                                        fontWeight: s === current ? '700' : '400',
                                         background: s === current ? c.bg : 'white',
                                     }}
                                     onMouseEnter={e => { if (s !== current) e.currentTarget.style.background = '#f9fafb'; }}
@@ -131,8 +113,15 @@ function StatusDropdown({ current, applicationId, onUpdate, onModalStatus }) {
     );
 }
 
-// ─── Interview Email Modal ─────────────────────────────────────────────────────
+// ─── Shared modal field styles ─────────────────────────────────────────────────
+const modalField = {
+    width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb',
+    borderRadius: '6px', fontSize: '13px', outline: 'none',
+    fontFamily: 'inherit', color: '#374151', background: 'white', boxSizing: 'border-box',
+};
+const modalLabel = { display: 'block', fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '5px' };
 
+// ─── Interview Email Modal ─────────────────────────────────────────────────────
 const INTERVIEW_TYPE_LABELS = {
     direct: 'Trực tiếp tại văn phòng',
     online: 'Online (Zoom / Google Meet)',
@@ -144,10 +133,8 @@ function buildEmailTemplate({ candidateName, jobTitle, companyName, interviewDat
         ? new Date(interviewDate + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
         : '';
     const typeLabel = INTERVIEW_TYPE_LABELS[interviewType] || 'Trực tiếp tại văn phòng';
-
     let body = `Kính gửi ${candidateName},\n\n`;
     body += `Cảm ơn bạn đã quan tâm và ứng tuyển vào vị trí ${jobTitle} tại ${companyName}. Sau khi xem xét hồ sơ, chúng tôi nhận thấy bạn phù hợp với yêu cầu tuyển dụng và mong muốn mời bạn tham gia buổi phỏng vấn để trao đổi chi tiết hơn về công việc.\n`;
-
     const hasDetails = dateStr || interviewLocation || interviewType;
     if (hasDetails) {
         body += '\n';
@@ -155,16 +142,13 @@ function buildEmailTemplate({ candidateName, jobTitle, companyName, interviewDat
         if (interviewLocation) body += `Địa điểm: ${interviewLocation}\n`;
         body += `Hình thức: ${typeLabel}\n`;
     }
-
     if (interviewNote) body += `\nLưu ý: ${interviewNote}\n`;
-
     body += '\nVui lòng xác nhận sự tham gia của bạn bằng cách phản hồi email này. Nếu bạn có bất kỳ câu hỏi nào, đừng ngần ngại liên hệ với chúng tôi.\n';
     body += '\nRất mong được gặp bạn trong buổi phỏng vấn!\n\n';
     body += `Trân trọng,\nBộ phận Nhân sự\n${companyName}`;
     return body;
 }
 
-// applications — always an array (1 item = single mode, >1 = bulk mode)
 function InterviewEmailModal({ applications, companyName, logoUrl, companyAddress, onClose, onConfirm }) {
     const isBulk = applications.length > 1;
     const firstApp = applications[0] || {};
@@ -182,9 +166,7 @@ function InterviewEmailModal({ applications, companyName, logoUrl, companyAddres
     const [interviewType, setInterviewType] = useState('direct');
     const [interviewNote, setInterviewNote] = useState('');
     const [emailSubject, setEmailSubject] = useState(
-        isBulk
-            ? `[${companyName}] Thư mời phỏng vấn`
-            : `[${companyName}] Thư mời phỏng vấn vị trí ${jobTitle}`
+        isBulk ? `[${companyName}] Thư mời phỏng vấn` : `[${companyName}] Thư mời phỏng vấn vị trí ${jobTitle}`
     );
     const [emailBody, setEmailBody] = useState('');
     const [isBodyCustomized, setIsBodyCustomized] = useState(false);
@@ -214,155 +196,141 @@ function InterviewEmailModal({ applications, companyName, logoUrl, companyAddres
     const handleConfirm = async () => {
         setLoading(true);
         try {
-            await onConfirm({
-                sendEmail, interviewDate, interviewTime, interviewLocation,
-                interviewType, interviewNote,
-                emailSubject: sendEmail ? emailSubject : undefined,
-                emailBodyTemplate: sendEmail ? emailBody : undefined,
-            });
-        } finally {
-            setLoading(false);
-        }
+            await onConfirm({ sendEmail, interviewDate, interviewTime, interviewLocation, interviewType, interviewNote, emailSubject: sendEmail ? emailSubject : undefined, emailBodyTemplate: sendEmail ? emailBody : undefined });
+        } finally { setLoading(false); }
     };
 
-    const field = { width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#374151', background: 'white', boxSizing: 'border-box' };
-    const lbl = { display: 'block', fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '5px' };
-
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
-            onClick={onClose}
-        >
-            <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '900px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }}
+        <div className="fixed inset-0 z-[2000] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-xl w-full max-w-[900px] max-h-[92vh] flex flex-col overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
                 onClick={e => e.stopPropagation()}
             >
-                {/* ── Header ── */}
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {/* Header */}
+                <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2.5">
                         {logoUrl
-                            ? <img src={logoUrl} alt={companyName} style={{ width: '34px', height: '34px', borderRadius: '6px', objectFit: 'contain', border: '1px solid #e5e7eb', background: '#f9fafb', padding: '2px' }} />
-                            : <div style={{ width: '34px', height: '34px', borderRadius: '6px', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '15px', flexShrink: 0 }}>{(companyName[0] || 'C').toUpperCase()}</div>
+                            ? <img src={logoUrl} alt={companyName} className="w-[34px] h-[34px] rounded-md object-contain border border-slate-200 bg-slate-50 p-0.5" />
+                            : <div className="w-[34px] h-[34px] rounded-md bg-slate-700 flex items-center justify-center text-white font-bold text-[15px] shrink-0">{(companyName[0] || 'C').toUpperCase()}</div>
                         }
                         <div>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Thư mời phỏng vấn</div>
-                            <div style={{ fontSize: '12px', color: '#6b7280' }}>{companyName}</div>
+                            <div className="text-sm font-bold text-slate-900">Thư mời phỏng vấn</div>
+                            <div className="text-xs text-slate-500">{companyName}</div>
                         </div>
                     </div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '22px', lineHeight: 1, padding: '4px 6px' }}>×</button>
+                    <button onClick={onClose} className="bg-transparent border-none cursor-pointer text-slate-400 text-[22px] leading-none px-1.5 py-1">×</button>
                 </div>
 
-                {/* ── To / Subject ── */}
-                <div style={{ padding: '10px 20px', borderBottom: '1px solid #e5e7eb', background: '#fafafa', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280', width: '50px', flexShrink: 0 }}>Gửi đến</span>
+                {/* To / Subject */}
+                <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-50 shrink-0">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-slate-500 w-[50px] shrink-0">Gửi đến</span>
                         {isBulk ? (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px', padding: '3px 12px 3px 8px' }}>
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px', fontWeight: '700' }}>{applications.length}</div>
-                                <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{applications.length} ứng viên đã chọn</span>
+                            <div className="inline-flex items-center gap-1.5 bg-green-50 border border-green-300 rounded-md px-2.5 py-0.5">
+                                <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ background: GREEN }}>{applications.length}</div>
+                                <span className="text-[13px] font-semibold text-slate-700">{applications.length} ứng viên đã chọn</span>
                             </div>
                         ) : (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px', padding: '3px 12px 3px 8px' }}>
-                                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px', fontWeight: '700' }}>{firstCandidateName[0]?.toUpperCase()}</div>
-                                <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{firstCandidateName}</span>
-                                <span style={{ fontSize: '12px', color: '#6b7280' }}>{'<'}{firstCandidate.email}{'>'}</span>
+                            <div className="inline-flex items-center gap-1.5 bg-green-50 border border-green-300 rounded-md px-2.5 py-0.5">
+                                <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ background: GREEN }}>{firstCandidateName[0]?.toUpperCase()}</div>
+                                <span className="text-[13px] font-semibold text-slate-700">{firstCandidateName}</span>
+                                <span className="text-xs text-slate-500">{'<'}{firstCandidate.email}{'>'}</span>
                             </div>
                         )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280', width: '50px', flexShrink: 0 }}>Tiêu đề</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 w-[50px] shrink-0">Tiêu đề</span>
                         <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)}
-                            style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#374151', background: 'white' }} />
+                            className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-md text-[13px] outline-none text-slate-700 bg-white" />
                     </div>
                 </div>
 
-                {/* ── Two-column body ── */}
-                <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
-
+                {/* Two-column body */}
+                <div className="flex flex-1 overflow-hidden min-h-0">
                     {/* Left: interview form */}
-                    <div style={{ width: '280px', flexShrink: 0, borderRight: '1px solid #e5e7eb', padding: '16px', overflowY: 'auto' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '14px' }}>Chi tiết buổi phỏng vấn</div>
-
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Ngày phỏng vấn</label>
-                            <input type="date" value={interviewDate} onChange={e => setInterviewDate(e.target.value)} style={field} />
+                    <div className="w-[280px] shrink-0 border-r border-slate-200 p-4 overflow-y-auto">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3.5">Chi tiết buổi phỏng vấn</div>
+                        <div className="mb-3">
+                            <label style={modalLabel}>Ngày phỏng vấn</label>
+                            <input type="date" value={interviewDate} onChange={e => setInterviewDate(e.target.value)} style={modalField} />
                         </div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Giờ bắt đầu</label>
-                            <input type="time" value={interviewTime} onChange={e => setInterviewTime(e.target.value)} style={field} />
+                        <div className="mb-3">
+                            <label style={modalLabel}>Giờ bắt đầu</label>
+                            <input type="time" value={interviewTime} onChange={e => setInterviewTime(e.target.value)} style={modalField} />
                         </div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Hình thức</label>
-                            <select value={interviewType} onChange={e => setInterviewType(e.target.value)} style={{ ...field, cursor: 'pointer' }}>
+                        <div className="mb-3">
+                            <label style={modalLabel}>Hình thức</label>
+                            <select value={interviewType} onChange={e => setInterviewType(e.target.value)} style={{ ...modalField, cursor: 'pointer' }}>
                                 <option value="direct">Trực tiếp tại văn phòng</option>
                                 <option value="online">Online (Zoom / Google Meet)</option>
                                 <option value="phone">Qua điện thoại</option>
                             </select>
                         </div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Địa điểm</label>
+                        <div className="mb-3">
+                            <label style={modalLabel}>Địa điểm</label>
                             <input type="text" value={interviewLocation} onChange={e => setInterviewLocation(e.target.value)}
-                                placeholder="Tầng 5, 123 Nguyễn Huệ, Q.1..." style={field} />
+                                placeholder="Tầng 5, 123 Nguyễn Huệ, Q.1..." style={modalField} />
                         </div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Ghi chú <span style={{ fontWeight: '400', color: '#9ca3af' }}>(tùy chọn)</span></label>
+                        <div className="mb-3">
+                            <label style={modalLabel}>Ghi chú <span className="font-normal text-slate-400">(tùy chọn)</span></label>
                             <textarea value={interviewNote} onChange={e => setInterviewNote(e.target.value)}
                                 placeholder="Vui lòng mang theo CCCD, CV bản cứng..."
-                                rows={3} style={{ ...field, resize: 'vertical' }} />
+                                rows={3} style={{ ...modalField, resize: 'vertical' }} />
                         </div>
-
-                        <div style={{ marginTop: '4px', padding: '10px 12px', background: '#f0fdf4', borderRadius: '6px', fontSize: '12px', color: '#16a34a', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                            <CheckCircle size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
+                        <div className="mt-1 px-3 py-2.5 bg-green-50 rounded-md text-xs text-green-700 flex items-start gap-1.5">
+                            <CheckCircle size={13} className="shrink-0 mt-0.5" />
                             <span>Thông báo realtime sẽ tự động gửi khi xác nhận.</span>
                         </div>
                     </div>
 
                     {/* Right: email body editor */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', overflow: 'hidden' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Nội dung email {isBulk && <span style={{ color: '#d97706', textTransform: 'none', letterSpacing: 0, fontWeight: '400' }}>— [Tên ứng viên] sẽ được thay tự động</span>}
+                    <div className="flex-1 flex flex-col p-4 overflow-hidden">
+                        <div className="flex justify-between items-center mb-2">
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                Nội dung email {isBulk && <span className="text-amber-600 normal-case tracking-normal font-normal">— [Tên ứng viên] sẽ được thay tự động</span>}
                             </div>
                             {isBodyCustomized && (
-                                <button onClick={resetBody} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: GREEN, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                                <button onClick={resetBody} className="flex items-center gap-1 text-xs bg-transparent border-none cursor-pointer p-0" style={{ color: GREEN }}>
                                     <RotateCcw size={11} /> Hoàn tác về mẫu
                                 </button>
                             )}
                         </div>
-
                         <textarea
                             value={emailBody}
                             onChange={handleBodyChange}
                             spellCheck={false}
                             style={{
-                                flex: 1, padding: '14px', border: `1px solid ${isBodyCustomized ? '#fbbf24' : '#e5e7eb'}`,
-                                borderRadius: '8px', fontSize: '13px', lineHeight: '1.8', resize: 'none', outline: 'none',
-                                fontFamily: 'inherit', color: '#374151',
+                                flex: 1, padding: '14px',
+                                border: `1px solid ${isBodyCustomized ? '#fbbf24' : '#e5e7eb'}`,
+                                borderRadius: '8px', fontSize: '13px', lineHeight: '1.8',
+                                resize: 'none', outline: 'none', fontFamily: 'inherit', color: '#374151',
                                 background: isBodyCustomized ? '#fffdf0' : 'white',
                                 transition: 'border-color 0.15s',
                             }}
                         />
-                        <div style={{ marginTop: '5px', fontSize: '11px', color: isBodyCustomized ? '#d97706' : '#9ca3af' }}>
-                            {isBodyCustomized ? '✏️ Nội dung tùy chỉnh — thay đổi trên form không tự cập nhật' : 'Tự động cập nhật khi điền thông tin bên trái'}
+                        <div className="mt-1 text-[11px]" style={{ color: isBodyCustomized ? '#d97706' : '#9ca3af' }}>
+                            {isBodyCustomized ? 'Nội dung tùy chỉnh — thay đổi trên form không tự cập nhật' : 'Tự động cập nhật khi điền thông tin bên trái'}
                         </div>
                     </div>
                 </div>
 
-                {/* ── Footer ── */}
-                <div style={{ padding: '12px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#374151' }}>
+                {/* Footer */}
+                <div className="px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+                    <label className="flex items-center gap-2 cursor-pointer text-[13px] text-slate-700">
                         <input type="checkbox" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)}
                             style={{ width: '15px', height: '15px', accentColor: GREEN }} />
                         {isBulk
                             ? `Gửi email thông báo đến ${applications.length} ứng viên`
-                            : <>Gửi email thông báo đến <strong style={{ marginLeft: '3px' }}>{firstCandidate.email}</strong></>
+                            : <><span>Gửi email thông báo đến</span> <strong className="ml-0.5">{firstCandidate.email}</strong></>
                         }
                     </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className="flex gap-2">
                         <button onClick={onClose}
-                            style={{ padding: '8px 18px', border: '1px solid #d1d5db', borderRadius: '7px', background: 'white', fontSize: '13px', cursor: 'pointer', color: '#374151', fontWeight: '500' }}>
+                            className="px-4 py-2 border border-slate-300 rounded-lg bg-white text-[13px] cursor-pointer text-slate-700 font-medium">
                             Hủy
                         </button>
                         <button onClick={handleConfirm} disabled={loading}
-                            style={{ padding: '8px 20px', background: GREEN, color: 'white', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+                            className="px-5 py-2 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer disabled:cursor-not-allowed disabled:opacity-70"
+                            style={{ background: GREEN }}>
                             {loading ? 'Đang xử lý...' : (sendEmail ? 'Xác nhận & Gửi email' : 'Xác nhận')}
                         </button>
                     </div>
@@ -373,7 +341,6 @@ function InterviewEmailModal({ applications, companyName, logoUrl, companyAddres
 }
 
 // ─── Offer Email Modal ────────────────────────────────────────────────────────
-
 function buildOfferTemplate({ candidateName, jobTitle, companyName, offerSalary, offerStartDate, offerProbation }) {
     const dateStr = offerStartDate
         ? new Date(offerStartDate + 'T00:00:00').toLocaleDateString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
@@ -426,111 +393,116 @@ function OfferEmailModal({ application, companyName, logoUrl, onClose, onConfirm
     const handleConfirm = async () => {
         setLoading(true);
         try {
-            await onConfirm({
-                sendEmail, offerSalary, offerStartDate, offerProbation, offerNote,
-                emailSubject: sendEmail ? emailSubject : undefined,
-                emailBody: sendEmail ? emailBody : undefined,
-            });
+            await onConfirm({ sendEmail, offerSalary, offerStartDate, offerProbation, offerNote, emailSubject: sendEmail ? emailSubject : undefined, emailBody: sendEmail ? emailBody : undefined });
         } finally { setLoading(false); }
     };
 
-    const field = { width: '100%', padding: '8px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#374151', background: 'white', boxSizing: 'border-box' };
-    const lbl = { display: 'block', fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '5px' };
-
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={onClose}>
-            <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '860px', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[2000] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-xl w-full max-w-[860px] max-h-[92vh] flex flex-col overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
+                onClick={e => e.stopPropagation()}
+            >
                 {/* Header */}
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2.5">
                         {logoUrl
-                            ? <img src={logoUrl} alt={companyName} style={{ width: '34px', height: '34px', borderRadius: '6px', objectFit: 'contain', border: '1px solid #e5e7eb', padding: '2px' }} />
-                            : <div style={{ width: '34px', height: '34px', borderRadius: '6px', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '15px' }}>{(companyName[0] || 'C').toUpperCase()}</div>
+                            ? <img src={logoUrl} alt={companyName} className="w-[34px] h-[34px] rounded-md object-contain border border-slate-200 p-0.5" />
+                            : <div className="w-[34px] h-[34px] rounded-md bg-slate-700 flex items-center justify-center text-white font-bold text-[15px]">{(companyName[0] || 'C').toUpperCase()}</div>
                         }
                         <div>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Thư mời nhận việc (Offer Letter)</div>
-                            <div style={{ fontSize: '12px', color: '#6b7280' }}>{companyName}</div>
+                            <div className="text-sm font-bold text-slate-900">Thư mời nhận việc (Offer Letter)</div>
+                            <div className="text-xs text-slate-500">{companyName}</div>
                         </div>
                     </div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '22px', lineHeight: 1, padding: '4px 6px' }}>×</button>
+                    <button onClick={onClose} className="bg-transparent border-none cursor-pointer text-slate-400 text-[22px] leading-none px-1.5 py-1">×</button>
                 </div>
 
                 {/* To / Subject */}
-                <div style={{ padding: '10px 20px', borderBottom: '1px solid #e5e7eb', background: '#fafafa', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280', width: '50px', flexShrink: 0 }}>Gửi đến</span>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '6px', padding: '3px 12px 3px 8px' }}>
-                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: GREEN, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px', fontWeight: '700' }}>{candidateName[0]?.toUpperCase()}</div>
-                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{candidateName}</span>
-                            <span style={{ fontSize: '12px', color: '#6b7280' }}>{'<'}{candidate.email}{'>'}</span>
+                <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-50 shrink-0">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-slate-500 w-[50px] shrink-0">Gửi đến</span>
+                        <div className="inline-flex items-center gap-1.5 bg-green-50 border border-green-300 rounded-md px-2.5 py-0.5">
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center text-white text-[10px] font-bold" style={{ background: GREEN }}>{candidateName[0]?.toUpperCase()}</div>
+                            <span className="text-[13px] font-semibold text-slate-700">{candidateName}</span>
+                            <span className="text-xs text-slate-500">{'<'}{candidate.email}{'>'}</span>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280', width: '50px', flexShrink: 0 }}>Tiêu đề</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 w-[50px] shrink-0">Tiêu đề</span>
                         <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)}
-                            style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#374151', background: 'white' }} />
+                            className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-md text-[13px] outline-none text-slate-700 bg-white" />
                     </div>
                 </div>
 
                 {/* Two-column */}
-                <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                <div className="flex flex-1 overflow-hidden min-h-0">
                     {/* Left: offer details */}
-                    <div style={{ width: '270px', flexShrink: 0, borderRight: '1px solid #e5e7eb', padding: '16px', overflowY: 'auto' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '14px' }}>Thông tin offer</div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Mức lương</label>
+                    <div className="w-[270px] shrink-0 border-r border-slate-200 p-4 overflow-y-auto">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-3.5">Thông tin offer</div>
+                        <div className="mb-3">
+                            <label style={modalLabel}>Mức lương</label>
                             <input type="text" value={offerSalary} onChange={e => setOfferSalary(e.target.value)}
-                                placeholder="VD: 18.000.000 VNĐ/tháng" style={field} />
+                                placeholder="VD: 18.000.000 VNĐ/tháng" style={modalField} />
                         </div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Ngày bắt đầu làm việc</label>
-                            <input type="date" value={offerStartDate} onChange={e => setOfferStartDate(e.target.value)} style={field} />
+                        <div className="mb-3">
+                            <label style={modalLabel}>Ngày bắt đầu làm việc</label>
+                            <input type="date" value={offerStartDate} onChange={e => setOfferStartDate(e.target.value)} style={modalField} />
                         </div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Thời gian thử việc <span style={{ fontWeight: '400', color: '#9ca3af' }}>(tùy chọn)</span></label>
+                        <div className="mb-3">
+                            <label style={modalLabel}>Thời gian thử việc <span className="font-normal text-slate-400">(tùy chọn)</span></label>
                             <input type="text" value={offerProbation} onChange={e => setOfferProbation(e.target.value)}
-                                placeholder="VD: 2 tháng, hưởng 80% lương" style={field} />
+                                placeholder="VD: 2 tháng, hưởng 80% lương" style={modalField} />
                         </div>
-                        <div style={{ marginBottom: '12px' }}>
-                            <label style={lbl}>Ghi chú <span style={{ fontWeight: '400', color: '#9ca3af' }}>(tùy chọn)</span></label>
+                        <div className="mb-3">
+                            <label style={modalLabel}>Ghi chú <span className="font-normal text-slate-400">(tùy chọn)</span></label>
                             <textarea value={offerNote} onChange={e => setOfferNote(e.target.value)}
                                 placeholder="Thông tin thêm về phúc lợi, quy định..."
-                                rows={3} style={{ ...field, resize: 'vertical' }} />
+                                rows={3} style={{ ...modalField, resize: 'vertical' }} />
                         </div>
-                        <div style={{ padding: '10px 12px', background: '#f0fdf4', borderRadius: '6px', fontSize: '12px', color: '#16a34a', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
-                            <CheckCircle size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
+                        <div className="px-3 py-2.5 bg-green-50 rounded-md text-xs text-green-700 flex items-start gap-1.5">
+                            <CheckCircle size={13} className="shrink-0 mt-0.5" />
                             <span>Thông báo realtime sẽ tự động gửi khi xác nhận.</span>
                         </div>
                     </div>
                     {/* Right: email body */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', overflow: 'hidden' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nội dung email</div>
+                    <div className="flex-1 flex flex-col p-4 overflow-hidden">
+                        <div className="flex justify-between items-center mb-2">
+                            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Nội dung email</div>
                             {isBodyCustomized && (
-                                <button onClick={resetBody} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: GREEN, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                                <button onClick={resetBody} className="flex items-center gap-1 text-xs bg-transparent border-none cursor-pointer p-0" style={{ color: GREEN }}>
                                     <RotateCcw size={11} /> Hoàn tác về mẫu
                                 </button>
                             )}
                         </div>
-                        <textarea value={emailBody} onChange={e => { setEmailBody(e.target.value); if (!dirtyRef.current) { dirtyRef.current = true; setIsBodyCustomized(true); } }}
+                        <textarea value={emailBody}
+                            onChange={e => { setEmailBody(e.target.value); if (!dirtyRef.current) { dirtyRef.current = true; setIsBodyCustomized(true); } }}
                             spellCheck={false}
-                            style={{ flex: 1, padding: '14px', border: `1px solid ${isBodyCustomized ? '#fbbf24' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '13px', lineHeight: '1.8', resize: 'none', outline: 'none', fontFamily: 'inherit', color: '#374151', background: isBodyCustomized ? '#fffdf0' : 'white', transition: 'border-color 0.15s' }} />
-                        <div style={{ marginTop: '5px', fontSize: '11px', color: isBodyCustomized ? '#d97706' : '#9ca3af' }}>
-                            {isBodyCustomized ? '✏️ Nội dung tùy chỉnh — thay đổi form sẽ không tự cập nhật' : 'Tự động cập nhật khi điền thông tin bên trái'}
+                            style={{
+                                flex: 1, padding: '14px',
+                                border: `1px solid ${isBodyCustomized ? '#fbbf24' : '#e5e7eb'}`,
+                                borderRadius: '8px', fontSize: '13px', lineHeight: '1.8',
+                                resize: 'none', outline: 'none', fontFamily: 'inherit', color: '#374151',
+                                background: isBodyCustomized ? '#fffdf0' : 'white',
+                                transition: 'border-color 0.15s',
+                            }} />
+                        <div className="mt-1 text-[11px]" style={{ color: isBodyCustomized ? '#d97706' : '#9ca3af' }}>
+                            {isBodyCustomized ? 'Nội dung tùy chỉnh — thay đổi form sẽ không tự cập nhật' : 'Tự động cập nhật khi điền thông tin bên trái'}
                         </div>
                     </div>
                 </div>
 
                 {/* Footer */}
-                <div style={{ padding: '12px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#374151' }}>
-                        <input type="checkbox" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)} style={{ width: '15px', height: '15px', accentColor: GREEN }} />
-                        Gửi email thông báo đến <strong style={{ marginLeft: '3px' }}>{candidate.email}</strong>
+                <div className="px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+                    <label className="flex items-center gap-2 cursor-pointer text-[13px] text-slate-700">
+                        <input type="checkbox" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)}
+                            style={{ width: '15px', height: '15px', accentColor: GREEN }} />
+                        Gửi email thông báo đến <strong className="ml-0.5">{candidate.email}</strong>
                     </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={onClose} style={{ padding: '8px 18px', border: '1px solid #d1d5db', borderRadius: '7px', background: 'white', fontSize: '13px', cursor: 'pointer', color: '#374151', fontWeight: '500' }}>Hủy</button>
+                    <div className="flex gap-2">
+                        <button onClick={onClose} className="px-4 py-2 border border-slate-300 rounded-lg bg-white text-[13px] cursor-pointer text-slate-700 font-medium">Hủy</button>
                         <button onClick={handleConfirm} disabled={loading}
-                            style={{ padding: '8px 20px', background: GREEN, color: 'white', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+                            className="px-5 py-2 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer disabled:opacity-70"
+                            style={{ background: GREEN }}>
                             {loading ? 'Đang xử lý...' : (sendEmail ? 'Xác nhận & Gửi email' : 'Xác nhận')}
                         </button>
                     </div>
@@ -541,7 +513,6 @@ function OfferEmailModal({ application, companyName, logoUrl, onClose, onConfirm
 }
 
 // ─── Rejected Email Modal ─────────────────────────────────────────────────────
-
 function buildRejectionTemplate({ candidateName, jobTitle, companyName }) {
     return `Kính gửi ${candidateName},\n\nCảm ơn bạn đã dành thời gian tham gia phỏng vấn cho vị trí ${jobTitle} tại ${companyName}.\n\nSau khi cân nhắc kỹ lưỡng, chúng tôi rất tiếc phải thông báo rằng hồ sơ của bạn chưa phù hợp với yêu cầu tuyển dụng hiện tại của chúng tôi.\n\nChúng tôi trân trọng sự quan tâm của bạn và sẽ lưu lại thông tin để xem xét trong tương lai nếu có vị trí phù hợp hơn.\n\nChúc bạn thành công trong quá trình tìm kiếm công việc!\n\nTrân trọng,\nBộ phận Nhân sự\n${companyName}`;
 }
@@ -567,66 +538,80 @@ function RejectedEmailModal({ application, companyName, logoUrl, onClose, onConf
     };
 
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }} onClick={onClose}>
-            <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '600px', maxHeight: '88vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.18)' }} onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[2000] bg-black/50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-xl w-full max-w-[600px] max-h-[88vh] flex flex-col overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.18)]"
+                onClick={e => e.stopPropagation()}
+            >
                 {/* Header */}
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div className="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between shrink-0">
+                    <div className="flex items-center gap-2.5">
                         {logoUrl
-                            ? <img src={logoUrl} alt={companyName} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'contain', border: '1px solid #e5e7eb', padding: '2px' }} />
-                            : <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '700', fontSize: '14px' }}>{(companyName[0] || 'C').toUpperCase()}</div>
+                            ? <img src={logoUrl} alt={companyName} className="w-8 h-8 rounded-md object-contain border border-slate-200 p-0.5" />
+                            : <div className="w-8 h-8 rounded-md bg-slate-700 flex items-center justify-center text-white font-bold text-sm">{(companyName[0] || 'C').toUpperCase()}</div>
                         }
                         <div>
-                            <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>Thông báo kết quả ứng tuyển</div>
-                            <div style={{ fontSize: '12px', color: '#6b7280' }}>{companyName}</div>
+                            <div className="text-sm font-bold text-slate-900">Thông báo kết quả ứng tuyển</div>
+                            <div className="text-xs text-slate-500">{companyName}</div>
                         </div>
                     </div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '22px', lineHeight: 1, padding: '4px 6px' }}>×</button>
+                    <button onClick={onClose} className="bg-transparent border-none cursor-pointer text-slate-400 text-[22px] leading-none px-1.5 py-1">×</button>
                 </div>
 
                 {/* To / Subject */}
-                <div style={{ padding: '10px 20px', borderBottom: '1px solid #e5e7eb', background: '#fafafa', flexShrink: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '7px' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280', width: '50px', flexShrink: 0 }}>Gửi đến</span>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '6px', padding: '3px 12px 3px 8px' }}>
-                            <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '10px', fontWeight: '700' }}>{candidateName[0]?.toUpperCase()}</div>
-                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>{candidateName}</span>
-                            <span style={{ fontSize: '12px', color: '#6b7280' }}>{'<'}{candidate.email}{'>'}</span>
+                <div className="px-5 py-2.5 border-b border-slate-200 bg-slate-50 shrink-0">
+                    <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs text-slate-500 w-[50px] shrink-0">Gửi đến</span>
+                        <div className="inline-flex items-center gap-1.5 bg-red-50 border border-red-200 rounded-md px-2.5 py-0.5">
+                            <div className="w-5 h-5 rounded-full bg-red-600 flex items-center justify-center text-white text-[10px] font-bold">{candidateName[0]?.toUpperCase()}</div>
+                            <span className="text-[13px] font-semibold text-slate-700">{candidateName}</span>
+                            <span className="text-xs text-slate-500">{'<'}{candidate.email}{'>'}</span>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280', width: '50px', flexShrink: 0 }}>Tiêu đề</span>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-500 w-[50px] shrink-0">Tiêu đề</span>
                         <input value={emailSubject} onChange={e => setEmailSubject(e.target.value)}
-                            style={{ flex: 1, padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', outline: 'none', fontFamily: 'inherit', color: '#374151', background: 'white' }} />
+                            className="flex-1 px-2.5 py-1.5 border border-slate-200 rounded-md text-[13px] outline-none text-slate-700 bg-white" />
                     </div>
                 </div>
 
                 {/* Email body */}
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '16px', overflow: 'hidden' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nội dung email</div>
+                <div className="flex-1 flex flex-col p-4 overflow-hidden">
+                    <div className="flex justify-between items-center mb-2">
+                        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Nội dung email</div>
                         {isBodyCustomized && (
-                            <button onClick={() => { dirtyRef.current = false; setIsBodyCustomized(false); setEmailBody(buildRejectionTemplate({ candidateName, jobTitle, companyName })); }}
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: GREEN, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                            <button
+                                onClick={() => { dirtyRef.current = false; setIsBodyCustomized(false); setEmailBody(buildRejectionTemplate({ candidateName, jobTitle, companyName })); }}
+                                className="flex items-center gap-1 text-xs bg-transparent border-none cursor-pointer p-0"
+                                style={{ color: GREEN }}
+                            >
                                 <RotateCcw size={11} /> Hoàn tác về mẫu
                             </button>
                         )}
                     </div>
-                    <textarea value={emailBody} onChange={e => { setEmailBody(e.target.value); if (!dirtyRef.current) { dirtyRef.current = true; setIsBodyCustomized(true); } }}
+                    <textarea value={emailBody}
+                        onChange={e => { setEmailBody(e.target.value); if (!dirtyRef.current) { dirtyRef.current = true; setIsBodyCustomized(true); } }}
                         spellCheck={false}
-                        style={{ flex: 1, padding: '14px', border: `1px solid ${isBodyCustomized ? '#fbbf24' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '13px', lineHeight: '1.8', resize: 'none', outline: 'none', fontFamily: 'inherit', color: '#374151', background: isBodyCustomized ? '#fffdf0' : 'white', transition: 'border-color 0.15s' }} />
+                        style={{
+                            flex: 1, padding: '14px',
+                            border: `1px solid ${isBodyCustomized ? '#fbbf24' : '#e5e7eb'}`,
+                            borderRadius: '8px', fontSize: '13px', lineHeight: '1.8',
+                            resize: 'none', outline: 'none', fontFamily: 'inherit', color: '#374151',
+                            background: isBodyCustomized ? '#fffdf0' : 'white',
+                            transition: 'border-color 0.15s',
+                        }} />
                 </div>
 
                 {/* Footer */}
-                <div style={{ padding: '12px 20px', borderTop: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: '#374151' }}>
-                        <input type="checkbox" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)} style={{ width: '15px', height: '15px', accentColor: GREEN }} />
-                        Gửi email thông báo đến <strong style={{ marginLeft: '3px' }}>{candidate.email}</strong>
+                <div className="px-5 py-3 border-t border-slate-200 flex items-center justify-between shrink-0">
+                    <label className="flex items-center gap-2 cursor-pointer text-[13px] text-slate-700">
+                        <input type="checkbox" checked={sendEmail} onChange={e => setSendEmail(e.target.checked)}
+                            style={{ width: '15px', height: '15px', accentColor: GREEN }} />
+                        Gửi email thông báo đến <strong className="ml-0.5">{candidate.email}</strong>
                     </label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={onClose} style={{ padding: '8px 18px', border: '1px solid #d1d5db', borderRadius: '7px', background: 'white', fontSize: '13px', cursor: 'pointer', color: '#374151', fontWeight: '500' }}>Hủy</button>
+                    <div className="flex gap-2">
+                        <button onClick={onClose} className="px-4 py-2 border border-slate-300 rounded-lg bg-white text-[13px] cursor-pointer text-slate-700 font-medium">Hủy</button>
                         <button onClick={handleConfirm} disabled={loading}
-                            style={{ padding: '8px 20px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}>
+                            className="px-5 py-2 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer disabled:opacity-70 bg-red-600">
                             {loading ? 'Đang xử lý...' : (sendEmail ? 'Xác nhận & Gửi email' : 'Xác nhận')}
                         </button>
                     </div>
@@ -637,7 +622,6 @@ function RejectedEmailModal({ application, companyName, logoUrl, onClose, onConf
 }
 
 // ─── Application Row ──────────────────────────────────────────────────────────
-
 function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onViewDetail, onModalStatus }) {
     const router = useRouter();
     const candidate = item.candidate || {};
@@ -647,78 +631,63 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
 
     return (
         <tr
-            className="ap-tr"
-            style={{ borderBottom: '1px solid #f3f4f6', background: selected ? '#f0fdf4' : 'white' }}
+            className="ap-tr border-b border-slate-100"
+            style={{ background: selected ? '#f0fdf4' : 'white' }}
             onMouseEnter={e => { if (!selected) e.currentTarget.style.background = '#fafafa'; }}
             onMouseLeave={e => { e.currentTarget.style.background = selected ? '#f0fdf4' : 'white'; }}
         >
             {/* Checkbox */}
-            <td className="ap-td ap-td-check" style={{ padding: '12px 8px 12px 16px', width: '36px' }}>
+            <td className="ap-td ap-td-check px-2 py-3 pl-4 w-9">
                 <input type="checkbox" checked={selected} onChange={() => onToggleSelect(item.id)}
                     style={{ width: '15px', height: '15px', accentColor: GREEN, cursor: 'pointer' }} />
             </td>
             {/* Candidate */}
-            <td className="ap-td ap-td-cand" style={{ padding: '12px 16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                        width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: '#f0fdf4', fontSize: '14px', fontWeight: '700', color: GREEN,
-                        overflow: 'hidden',
-                    }}>
+            <td className="ap-td ap-td-cand px-4 py-3">
+                <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center bg-green-50 text-sm font-bold overflow-hidden" style={{ color: GREEN }}>
                         {profile.avatarUrl
-                            ? <img src={profile.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ? <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                             : displayName[0].toUpperCase()
                         }
                     </div>
                     <div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>{displayName}</div>
-                        <div style={{ fontSize: '12px', color: '#6b7280' }}>{candidate.email}</div>
-                        {candidate.phone && <div style={{ fontSize: '12px', color: '#6b7280' }}>{candidate.phone}</div>}
+                        <div className="text-sm font-semibold text-slate-900">{displayName}</div>
+                        <div className="text-xs text-slate-500">{candidate.email}</div>
+                        {candidate.phone && <div className="text-xs text-slate-500">{candidate.phone}</div>}
                     </div>
                 </div>
             </td>
-
             {/* Job */}
-            <td className="ap-td ap-td-job" style={{ padding: '12px 16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '2px' }}>{job.title}</div>
+            <td className="ap-td ap-td-job px-4 py-3">
+                <div className="text-[13px] font-semibold text-slate-700 mb-0.5">{job.title}</div>
                 {item.location && (
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                    <div className="text-xs text-slate-500">
                         {[item.location?.districtName, item.location?.provinceName].filter(Boolean).join(', ')}
                     </div>
                 )}
             </td>
-
             {/* CV */}
-            <td className="ap-td ap-td-cv" style={{ padding: '12px 16px' }}>
+            <td className="ap-td ap-td-cv px-4 py-3">
                 {item.resume ? (
                     <a href={`/xem-cv/${item.resume.id}`} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: '12px', color: '#2563eb', textDecoration: 'none', fontWeight: '500' }}
-                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                    >
+                        className="text-xs text-blue-600 no-underline font-medium hover:underline">
                         {item.resume.title}
                     </a>
                 ) : item.cvFileUrl ? (
                     <a href={item.cvFileUrl} target="_blank" rel="noopener noreferrer"
-                        style={{ fontSize: '12px', color: '#2563eb', textDecoration: 'none', fontWeight: '500' }}
-                        onMouseEnter={e => e.currentTarget.style.textDecoration = 'underline'}
-                        onMouseLeave={e => e.currentTarget.style.textDecoration = 'none'}
-                    >
+                        className="text-xs text-blue-600 no-underline font-medium hover:underline">
                         Xem file CV
                     </a>
                 ) : (
-                    <span style={{ fontSize: '12px', color: '#9ca3af' }}>—</span>
+                    <span className="text-xs text-slate-400">—</span>
                 )}
             </td>
-
             {/* Applied at */}
-            <td className="ap-td ap-td-time" style={{ padding: '12px 16px' }}>
-                <span style={{ fontSize: '12px', color: '#6b7280' }}>{timeAgo(item.createdAt)}</span>
+            <td className="ap-td ap-td-time px-4 py-3">
+                <span className="text-xs text-slate-500">{timeAgo(item.createdAt)}</span>
             </td>
-
             {/* Status */}
-            <td className="ap-td ap-td-status" style={{ padding: '12px 16px' }}>
+            <td className="ap-td ap-td-status px-4 py-3">
                 <StatusDropdown
                     current={item.status}
                     applicationId={item.id}
@@ -726,34 +695,26 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
                     onModalStatus={(status) => onModalStatus(item, status)}
                 />
             </td>
-
             {/* Actions */}
-            <td className="ap-td ap-td-actions" style={{ padding: '12px 16px', textAlign: 'center' }}>
-                <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+            <td className="ap-td ap-td-actions px-4 py-3 text-center">
+                <div className="flex gap-1 justify-center">
                     <button
                         onClick={() => onViewDetail(item)}
                         title="Xem chi tiết"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
-                        onMouseEnter={e => e.currentTarget.style.color = GREEN}
-                        onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                        className="bg-transparent border-none cursor-pointer text-slate-400 p-1 hover:text-green-600 transition-colors"
                     >
                         <Eye size={16} />
                     </button>
                     <button
                         onClick={async () => {
                             try {
-                                const res = await chatService.findOrCreate({
-                                    candidateUserId: item.candidateId,
-                                    employerProfileId: item.job?.employerId,
-                                });
+                                const res = await chatService.findOrCreate({ candidateUserId: item.candidateId, employerProfileId: item.job?.employerId });
                                 const convId = res.data?.data?.id;
                                 if (convId) router.push(`/nha-tuyen-dung/tin-nhan?conv=${convId}`);
                             } catch {}
                         }}
                         title="Nhắn tin"
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '4px' }}
-                        onMouseEnter={e => e.currentTarget.style.color = GREEN}
-                        onMouseLeave={e => e.currentTarget.style.color = '#9ca3af'}
+                        className="bg-transparent border-none cursor-pointer text-slate-400 p-1 hover:text-green-600 transition-colors"
                     >
                         <MessageSquare size={16} />
                     </button>
@@ -764,7 +725,6 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
 }
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
-
 function DetailModal({ item, onClose, onStatusChange, onModalStatus }) {
     const candidate = item.candidate || {};
     const profile = candidate.candidateProfile || {};
@@ -785,55 +745,54 @@ function DetailModal({ item, onClose, onStatusChange, onModalStatus }) {
 
     return (
         <div
-            style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}
+            className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-4"
             onClick={onClose}
         >
             <div
-                style={{ background: 'white', borderRadius: '16px', width: '100%', maxWidth: '540px', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}
+                className="bg-white rounded-2xl w-full max-w-[540px] max-h-[90vh] overflow-auto shadow-[0_20px_60px_rgba(0,0,0,0.2)]"
                 onClick={e => e.stopPropagation()}
             >
-                <div style={{ padding: '20px 24px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>Chi tiết ứng viên</div>
-                    <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '20px' }}>×</button>
+                <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center">
+                    <div className="text-base font-bold text-slate-900">Chi tiết ứng viên</div>
+                    <button onClick={onClose} className="bg-transparent border-none cursor-pointer text-slate-400 text-xl">×</button>
                 </div>
-                <div style={{ padding: '20px 24px' }}>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                        <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '700', color: GREEN, flexShrink: 0, overflow: 'hidden' }}>
+                <div className="px-6 py-5">
+                    {/* Avatar + name */}
+                    <div className="flex items-center gap-3 mb-5">
+                        <div className="w-[52px] h-[52px] rounded-full bg-green-50 flex items-center justify-center text-xl font-bold shrink-0 overflow-hidden" style={{ color: GREEN }}>
                             {profile.avatarUrl
-                                ? <img src={profile.avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                ? <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
                                 : displayName[0].toUpperCase()
                             }
                         </div>
                         <div>
-                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#111827' }}>{displayName}</div>
-                            <div style={{ fontSize: '13px', color: '#6b7280' }}>{candidate.email}</div>
-                            {candidate.phone && <div style={{ fontSize: '13px', color: '#6b7280' }}>{candidate.phone}</div>}
+                            <div className="text-base font-bold text-slate-900">{displayName}</div>
+                            <div className="text-[13px] text-slate-500">{candidate.email}</div>
+                            {candidate.phone && <div className="text-[13px] text-slate-500">{candidate.phone}</div>}
                         </div>
                     </div>
 
-                    <div style={{ background: '#f8fafc', borderRadius: '8px', padding: '12px 14px', marginBottom: '16px' }}>
-                        <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '4px' }}>Vị trí ứng tuyển</div>
-                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>{job.title}</div>
+                    {/* Position */}
+                    <div className="bg-slate-50 rounded-lg px-3.5 py-3 mb-4">
+                        <div className="text-xs text-slate-400 mb-1">Vị trí ứng tuyển</div>
+                        <div className="text-sm font-semibold text-slate-900">{job.title}</div>
                     </div>
 
                     {/* CV links */}
                     {(item.resume || item.cvFileUrl) && (
-                        <div style={{ marginBottom: '16px' }}>
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Hồ sơ CV</div>
-                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <div className="mb-4">
+                            <div className="text-[13px] font-semibold text-slate-700 mb-2">Hồ sơ CV</div>
+                            <div className="flex gap-2 flex-wrap">
                                 {item.resume && (
                                     <a href={`/xem-cv/${item.resume.id}`} target="_blank" rel="noopener noreferrer"
-                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '6px', background: '#eff6ff', border: '1px solid #bfdbfe', fontSize: '13px', fontWeight: '600', color: '#2563eb', textDecoration: 'none' }}
-                                    >
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-blue-50 border border-blue-200 text-[13px] font-semibold text-blue-700 no-underline">
                                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="1.8"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
                                         {item.resume.title || 'CV Online'}
                                     </a>
                                 )}
                                 {item.cvFileUrl && (
                                     <a href={item.cvFileUrl} target="_blank" rel="noopener noreferrer"
-                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '6px', background: '#fef3c7', border: '1px solid #fde68a', fontSize: '13px', fontWeight: '600', color: '#d97706', textDecoration: 'none' }}
-                                    >
+                                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-amber-50 border border-amber-200 text-[13px] font-semibold text-amber-600 no-underline">
                                         <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
                                         CV file đính kèm
                                     </a>
@@ -843,11 +802,10 @@ function DetailModal({ item, onClose, onStatusChange, onModalStatus }) {
                     )}
 
                     {item.coverLetterFileUrl && (
-                        <div style={{ marginBottom: '16px' }}>
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Cover Letter đính kèm (file)</div>
+                        <div className="mb-4">
+                            <div className="text-[13px] font-semibold text-slate-700 mb-2">Cover Letter đính kèm (file)</div>
                             <a href={item.coverLetterFileUrl} target="_blank" rel="noopener noreferrer"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '6px', background: '#f0fdf4', border: '1px solid #86efac', fontSize: '13px', fontWeight: '600', color: '#16a34a', textDecoration: 'none' }}
-                            >
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-green-50 border border-green-300 text-[13px] font-semibold text-green-700 no-underline">
                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
                                 Xem file Cover Letter
                             </a>
@@ -855,19 +813,19 @@ function DetailModal({ item, onClose, onStatusChange, onModalStatus }) {
                     )}
 
                     {item.coverLetterDoc && (
-                        <div style={{ marginBottom: '16px' }}>
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>Cover Letter đính kèm</div>
+                        <div className="mb-4">
+                            <div className="text-[13px] font-semibold text-slate-700 mb-2">Cover Letter đính kèm</div>
                             <a href={`/xem-cover-letter/${item.coverLetterDoc.id}`} target="_blank" rel="noopener noreferrer"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '6px', background: '#f0fdf4', border: '1px solid #86efac', fontSize: '13px', fontWeight: '600', color: '#16a34a', textDecoration: 'none' }}
-                            >
+                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-md bg-green-50 border border-green-300 text-[13px] font-semibold text-green-700 no-underline">
                                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="1.8"/><path d="M14 2v6h6" stroke="currentColor" strokeWidth="1.8"/></svg>
                                 {item.coverLetterDoc.title || 'Cover Letter'}
                             </a>
                         </div>
                     )}
 
-                    <div style={{ marginBottom: '16px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>Cập nhật trạng thái</div>
+                    {/* Status update */}
+                    <div className="mb-4">
+                        <div className="text-[13px] font-semibold text-slate-700 mb-1.5">Cập nhật trạng thái</div>
                         <StatusDropdown
                             current={item.status}
                             applicationId={item.id}
@@ -876,33 +834,35 @@ function DetailModal({ item, onClose, onStatusChange, onModalStatus }) {
                         />
                     </div>
 
+                    {/* Cover letter text */}
                     {item.coverLetter && (
-                        <div style={{ marginBottom: '16px' }}>
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>Thư giới thiệu</div>
-                            <div style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px', color: '#374151', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                        <div className="mb-4">
+                            <div className="text-[13px] font-semibold text-slate-700 mb-1.5">Thư giới thiệu</div>
+                            <div className="px-3 py-2.5 bg-slate-50 rounded-lg text-[13px] text-slate-700 leading-relaxed whitespace-pre-wrap">
                                 {item.coverLetter}
                             </div>
                         </div>
                     )}
 
-                    <div style={{ marginBottom: '20px' }}>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
-                            Ghi chú nội bộ
-                        </label>
+                    {/* Internal note */}
+                    <div className="mb-5">
+                        <label className="block text-[13px] font-semibold text-slate-700 mb-1.5">Ghi chú nội bộ</label>
                         <textarea
                             value={note}
                             onChange={e => setNote(e.target.value)}
                             placeholder="Ghi chú về ứng viên này..."
                             rows={3}
-                            style={{ width: '100%', padding: '10px 12px', border: '1px solid #d1d5db', borderRadius: '8px', fontSize: '13px', resize: 'vertical', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }}
+                            className="w-full px-3 py-2.5 border border-slate-300 rounded-lg text-[13px] resize-y outline-none box-border font-inherit"
                         />
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button onClick={onClose} style={{ flex: 1, padding: '10px', border: '1px solid #d1d5db', borderRadius: '8px', background: 'white', fontSize: '13px', cursor: 'pointer' }}>
+                    <div className="flex gap-2.5">
+                        <button onClick={onClose} className="flex-1 py-2.5 border border-slate-300 rounded-lg bg-white text-[13px] cursor-pointer text-slate-700">
                             Đóng
                         </button>
-                        <button onClick={saveNote} disabled={saving} style={{ flex: 2, padding: '10px', background: GREEN, color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                        <button onClick={saveNote} disabled={saving}
+                            className="flex-[2] py-2.5 text-white border-none rounded-lg text-[13px] font-semibold cursor-pointer disabled:opacity-70"
+                            style={{ background: GREEN }}>
                             {saving ? 'Đang lưu...' : 'Lưu ghi chú'}
                         </button>
                     </div>
@@ -913,7 +873,6 @@ function DetailModal({ item, onClose, onStatusChange, onModalStatus }) {
 }
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
-
 export default function CandidateProfilesPage() {
     const { user } = useAuthStore();
     const companyName = user?.employerProfile?.companyName || 'Công ty';
@@ -947,10 +906,7 @@ export default function CandidateProfilesPage() {
         if (statusFilter) params.status = statusFilter;
         if (jobFilter) params.jobId = jobFilter;
         applicationsService.getAllByEmployer(params)
-            .then(res => {
-                setItems(res.data?.data || []);
-                setTotal(res.data?.total || 0);
-            })
+            .then(res => { setItems(res.data?.data || []); setTotal(res.data?.total || 0); })
             .catch(() => {})
             .finally(() => setLoading(false));
     };
@@ -970,10 +926,7 @@ export default function CandidateProfilesPage() {
                 const prof = cand.candidateProfile || {};
                 const name = prof.fullName || cand.email || 'Ứng viên';
                 const emailBody = emailBodyTemplate?.replace(/\[Tên ứng viên\]/g, name);
-                return applicationsService.updateStatus(app.id, {
-                    status: 'INTERVIEW', sendEmail, interviewDate, interviewTime,
-                    interviewLocation, interviewType, interviewNote, emailSubject, emailBody,
-                });
+                return applicationsService.updateStatus(app.id, { status: 'INTERVIEW', sendEmail, interviewDate, interviewTime, interviewLocation, interviewType, interviewNote, emailSubject, emailBody });
             }));
             targets.forEach(app => handleStatusChange(app.id, 'INTERVIEW'));
             setInterviewItem(null);
@@ -1013,28 +966,14 @@ export default function CandidateProfilesPage() {
 
     const allChecked = items.length > 0 && items.every(i => selectedIds.has(i.id));
     const someChecked = items.some(i => selectedIds.has(i.id)) && !allChecked;
-
     const totalPages = Math.ceil(total / LIMIT);
-
-    const thStyle = {
-        padding: '10px 16px', textAlign: 'left',
-        fontSize: '11px', fontWeight: '700',
-        color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em',
-        background: '#f9fafb', borderBottom: '1px solid #e5e7eb',
-    };
 
     return (
         <div>
             <style>{`
                 @media (max-width: 768px) {
                     .ap-thead { display: none; }
-                    .ap-tr {
-                        display: flex !important;
-                        flex-wrap: wrap;
-                        align-items: flex-start;
-                        padding: 12px !important;
-                        gap: 0;
-                    }
+                    .ap-tr { display: flex !important; flex-wrap: wrap; align-items: flex-start; padding: 12px !important; gap: 0; }
                     .ap-td { padding: 0 !important; }
                     .ap-td-check { flex-shrink: 0; padding-top: 6px !important; }
                     .ap-td-cand { flex: 1; min-width: 0; padding-left: 10px !important; }
@@ -1045,113 +984,76 @@ export default function CandidateProfilesPage() {
                     .ap-td-actions { margin-left: auto; margin-top: 8px; }
                 }
             `}</style>
+
+            {/* Modals */}
             {detailItem && (
-                <DetailModal
-                    item={detailItem}
-                    onClose={() => setDetailItem(null)}
-                    onStatusChange={handleStatusChange}
-                    onModalStatus={openStatusModal}
-                />
+                <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onStatusChange={handleStatusChange} onModalStatus={openStatusModal} />
             )}
-
             {offerItem && (
-                <OfferEmailModal
-                    application={offerItem}
-                    companyName={companyName}
-                    logoUrl={logoUrl}
-                    onClose={() => setOfferItem(null)}
-                    onConfirm={handleOfferConfirm}
-                />
+                <OfferEmailModal application={offerItem} companyName={companyName} logoUrl={logoUrl} onClose={() => setOfferItem(null)} onConfirm={handleOfferConfirm} />
             )}
-
             {rejectItem && (
-                <RejectedEmailModal
-                    application={rejectItem}
-                    companyName={companyName}
-                    logoUrl={logoUrl}
-                    onClose={() => setRejectItem(null)}
-                    onConfirm={handleRejectConfirm}
-                />
+                <RejectedEmailModal application={rejectItem} companyName={companyName} logoUrl={logoUrl} onClose={() => setRejectItem(null)} onConfirm={handleRejectConfirm} />
             )}
-
             {interviewItem && (
-                <InterviewEmailModal
-                    applications={[interviewItem]}
-                    companyName={companyName}
-                    logoUrl={logoUrl}
-                    companyAddress={companyAddress}
-                    onClose={() => setInterviewItem(null)}
-                    onConfirm={handleInterviewConfirm}
-                />
+                <InterviewEmailModal applications={[interviewItem]} companyName={companyName} logoUrl={logoUrl} companyAddress={companyAddress} onClose={() => setInterviewItem(null)} onConfirm={handleInterviewConfirm} />
             )}
-
             {bulkModalOpen && selectedIds.size > 0 && (
-                <InterviewEmailModal
-                    applications={items.filter(i => selectedIds.has(i.id))}
-                    companyName={companyName}
-                    logoUrl={logoUrl}
-                    companyAddress={companyAddress}
-                    onClose={() => setBulkModalOpen(false)}
-                    onConfirm={handleInterviewConfirm}
-                />
+                <InterviewEmailModal applications={items.filter(i => selectedIds.has(i.id))} companyName={companyName} logoUrl={logoUrl} companyAddress={companyAddress} onClose={() => setBulkModalOpen(false)} onConfirm={handleInterviewConfirm} />
             )}
 
-            {/* Header */}
-            <div style={{ marginBottom: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            {/* Page header */}
+            <div className="mb-6 flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', margin: '0 0 4px' }}>
-                        Hồ sơ ứng viên
-                    </h1>
-                    <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>
-                        {total > 0 ? `${total} đơn ứng tuyển` : 'Chưa có đơn ứng tuyển'}
-                    </p>
+                    <h1 className="text-[22px] font-extrabold text-slate-900 mb-1">Hồ sơ ứng viên</h1>
+                    <p className="text-sm text-slate-500">{total > 0 ? `${total} đơn ứng tuyển` : 'Chưa có đơn ứng tuyển'}</p>
                 </div>
             </div>
 
             {/* Filters */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative' }}>
+            <div className="flex gap-2.5 mb-4 flex-wrap">
+                <div className="relative">
                     <select
                         value={jobFilter}
                         onChange={e => { setJobFilter(e.target.value); setPage(1); }}
-                        style={{ padding: '8px 32px 8px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', color: '#374151', background: 'white', appearance: 'none', cursor: 'pointer', outline: 'none', minWidth: '180px' }}
+                        className="pl-3 pr-8 py-2 border border-slate-200 rounded-lg text-[13px] text-slate-700 bg-white appearance-none cursor-pointer outline-none min-w-[180px]"
                     >
                         <option value="">Tất cả vị trí</option>
                         {jobs.map(j => <option key={j.id} value={j.id}>{j.title}</option>)}
                     </select>
-                    <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', pointerEvents: 'none' }} />
+                    <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 </div>
-
-                <div style={{ position: 'relative' }}>
+                <div className="relative">
                     <select
                         value={statusFilter}
                         onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
-                        style={{ padding: '8px 32px 8px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', color: '#374151', background: 'white', appearance: 'none', cursor: 'pointer', outline: 'none', minWidth: '160px' }}
+                        className="pl-3 pr-8 py-2 border border-slate-200 rounded-lg text-[13px] text-slate-700 bg-white appearance-none cursor-pointer outline-none min-w-[160px]"
                     >
                         <option value="">Tất cả trạng thái</option>
                         {Object.entries(STATUS_CONFIG).map(([k, v]) => (
                             <option key={k} value={k}>{v.label}</option>
                         ))}
                     </select>
-                    <ChevronDown size={14} style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', color: '#6b7280', pointerEvents: 'none' }} />
+                    <ChevronDown size={14} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
                 </div>
             </div>
 
             {/* Bulk action bar */}
             {selectedIds.size > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 16px', marginBottom: '10px', background: '#f0fdf4', border: '1px solid #86efac', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '13px', color: '#374151' }}>
+                <div className="flex items-center gap-3 px-4 py-2.5 mb-2.5 bg-green-50 border border-green-300 rounded-lg">
+                    <span className="text-[13px] text-slate-700">
                         Đã chọn <strong>{selectedIds.size}</strong> ứng viên
                     </span>
                     <button
                         onClick={() => setBulkModalOpen(true)}
-                        style={{ padding: '6px 16px', background: GREEN, color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                        className="px-4 py-1.5 text-white border-none rounded-md text-[13px] font-semibold cursor-pointer"
+                        style={{ background: GREEN }}
                     >
                         Mời phỏng vấn ({selectedIds.size})
                     </button>
                     <button
                         onClick={() => setSelectedIds(new Set())}
-                        style={{ padding: '6px 14px', background: 'white', color: '#374151', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
+                        className="px-3.5 py-1.5 bg-white text-slate-700 border border-slate-300 rounded-md text-[13px] cursor-pointer hover:bg-slate-50"
                     >
                         Bỏ chọn
                     </button>
@@ -1159,44 +1061,34 @@ export default function CandidateProfilesPage() {
             )}
 
             {/* Table */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-                <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse">
                         <thead>
                             <tr className="ap-thead">
-                                <th style={{ ...thStyle, width: '36px', padding: '10px 8px 10px 16px' }}>
+                                <th className="px-2 py-2.5 pl-4 w-9 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
                                     <input type="checkbox" checked={allChecked}
                                         ref={el => { if (el) el.indeterminate = someChecked; }}
                                         onChange={() => setSelectedIds(allChecked ? new Set() : new Set(items.map(i => i.id)))}
                                         style={{ width: '15px', height: '15px', accentColor: GREEN, cursor: 'pointer' }} />
                                 </th>
-                                <th style={thStyle}>Ứng viên</th>
-                                <th style={thStyle}>Vị trí</th>
-                                <th style={thStyle}>CV</th>
-                                <th style={thStyle}>Thời gian</th>
-                                <th style={thStyle}>Trạng thái</th>
-                                <th style={{ ...thStyle, textAlign: 'center' }}>Chi tiết</th>
+                                {['Ứng viên', 'Vị trí', 'CV', 'Thời gian', 'Trạng thái'].map(h => (
+                                    <th key={h} className="px-4 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">{h}</th>
+                                ))}
+                                <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">Chi tiết</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} style={{ padding: '40px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>
-                                        Đang tải...
-                                    </td>
+                                    <td colSpan={7} className="py-10 text-center text-slate-400 text-sm">Đang tải...</td>
                                 </tr>
                             ) : items.length === 0 ? (
                                 <tr>
-                                    <td colSpan={7} style={{ padding: '60px', textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
-                                            <ClipboardList size={40} color="#d1d5db" />
-                                        </div>
-                                        <p style={{ fontSize: '15px', fontWeight: '600', color: '#374151', margin: '0 0 4px' }}>
-                                            Chưa có hồ sơ ứng viên
-                                        </p>
-                                        <p style={{ fontSize: '13px', color: '#9ca3af', margin: 0 }}>
-                                            Ứng viên sẽ hiển thị tại đây khi họ nộp hồ sơ
-                                        </p>
+                                    <td colSpan={7} className="py-16 text-center">
+                                        <ClipboardList size={40} className="text-slate-300 mx-auto mb-3" />
+                                        <p className="text-[15px] font-semibold text-slate-700 mb-1">Chưa có hồ sơ ứng viên</p>
+                                        <p className="text-[13px] text-slate-400">Ứng viên sẽ hiển thị tại đây khi họ nộp hồ sơ</p>
                                     </td>
                                 </tr>
                             ) : (
@@ -1220,17 +1112,18 @@ export default function CandidateProfilesPage() {
                     </table>
                 </div>
 
+                {/* Pagination */}
                 {totalPages > 1 && (
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', padding: '16px', borderTop: '1px solid #f3f4f6' }}>
+                    <div className="flex justify-center gap-1.5 p-4 border-t border-slate-100">
                         {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                             <button key={p} onClick={() => setPage(p)}
-                                style={{
-                                    width: '32px', height: '32px', borderRadius: '6px', fontSize: '13px', cursor: 'pointer',
-                                    border: p === page ? `2px solid ${GREEN}` : '1px solid #e5e7eb',
-                                    background: p === page ? '#f0fdf4' : 'white',
-                                    color: p === page ? GREEN : '#374151',
-                                    fontWeight: p === page ? '700' : '400',
-                                }}
+                                className={cn(
+                                    'w-8 h-8 rounded-md text-[13px] cursor-pointer border transition-colors',
+                                    p === page
+                                        ? 'font-bold'
+                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                )}
+                                style={p === page ? { borderColor: GREEN, background: '#f0fdf4', color: GREEN } : {}}
                             >
                                 {p}
                             </button>

@@ -199,6 +199,7 @@ const USER_MENU_SECTIONS = [
                 href: '/tai-khoan/bao-mat',
                 badgeFn: (u) => (u?.twoFactorEnabled ? null : 'Chưa kích hoạt'),
             },
+            { label: 'Gửi phản hồi', href: '/phan-hoi' },
         ],
     },
     {
@@ -207,6 +208,7 @@ const USER_MENU_SECTIONS = [
         items: [
             { label: 'Nâng cấp tài khoản VIP', href: '/nang-cap' },
             { label: 'Kích hoạt quà tặng', href: '#' },
+            { label: 'Lịch sử giao dịch', href: '/lich-su-giao-dich' },
         ],
     },
 ];

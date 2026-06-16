@@ -12,44 +12,28 @@ import { employerDashboardService } from '@/services/employer-dashboard.service'
 const GREEN = '#00b14f';
 
 const STAT_CONFIGS = [
-    { key: 'total',    label: 'Tổng tin đăng',   icon: Briefcase,    color: '#7c3aed', bg: '#f5f3ff', border: '#7c3aed' },
-    { key: 'active',   label: 'Đang tuyển dụng', icon: CheckCircle,  color: GREEN,     bg: '#f0fdf4', border: GREEN },
-    { key: 'inactive', label: 'Tạm dừng',        icon: PauseCircle,  color: '#d97706', bg: '#fffbeb', border: '#d97706' },
-    { key: 'expired',  label: 'Hết hạn',          icon: Clock,        color: '#dc2626', bg: '#fef2f2', border: '#dc2626' },
+    { key: 'total',    label: 'Tổng tin đăng',   icon: Briefcase,   color: '#7c3aed', bg: 'bg-violet-50' },
+    { key: 'active',   label: 'Đang tuyển dụng', icon: CheckCircle, color: GREEN,     bg: 'bg-green-50' },
+    { key: 'inactive', label: 'Tạm dừng',        icon: PauseCircle, color: '#d97706', bg: 'bg-amber-50' },
+    { key: 'expired',  label: 'Hết hạn',         icon: Clock,       color: '#dc2626', bg: 'bg-red-50' },
 ];
 
 const ACTION_LABELS = {
-    CREATE: { label: 'Tạo mới',   color: '#059669', bg: '#d1fae5' },
-    UPDATE: { label: 'Cập nhật',  color: '#2563eb', bg: '#dbeafe' },
-    DELETE: { label: 'Xóa',       color: '#dc2626', bg: '#fee2e2' },
-    TOGGLE: { label: 'Bật/Tắt',  color: '#d97706', bg: '#fef3c7' },
+    CREATE: { label: 'Tạo mới',  color: '#059669', bg: '#d1fae5' },
+    UPDATE: { label: 'Cập nhật', color: '#2563eb', bg: '#dbeafe' },
+    DELETE: { label: 'Xóa',      color: '#dc2626', bg: '#fee2e2' },
+    TOGGLE: { label: 'Bật/Tắt', color: '#d97706', bg: '#fef3c7' },
 };
 
 function StatCard({ icon: Icon, label, value, color, bg }) {
     return (
-        <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            padding: '18px 20px',
-            border: '1px solid #e2e8f0',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-        }}>
-            <div style={{
-                width: '44px', height: '44px', borderRadius: '12px',
-                background: bg, display: 'flex', alignItems: 'center',
-                justifyContent: 'center', flexShrink: 0,
-            }}>
+        <div className="bg-white rounded-xl p-4 border border-slate-200 flex items-center gap-3.5 shadow-sm">
+            <div className={`w-11 h-11 rounded-xl ${bg} flex items-center justify-center shrink-0`}>
                 <Icon size={22} color={color} strokeWidth={2} />
             </div>
             <div>
-                <div style={{ fontSize: '28px', fontWeight: '800', color: '#0f172a', lineHeight: 1 }}>
-                    {value}
-                </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px', fontWeight: '500' }}>
-                    {label}
-                </div>
+                <div className="text-3xl font-extrabold text-slate-900 leading-none">{value}</div>
+                <div className="text-xs text-slate-500 mt-1 font-medium">{label}</div>
             </div>
         </div>
     );
@@ -111,35 +95,22 @@ export default function EmployerDashboardPage() {
 
     if (loading)
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px', gap: '12px', color: '#94a3b8' }}>
-                <div style={{
-                    width: '32px', height: '32px', border: '3px solid #e2e8f0',
-                    borderTopColor: GREEN, borderRadius: '50%', animation: 'spin 0.8s linear infinite',
-                }} />
-                <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+            <div className="flex justify-center items-center h-52 gap-3 text-slate-400">
+                <div className="w-8 h-8 border-[3px] border-slate-200 border-t-green-500 rounded-full animate-spin" />
             </div>
         );
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="flex flex-col gap-6">
             {/* Header */}
-            <div className="dash-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Tổng quan</h1>
-                    <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>
-                        Theo dõi hoạt động tuyển dụng của bạn
-                    </p>
+                    <h1 className="text-xl font-extrabold text-slate-900 m-0">Tổng quan</h1>
+                    <p className="text-sm text-slate-500 mt-1">Theo dõi hoạt động tuyển dụng của bạn</p>
                 </div>
                 <Link
                     href="/nha-tuyen-dung/dang-tin"
-                    style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '7px',
-                        background: `linear-gradient(135deg, ${GREEN}, #00934a)`,
-                        color: 'white', padding: '10px 20px',
-                        borderRadius: '10px', textDecoration: 'none',
-                        fontSize: '14px', fontWeight: '600',
-                        boxShadow: '0 4px 12px rgba(0,177,79,0.3)',
-                    }}
+                    className="inline-flex items-center gap-2 bg-gradient-to-br from-green-500 to-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-[0_4px_12px_rgba(0,177,79,0.3)] no-underline hover:opacity-90 transition-opacity"
                 >
                     <PlusCircle size={16} />
                     Đăng tin mới
@@ -147,7 +118,7 @@ export default function EmployerDashboardPage() {
             </div>
 
             {/* Stats grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }} className="stats-grid">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {STAT_CONFIGS.map(cfg => (
                     <StatCard
                         key={cfg.key}
@@ -161,35 +132,25 @@ export default function EmployerDashboardPage() {
             </div>
 
             {/* Charts + recent jobs */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }} className="dash-grid">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                 {/* Weekly chart */}
-                <div style={{
-                    background: 'white', borderRadius: '14px',
-                    padding: '20px 24px', border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{
-                                width: '34px', height: '34px', borderRadius: '10px',
-                                background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}>
+                <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-5">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
                                 <TrendingUp size={16} color={GREEN} />
                             </div>
                             <div>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>Tin đăng 7 ngày</div>
-                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Hoạt động gần đây</div>
+                                <div className="text-sm font-bold text-slate-900">Tin đăng 7 ngày</div>
+                                <div className="text-[11px] text-slate-400">Hoạt động gần đây</div>
                             </div>
                         </div>
-                        <Link href="/nha-tuyen-dung/bao-cao" style={{ fontSize: '12px', color: GREEN, textDecoration: 'none', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Link href="/nha-tuyen-dung/bao-cao" className="text-xs text-green-600 no-underline font-semibold flex items-center gap-1 hover:underline">
                             Xem báo cáo <ArrowRight size={12} />
                         </Link>
                     </div>
                     {stats?.weeklyGrowth?.every((d) => d.count === 0) ? (
-                        <div style={{
-                            textAlign: 'center', color: '#94a3b8', fontSize: '13px',
-                            padding: '32px 0', background: '#f8fafc', borderRadius: '10px',
-                        }}>
+                        <div className="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl">
                             Chưa có tin nào trong 7 ngày qua
                         </div>
                     ) : (
@@ -198,68 +159,40 @@ export default function EmployerDashboardPage() {
                 </div>
 
                 {/* Recent jobs */}
-                <div style={{
-                    background: 'white', borderRadius: '14px',
-                    padding: '20px 24px', border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <div style={{
-                                width: '34px', height: '34px', borderRadius: '10px',
-                                background: '#ede9fe', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}>
+                <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-violet-50 flex items-center justify-center">
                                 <Briefcase size={16} color="#7c3aed" />
                             </div>
                             <div>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>Tin đăng gần đây</div>
-                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>{stats?.total || 0} tin tổng cộng</div>
+                                <div className="text-sm font-bold text-slate-900">Tin đăng gần đây</div>
+                                <div className="text-[11px] text-slate-400">{stats?.total || 0} tin tổng cộng</div>
                             </div>
                         </div>
-                        <Link href="/nha-tuyen-dung/quan-ly-tin" style={{ fontSize: '12px', color: '#7c3aed', textDecoration: 'none', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Link href="/nha-tuyen-dung/quan-ly-tin" className="text-xs text-violet-600 no-underline font-semibold flex items-center gap-1 hover:underline">
                             Tất cả <ArrowRight size={12} />
                         </Link>
                     </div>
                     {!stats?.recentJobs?.length ? (
-                        <div style={{
-                            textAlign: 'center', color: '#94a3b8', fontSize: '13px',
-                            padding: '32px 0', background: '#f8fafc', borderRadius: '10px',
-                        }}>
+                        <div className="text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-xl">
                             Chưa có tin nào
                         </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                        <div className="flex flex-col gap-0.5">
                             {stats.recentJobs.map((job, idx) => (
-                                <div key={job.id} style={{
-                                    display: 'flex', alignItems: 'center', gap: '10px',
-                                    padding: '10px 12px', borderRadius: '8px',
-                                    background: idx % 2 === 0 ? '#fafafa' : 'white',
-                                    transition: 'background 0.1s',
-                                }}>
-                                    <div style={{
-                                        width: '6px', height: '6px', borderRadius: '50%', flexShrink: 0,
-                                        background: job.isActive ? GREEN : '#d1d5db',
-                                    }} />
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} style={{
-                                            fontSize: '13px', fontWeight: '600', color: '#0f172a',
-                                            textDecoration: 'none', overflow: 'hidden',
-                                            textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block',
-                                        }}>
+                                <div key={job.id} className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg ${idx % 2 === 0 ? 'bg-slate-50' : 'bg-white'}`}>
+                                    <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${job.isActive ? 'bg-green-500' : 'bg-slate-300'}`} />
+                                    <div className="flex-1 min-w-0">
+                                        <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} className="text-sm font-semibold text-slate-900 no-underline truncate block hover:text-green-600 transition-colors">
                                             {job.title}
                                         </Link>
-                                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '1px' }}>
+                                        <div className="text-[11px] text-slate-400 mt-0.5">
                                             {new Date(job.createdAt).toLocaleDateString('vi-VN')}
                                             {job.deadline && ` · HH: ${new Date(job.deadline).toLocaleDateString('vi-VN')}`}
                                         </div>
                                     </div>
-                                    <span style={{
-                                        fontSize: '10px', fontWeight: '700', padding: '3px 8px',
-                                        borderRadius: '20px',
-                                        background: job.isActive ? '#dcfce7' : '#f3f4f6',
-                                        color: job.isActive ? GREEN : '#9ca3af',
-                                        whiteSpace: 'nowrap',
-                                    }}>
+                                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${job.isActive ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
                                         {job.isActive ? 'Đang hiển thị' : 'Tạm ẩn'}
                                     </span>
                                 </div>
@@ -270,91 +203,56 @@ export default function EmployerDashboardPage() {
             </div>
 
             {/* Quick actions */}
-            <div style={{
-                background: 'white', borderRadius: '14px',
-                padding: '20px 24px', border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
-            }}>
-                <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                <div className="text-sm font-bold text-slate-900 mb-3.5 flex items-center gap-2">
                     <Activity size={16} color="#64748b" />
                     Thao tác nhanh
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
                     {[
-                        { href: '/nha-tuyen-dung/dang-tin', icon: PlusCircle, label: 'Đăng tin tuyển dụng', color: GREEN, bg: '#f0fdf4' },
-                        { href: '/nha-tuyen-dung/xem-ho-so', icon: CheckCircle, label: 'Xem hồ sơ ứng viên', color: '#7c3aed', bg: '#f5f3ff' },
-                        { href: '/nha-tuyen-dung/ket-noi', icon: PlusCircle, label: 'Kết nối ứng viên', color: '#0284c7', bg: '#f0f9ff' },
-                        { href: '/nha-tuyen-dung/bao-cao', icon: BarChart2, label: 'Xem báo cáo', color: '#d97706', bg: '#fffbeb' },
+                        { href: '/nha-tuyen-dung/dang-tin',   icon: PlusCircle,  label: 'Đăng tin tuyển dụng',  color: GREEN,     bg: 'bg-green-50' },
+                        { href: '/nha-tuyen-dung/xem-ho-so',  icon: CheckCircle, label: 'Xem hồ sơ ứng viên',  color: '#7c3aed', bg: 'bg-violet-50' },
+                        { href: '/nha-tuyen-dung/ket-noi',    icon: PlusCircle,  label: 'Kết nối ứng viên',    color: '#0284c7', bg: 'bg-sky-50' },
+                        { href: '/nha-tuyen-dung/bao-cao',    icon: BarChart2,   label: 'Xem báo cáo',         color: '#d97706', bg: 'bg-amber-50' },
                     ].map(action => (
-                        <Link key={action.href} href={action.href} style={{
-                            display: 'flex', alignItems: 'center', gap: '10px',
-                            padding: '12px 14px', borderRadius: '10px',
-                            border: '1px solid #e2e8f0', textDecoration: 'none',
-                            background: action.bg, transition: 'transform 0.1s',
-                        }}>
-                            <div style={{
-                                width: '32px', height: '32px', borderRadius: '8px',
-                                background: 'white', display: 'flex', alignItems: 'center',
-                                justifyContent: 'center', flexShrink: 0,
-                                boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                            }}>
+                        <Link key={action.href} href={action.href} className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl border border-slate-200 no-underline ${action.bg} hover:shadow-sm transition-shadow`}>
+                            <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0 shadow-sm">
                                 <action.icon size={16} color={action.color} />
                             </div>
-                            <span style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
-                                {action.label}
-                            </span>
+                            <span className="text-sm font-semibold text-slate-700">{action.label}</span>
                         </Link>
                     ))}
                 </div>
             </div>
 
             {/* Audit logs */}
-            <div style={{
-                background: 'white', borderRadius: '14px',
-                padding: '20px 24px', border: '1px solid #e2e8f0',
-                boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
-            }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                    <div style={{
-                        width: '34px', height: '34px', borderRadius: '10px',
-                        background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}>
+            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                <div className="flex items-center gap-2.5 mb-4">
+                    <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
                         <Activity size={16} color="#64748b" />
                     </div>
                     <div>
-                        <div style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>Lịch sử hoạt động</div>
-                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>8 hoạt động gần nhất</div>
+                        <div className="text-sm font-bold text-slate-900">Lịch sử hoạt động</div>
+                        <div className="text-[11px] text-slate-400">8 hoạt động gần nhất</div>
                     </div>
                 </div>
                 {!logs.length ? (
-                    <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '13px', padding: '24px 0' }}>
-                        Chưa có hoạt động nào
-                    </div>
+                    <div className="text-center text-slate-400 text-sm py-6">Chưa có hoạt động nào</div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div className="flex flex-col">
                         {logs.map((log, idx) => {
                             const meta = ACTION_LABELS[log.action] || { label: log.action, color: '#64748b', bg: '#f1f5f9' };
                             return (
-                                <div key={log.id} style={{
-                                    display: 'flex', alignItems: 'flex-start', gap: '12px',
-                                    padding: '10px 0',
-                                    borderBottom: idx < logs.length - 1 ? '1px solid #f1f5f9' : 'none',
-                                }}>
-                                    <span style={{
-                                        fontSize: '10px', fontWeight: '700', padding: '3px 8px',
-                                        borderRadius: '20px', background: meta.bg, color: meta.color,
-                                        flexShrink: 0, marginTop: '1px', whiteSpace: 'nowrap',
-                                    }}>
+                                <div key={log.id} className={`flex items-start gap-3 py-2.5 ${idx < logs.length - 1 ? 'border-b border-slate-50' : ''}`}>
+                                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 mt-0.5 whitespace-nowrap" style={{ background: meta.bg, color: meta.color }}>
                                         {meta.label}
                                     </span>
-                                    <div style={{ flex: 1 }}>
-                                        <span style={{ fontSize: '13px', color: '#374151' }}>
+                                    <div className="flex-1">
+                                        <span className="text-sm text-slate-700">
                                             <strong>{log.entity}</strong>
-                                            {log.newData?.title && <span style={{ color: '#64748b' }}> · {log.newData.title}</span>}
+                                            {log.newData?.title && <span className="text-slate-500"> · {log.newData.title}</span>}
                                         </span>
-                                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                                            {timeAgo(log.createdAt)}
-                                        </div>
+                                        <div className="text-[11px] text-slate-400 mt-0.5">{timeAgo(log.createdAt)}</div>
                                     </div>
                                 </div>
                             );
@@ -362,17 +260,6 @@ export default function EmployerDashboardPage() {
                     </div>
                 )}
             </div>
-
-            <style>{`
-                @keyframes spin { to { transform: rotate(360deg); } }
-                @media (max-width: 900px) {
-                    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-                    .dash-grid  { grid-template-columns: 1fr !important; }
-                }
-                @media (max-width: 480px) {
-                    .stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
-                }
-            `}</style>
         </div>
     );
 }

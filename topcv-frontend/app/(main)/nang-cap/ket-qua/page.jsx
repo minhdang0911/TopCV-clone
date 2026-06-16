@@ -16,27 +16,42 @@ function KetQuaContent() {
     const pollCount = useRef(0);
 
     useEffect(() => {
-        const vnpResponseCode = searchParams.get('vnp_ResponseCode');
-        const isVNPay = !!vnpResponseCode;
+        const params = {};
+        searchParams.forEach((v, k) => { params[k] = v; });
+
+        const isVNPay = !!searchParams.get('vnp_ResponseCode');
+        const isMoMo = searchParams.get('partnerCode') === 'MOMO';
+        const isZaloPay = !isVNPay && !isMoMo && (!!searchParams.get('apptransid') || !!searchParams.get('status'));
+
+        const handleResult = (res) => {
+            const s = res.data?.status;
+            if (s === 'SUCCESS') { setPlan(res.data.plan); setStatus('SUCCESS'); localStorage.removeItem('pending_payment'); }
+            else setStatus('FAILED');
+        };
 
         if (isVNPay) {
-            // Build params object from URL
-            const params = {};
-            searchParams.forEach((v, k) => { params[k] = v; });
-            paymentService.verifyVNPay(params)
-                .then(res => {
-                    const s = res.data?.status;
-                    if (s === 'SUCCESS') { setPlan(res.data.plan); setStatus('SUCCESS'); }
-                    else setStatus('FAILED');
-                })
-                .catch(() => setStatus('FAILED'));
+            paymentService.verifyVNPay(params).then(handleResult).catch(() => setStatus('FAILED'));
             return;
         }
 
-        // MoMo / ZaloPay: poll
+        if (isMoMo) {
+            paymentService.confirmMoMo(params).then(handleResult).catch(() => setStatus('FAILED'));
+            return;
+        }
+
+        if (isZaloPay) {
+            // Also attach orderId from localStorage for ZaloPay if not in URL
+            const stored = localStorage.getItem('pending_payment');
+            if (stored) {
+                try { params.orderId = JSON.parse(stored).orderId; } catch {}
+            }
+            paymentService.confirmZaloPay(params).then(handleResult).catch(() => setStatus('FAILED'));
+            return;
+        }
+
+        // Fallback: poll by orderId from localStorage (for direct navigation)
         const stored = localStorage.getItem('pending_payment');
         if (!stored) { setStatus('INVALID'); return; }
-
         let { orderId } = JSON.parse(stored);
         if (!orderId) { setStatus('INVALID'); return; }
 
@@ -78,25 +93,41 @@ function KetQuaContent() {
         </div>
     );
 
-    if (status === 'SUCCESS') return (
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: '#f5f5f5' }}>
-            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#00b14f"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+    if (status === 'SUCCESS') {
+        const isViewApplicants = plan?.startsWith('VIEW_APPLICANTS:');
+        return (
+            <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: '#f5f5f5' }}>
+                <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <svg width="36" height="36" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#00b14f"/><path d="M7 12.5l3.5 3.5 6.5-7" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div style={{ fontSize: '22px', fontWeight: '800', color: '#00b14f' }}>
+                    {isViewApplicants ? 'Thanh toán thành công!' : 'Nâng cấp thành công!'}
+                </div>
+                <div style={{ fontSize: '14px', color: '#555', textAlign: 'center' }}>
+                    {isViewApplicants
+                        ? 'Bạn có thể đóng tab này và quay lại trang việc làm để xem số người ứng tuyển.'
+                        : <>Tài khoản của bạn đã được nâng lên gói <strong>{plan}</strong>.</>
+                    }
+                </div>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                    {isViewApplicants ? (
+                        <button onClick={() => window.close()} style={{ background: '#00b14f', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
+                            Đóng tab này
+                        </button>
+                    ) : (
+                        <>
+                            <button onClick={() => router.push('/quan-ly-cv')} style={{ background: '#00b14f', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
+                                Quản lý CV
+                            </button>
+                            <button onClick={() => router.push('/')} style={{ background: 'white', color: '#555', border: '1px solid #ddd', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', cursor: 'pointer' }}>
+                                Trang chủ
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
-            <div style={{ fontSize: '22px', fontWeight: '800', color: '#00b14f' }}>Nâng cấp thành công!</div>
-            <div style={{ fontSize: '14px', color: '#555' }}>
-                Tài khoản của bạn đã được nâng lên gói <strong>{plan}</strong>.
-            </div>
-            <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                <button onClick={() => router.push('/quan-ly-cv')} style={{ background: '#00b14f', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
-                    Quản lý CV
-                </button>
-                <button onClick={() => router.push('/')} style={{ background: 'white', color: '#555', border: '1px solid #ddd', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', cursor: 'pointer' }}>
-                    Trang chủ
-                </button>
-            </div>
-        </div>
-    );
+        );
+    }
 
     if (status === 'FAILED') return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', background: '#f5f5f5' }}>

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Search, ChevronLeft } from 'lucide-react';
+import { Search, ChevronLeft, MessageSquare } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import { chatService } from '@/services/chat.service';
 import ChatMessageArea, { Avatar, timeAgo } from '@/app/components/chat/ChatMessageArea';
+import { cn } from '@/lib/utils';
 
 const GREEN = '#00b14f';
 
@@ -30,10 +31,8 @@ export default function EmployerChatPage() {
     const [showSidebar, setShowSidebar] = useState(true);
 
     const wsDeadRef = useRef(false);
-
     const activeConv = conversations.find(c => c.id === activeConvId);
 
-    // Responsive breakpoint detection
     useEffect(() => {
         const check = () => {
             const mobile = window.innerWidth < 768;
@@ -76,7 +75,6 @@ export default function EmployerChatPage() {
         setConversations(prev => prev.map(c => c.id === activeConvId ? { ...c, unreadCount: 0 } : c));
     }, [activeConvId]);
 
-    // WebSocket
     useEffect(() => {
         if (!isAuthenticated || !accessToken) return;
         wsDeadRef.current = false;
@@ -120,10 +118,7 @@ export default function EmployerChatPage() {
     const handleSend = async (text, replyTo) => {
         const res = await chatService.send(activeConvId, text, 'text', replyTo?.id || null);
         let msg = res.data?.data;
-        // Ensure replyTo is shown immediately without needing a refresh
-        if (replyTo && msg && !msg.replyTo) {
-            msg = { ...msg, replyTo };
-        }
+        if (replyTo && msg && !msg.replyTo) msg = { ...msg, replyTo };
         setMessages(prev => [...prev, msg]);
         setConversations(prev => prev.map(c =>
             c.id === activeConvId ? { ...c, messages: [msg], lastMessageAt: msg?.createdAt } : c
@@ -137,9 +132,7 @@ export default function EmployerChatPage() {
             ? await chatService.removeReaction(msgId, emoji)
             : await chatService.addReaction(msgId, emoji);
         const reactions = res.data?.reactions;
-        if (Array.isArray(reactions)) {
-            setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions } : m));
-        }
+        if (Array.isArray(reactions)) setMessages(prev => prev.map(m => m.id === msgId ? { ...m, reactions } : m));
     };
 
     const filtered = conversations
@@ -153,36 +146,41 @@ export default function EmployerChatPage() {
     const candidateAvatar = activeConv?.candidate?.candidateProfile?.avatarUrl;
 
     return (
-        <div style={{ display: 'flex', height: 'calc(100vh - 60px)', background: '#f3f4f6', overflow: 'hidden' }}>
+        <div className="flex h-[calc(100vh-60px)] bg-slate-100 overflow-hidden">
 
-            {/* Conversation sidebar */}
+            {/* Sidebar */}
             {(!isMobile || showSidebar) && (
-                <div style={{ width: isMobile ? '100%' : '300px', flexShrink: 0, background: 'white', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ padding: '14px 16px', borderBottom: '1px solid #f3f4f6' }}>
-                        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '10px' }}>Tin nhắn</div>
-                        <div style={{ position: 'relative', marginBottom: '10px' }}>
-                            <Search size={13} style={{ position: 'absolute', left: '9px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                <div className={cn('shrink-0 bg-white border-r border-slate-200 flex flex-col', isMobile ? 'w-full' : 'w-[300px]')}>
+                    <div className="px-4 py-3.5 border-b border-slate-100">
+                        <div className="text-[15px] font-bold text-slate-900 mb-2.5">Tin nhắn</div>
+                        <div className="relative mb-2.5">
+                            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
                             <input
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 placeholder="Tìm ứng viên..."
-                                style={{ width: '100%', padding: '7px 9px 7px 28px', border: '1px solid #e5e7eb', borderRadius: '7px', fontSize: '12px', outline: 'none', boxSizing: 'border-box' }}
+                                className="w-full pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-lg text-xs outline-none box-border focus:border-slate-300"
                             />
                         </div>
-                        <div style={{ display: 'flex', gap: '6px' }}>
+                        <div className="flex gap-1.5">
                             {[{ k: 'all', l: 'Tất cả' }, { k: 'unread', l: 'Chưa đọc' }].map(t => (
-                                <button key={t.k} onClick={() => setTab(t.k)} style={{ padding: '5px 12px', borderRadius: '16px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', background: tab === t.k ? GREEN : '#f3f4f6', color: tab === t.k ? 'white' : '#6b7280' }}>
+                                <button
+                                    key={t.k}
+                                    onClick={() => setTab(t.k)}
+                                    className={cn('px-3 py-1.5 rounded-full border-none cursor-pointer text-xs font-semibold transition-colors', tab === t.k ? 'text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200')}
+                                    style={tab === t.k ? { background: GREEN } : {}}
+                                >
                                     {t.l}
                                 </button>
                             ))}
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                    <div className="flex-1 overflow-y-auto">
                         {loadingConvs ? (
-                            <div style={{ padding: '32px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>Đang tải...</div>
+                            <div className="py-8 text-center text-slate-400 text-sm">Đang tải...</div>
                         ) : filtered.length === 0 ? (
-                            <div style={{ padding: '32px 16px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>Chưa có tin nhắn nào</div>
+                            <div className="py-8 px-4 text-center text-slate-400 text-sm">Chưa có tin nhắn nào</div>
                         ) : (
                             filtered.map(conv => {
                                 const cp = conv.candidate?.candidateProfile || {};
@@ -192,20 +190,20 @@ export default function EmployerChatPage() {
                                     <div
                                         key={conv.id}
                                         onClick={() => handleSelectConv(conv.id)}
-                                        style={{ padding: '12px 16px', cursor: 'pointer', display: 'flex', gap: '10px', alignItems: 'flex-start', background: isActive ? '#f0fdf4' : 'white', borderLeft: isActive ? `3px solid ${GREEN}` : '3px solid transparent', borderBottom: '1px solid #f9fafb' }}
+                                        className={cn('px-4 py-3 cursor-pointer flex gap-2.5 items-start border-b border-slate-50 border-l-[3px] transition-colors', isActive ? 'bg-green-50 border-l-green-500' : 'bg-white border-l-transparent hover:bg-slate-50')}
                                     >
                                         <Avatar src={cp.avatarUrl} name={cp.fullName} size={38} />
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                                                <span style={{ fontSize: '13px', fontWeight: conv.unreadCount > 0 ? '700' : '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cp.fullName || 'Ứng viên'}</span>
-                                                <span style={{ fontSize: '11px', color: '#9ca3af', flexShrink: 0, marginLeft: '4px' }}>{timeAgo(conv.lastMessageAt)}</span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-center mb-0.5">
+                                                <span className={cn('text-sm overflow-hidden text-ellipsis whitespace-nowrap text-slate-900', conv.unreadCount > 0 ? 'font-bold' : 'font-semibold')}>{cp.fullName || 'Ứng viên'}</span>
+                                                <span className="text-[11px] text-slate-400 shrink-0 ml-1">{timeAgo(conv.lastMessageAt)}</span>
                                             </div>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ fontSize: '12px', color: '#6b7280', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-xs text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap flex-1">
                                                     {lastMsg ? lastMsg.content : 'Bắt đầu trò chuyện...'}
                                                 </span>
                                                 {conv.unreadCount > 0 && (
-                                                    <span style={{ background: '#ef4444', color: 'white', fontSize: '10px', borderRadius: '50%', minWidth: '16px', height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700', flexShrink: 0, marginLeft: '4px', padding: '0 3px' }}>
+                                                    <span className="bg-red-500 text-white text-[10px] rounded-full min-w-4 h-4 flex items-center justify-center font-bold shrink-0 ml-1 px-1">
                                                         {conv.unreadCount > 9 ? '9+' : conv.unreadCount}
                                                     </span>
                                                 )}
@@ -222,21 +220,19 @@ export default function EmployerChatPage() {
             {/* Chat area */}
             {(!isMobile || !showSidebar) && (
                 activeConvId && activeConv ? (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                        {/* Chat header */}
-                        <div style={{ padding: '12px 20px', background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="flex-1 flex flex-col min-w-0">
+                        <div className="px-5 py-3 bg-white border-b border-slate-200 flex items-center gap-3">
                             {isMobile && (
-                                <button onClick={() => setShowSidebar(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}>
-                                    <ChevronLeft size={22} color="#374151" />
+                                <button onClick={() => setShowSidebar(true)} className="bg-transparent border-none cursor-pointer p-0.5 flex items-center">
+                                    <ChevronLeft size={22} className="text-slate-700" />
                                 </button>
                             )}
                             <Avatar src={candidateAvatar} name={candidateName} size={38} />
                             <div>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111827' }}>{candidateName}</div>
-                                <div style={{ fontSize: '12px', color: '#9ca3af' }}>Ứng viên</div>
+                                <div className="text-sm font-bold text-slate-900">{candidateName}</div>
+                                <div className="text-xs text-slate-400">Ứng viên</div>
                             </div>
                         </div>
-
                         <ChatMessageArea
                             messages={messages}
                             user={user}
@@ -251,10 +247,10 @@ export default function EmployerChatPage() {
                         />
                     </div>
                 ) : (
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#9ca3af' }}>
-                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>💬</div>
-                        <div style={{ fontSize: '15px', fontWeight: '600', color: '#374151' }}>Chọn một cuộc trò chuyện</div>
-                        <div style={{ fontSize: '13px', marginTop: '6px' }}>Hoặc nhắn tin ứng viên từ trang hồ sơ ứng tuyển</div>
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
+                        <MessageSquare size={48} className="text-slate-300 mb-3" />
+                        <div className="text-[15px] font-semibold text-slate-700">Chọn một cuộc trò chuyện</div>
+                        <div className="text-sm mt-1.5">Hoặc nhắn tin ứng viên từ trang hồ sơ ứng tuyển</div>
                     </div>
                 )
             )}

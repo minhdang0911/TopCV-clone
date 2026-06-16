@@ -21,6 +21,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { ChatModule } from './chat/chat.module';
 import { ConnectModule } from './connect/connect.module';
 import { JobAlertsModule } from './job-alerts/job-alerts.module';
+import { FeedbackModule } from './feedback/feedback.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { JobAlertsModule } from './job-alerts/job-alerts.module';
     ChatModule,
     ConnectModule,
     JobAlertsModule,
+    FeedbackModule,
   ],
 })
 export class AppModule {}

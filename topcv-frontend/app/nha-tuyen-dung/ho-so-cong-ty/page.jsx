@@ -5,14 +5,9 @@ import { Save, Upload, Check, ChevronDown, X, Loader } from 'lucide-react';
 import { toast } from 'sonner';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
+import { cn } from '@/lib/utils';
 
 const GREEN = '#00b14f';
-
-const inputStyle = {
-    width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0',
-    borderRadius: '10px', fontSize: '14px', color: '#0f172a',
-    outline: 'none', background: '#fafafa', boxSizing: 'border-box',
-};
 
 function IndustryPicker({ industries, selected, onChange }) {
     const [open, setOpen] = useState(false);
@@ -20,27 +15,36 @@ function IndustryPicker({ industries, selected, onChange }) {
     const selectedLabels = industries.filter(i => selected.includes(i.id)).map(i => i.name);
 
     return (
-        <div style={{ position: 'relative' }}>
-            <button type="button" onClick={() => setOpen(v => !v)} style={{ ...inputStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', gap: '8px' }}>
-                <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected.length ? '#111827' : '#9ca3af' }}>
+        <div className="relative">
+            <button
+                type="button"
+                onClick={() => setOpen(v => !v)}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 bg-slate-50 cursor-pointer outline-none text-left gap-2 hover:border-slate-300 transition-colors"
+            >
+                <span className={cn('flex-1 truncate', selected.length === 0 && 'text-slate-400')}>
                     {selected.length === 0 ? '-- Chọn ngành nghề --' : selectedLabels.join(', ')}
                 </span>
-                <ChevronDown size={14} color="#9ca3af" style={{ flexShrink: 0, transform: open ? 'rotate(180deg)' : 'none', transition: '0.15s' }} />
+                <ChevronDown size={14} className={cn('text-slate-400 shrink-0 transition-transform', open && 'rotate-180')} />
             </button>
             {selected.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '8px' }}>
+                <div className="flex flex-wrap gap-1.5 mt-2">
                     {industries.filter(i => selected.includes(i.id)).map(i => (
-                        <span key={i.id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', background: '#f0fdf4', border: `1px solid ${GREEN}`, borderRadius: '20px', fontSize: '12px', color: GREEN, fontWeight: '500' }}>
+                        <span key={i.id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-green-50 border border-green-500 rounded-full text-xs text-green-600 font-medium">
                             {i.name}
-                            <button type="button" onClick={() => toggle(i.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', color: GREEN, display: 'flex', padding: 0 }}><X size={12} /></button>
+                            <button type="button" onClick={() => toggle(i.id)} className="border-none bg-transparent cursor-pointer text-green-600 flex p-0 leading-none">
+                                <X size={12} />
+                            </button>
                         </span>
                     ))}
                 </div>
             )}
             {open && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', maxHeight: '220px', overflowY: 'auto', marginTop: '4px' }}>
+                <div className="absolute top-full left-0 right-0 z-50 bg-white border border-slate-200 rounded-xl shadow-lg max-h-[220px] overflow-y-auto mt-1">
                     {industries.map(i => (
-                        <button key={i.id} type="button" onClick={() => toggle(i.id)} style={{ width: '100%', textAlign: 'left', padding: '10px 16px', border: 'none', background: selected.includes(i.id) ? '#f0fdf4' : 'white', cursor: 'pointer', fontSize: '13px', color: '#374151', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <button
+                            key={i.id} type="button" onClick={() => toggle(i.id)}
+                            className={cn('w-full text-left px-4 py-2.5 border-none cursor-pointer text-sm text-slate-700 flex items-center justify-between hover:bg-slate-50', selected.includes(i.id) && 'bg-green-50')}
+                        >
                             {i.name}
                             {selected.includes(i.id) && <Check size={14} color={GREEN} />}
                         </button>
@@ -53,13 +57,15 @@ function IndustryPicker({ industries, selected, onChange }) {
 
 function Field({ label, children, hint }) {
     return (
-        <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>{label}</label>
+        <div className="mb-5">
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">{label}</label>
             {children}
-            {hint && <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>{hint}</p>}
+            {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
         </div>
     );
 }
+
+const fieldCls = 'w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 outline-none bg-slate-50 box-border focus:border-green-400 focus:bg-white transition-colors';
 
 export default function ThongTinCongTyPage() {
     const { user, setUser } = useAuthStore();
@@ -92,7 +98,7 @@ export default function ThongTinCongTyPage() {
             else if (profile.industryId) setIndustryIds([profile.industryId]);
             setLogoPreview(profile.logoUrl || null);
         }
-    }, [profile?.id]);
+    }, [profile?.id]); // eslint-disable-line
 
     const set = (key, value) => setForm(f => ({ ...f, [key]: value }));
 
@@ -100,8 +106,7 @@ export default function ThongTinCongTyPage() {
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 2 * 1024 * 1024) { toast.error('File tối đa 2MB'); return; }
-        const localPreview = URL.createObjectURL(file);
-        setLogoPreview(localPreview);
+        setLogoPreview(URL.createObjectURL(file));
         setLogoUploading(true);
         try {
             const formData = new FormData();
@@ -136,31 +141,30 @@ export default function ThongTinCongTyPage() {
 
     return (
         <div>
-            <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Thông tin công ty</h2>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>Thông tin hiển thị cho ứng viên khi xem tin tuyển dụng của bạn</p>
+            <div className="mb-5">
+                <h2 className="text-base font-extrabold text-slate-900 m-0">Thông tin công ty</h2>
+                <p className="text-sm text-slate-500 mt-1">Thông tin hiển thị cho ứng viên khi xem tin tuyển dụng của bạn</p>
             </div>
 
-            <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: '20px', alignItems: 'flex-start' }} className="company-form-layout">
-                <div>
-                    <div style={{ background: 'white', borderRadius: '14px', padding: '24px', border: '1px solid #e2e8f0', marginBottom: '16px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
-                        <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', margin: '0 0 18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
-                            Thông tin cơ bản
-                        </h3>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-5 items-start">
+                <div className="flex flex-col gap-4">
+                    {/* Basic info */}
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-900 m-0 mb-4 pb-3 border-b border-slate-100">Thông tin cơ bản</h3>
                         <Field label="Tên công ty">
-                            <input value={form.companyName} onChange={e => set('companyName', e.target.value)} placeholder="TopCV Vietnam" style={inputStyle} />
+                            <input value={form.companyName} onChange={e => set('companyName', e.target.value)} placeholder="TopCV Vietnam" className={fieldCls} />
                         </Field>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Field label="Website">
-                                <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://topcv.vn" style={inputStyle} />
+                                <input value={form.website} onChange={e => set('website', e.target.value)} placeholder="https://topcv.vn" className={fieldCls} />
                             </Field>
                             <Field label="Mã số thuế">
-                                <input value={form.taxCode} onChange={e => set('taxCode', e.target.value)} placeholder="0123456789" style={inputStyle} />
+                                <input value={form.taxCode} onChange={e => set('taxCode', e.target.value)} placeholder="0123456789" className={fieldCls} />
                             </Field>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <Field label="Quy mô công ty">
-                                <select value={form.companySize} onChange={e => set('companySize', e.target.value)} style={{ ...inputStyle, cursor: 'pointer' }}>
+                                <select value={form.companySize} onChange={e => set('companySize', e.target.value)} className={cn(fieldCls, 'cursor-pointer')}>
                                     <option value="">-- Chọn quy mô --</option>
                                     <option value="1-10">1 – 10 nhân viên</option>
                                     <option value="11-50">11 – 50 nhân viên</option>
@@ -171,7 +175,7 @@ export default function ThongTinCongTyPage() {
                                 </select>
                             </Field>
                             <Field label="Địa chỉ trụ sở">
-                                <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="123 Nguyễn Huệ, Q.1, HCM" style={inputStyle} />
+                                <input value={form.address} onChange={e => set('address', e.target.value)} placeholder="123 Nguyễn Huệ, Q.1, HCM" className={fieldCls} />
                             </Field>
                         </div>
                         <Field label="Ngành nghề" hint="Chọn một hoặc nhiều ngành phù hợp với lĩnh vực của công ty">
@@ -179,60 +183,57 @@ export default function ThongTinCongTyPage() {
                         </Field>
                     </div>
 
-                    <div style={{ background: 'white', borderRadius: '14px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
-                        <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', margin: '0 0 18px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>Giới thiệu công ty</h3>
+                    {/* Description */}
+                    <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-900 m-0 mb-4 pb-3 border-b border-slate-100">Giới thiệu công ty</h3>
                         <Field label="Mô tả" hint="Giới thiệu về công ty, văn hóa, định hướng phát triển...">
                             <textarea
                                 value={form.description}
                                 onChange={e => set('description', e.target.value)}
                                 rows={8}
                                 placeholder="Giới thiệu về công ty của bạn..."
-                                style={{ ...inputStyle, resize: 'vertical', minHeight: '160px', fontFamily: 'inherit' }}
+                                className={cn(fieldCls, 'resize-y min-h-40 font-inherit')}
                             />
                         </Field>
                     </div>
                 </div>
 
                 {/* Sidebar */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="flex flex-col gap-4">
                     {/* Logo */}
-                    <div style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0', textAlign: 'center', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
-                        <h3 style={{ fontSize: '12px', fontWeight: '700', margin: '0 0 12px', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748b' }}>Logo công ty</h3>
-                        <div style={{ width: '90px', height: '90px', borderRadius: '12px', border: '2px dashed #d1fae5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 10px', overflow: 'hidden', background: 'linear-gradient(135deg, #f0fdf4, #f8fafc)', position: 'relative' }}>
+                    <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm text-center">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider m-0 mb-3">Logo công ty</h3>
+                        <div className="w-[90px] h-[90px] rounded-xl border-2 border-dashed border-green-200 flex items-center justify-center mx-auto mb-2.5 overflow-hidden bg-gradient-to-br from-green-50 to-slate-50 relative">
                             {logoPreview
-                                ? <img src={logoPreview} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                : <span style={{ fontSize: '26px', fontWeight: '800', color: GREEN }}>{form.companyName[0]?.toUpperCase() || '?'}</span>
+                                ? <img src={logoPreview} alt="logo" className="w-full h-full object-contain" />
+                                : <span className="text-3xl font-extrabold text-green-600">{form.companyName[0]?.toUpperCase() || '?'}</span>
                             }
                             {logoUploading && (
-                                <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,255,255,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Loader size={20} color={GREEN} style={{ animation: 'spin 1s linear infinite' }} />
+                                <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                    <Loader size={20} color={GREEN} className="animate-spin" />
                                 </div>
                             )}
                         </div>
-                        <p style={{ fontSize: '11px', color: '#9ca3af', margin: '0 0 10px' }}>PNG, JPG tối đa 2MB</p>
-                        <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'white', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', cursor: logoUploading ? 'not-allowed' : 'pointer', color: '#374151' }}>
+                        <p className="text-[11px] text-slate-400 m-0 mb-2.5">PNG, JPG tối đa 2MB</p>
+                        <label className={cn('inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-600', logoUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50 transition-colors')}>
                             <Upload size={13} />
                             Tải logo lên
-                            <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" style={{ display: 'none' }} onChange={handleLogoUpload} disabled={logoUploading} />
+                            <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={handleLogoUpload} disabled={logoUploading} />
                         </label>
                     </div>
 
                     {/* Save */}
-                    <div style={{ background: 'white', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
-                        <button type="submit" disabled={saving} style={{ width: '100%', background: saving ? '#86efac' : `linear-gradient(135deg, ${GREEN}, #00934a)`, color: 'white', border: 'none', borderRadius: '10px', padding: '12px', fontSize: '14px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', boxShadow: saving ? 'none' : '0 4px 12px rgba(0,177,79,0.3)' }}>
-                            {saving ? <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={16} />}
+                    <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                        <button
+                            type="submit" disabled={saving}
+                            className={cn('w-full flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-opacity', saving ? 'bg-green-300 cursor-not-allowed' : 'bg-gradient-to-br from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.3)] hover:opacity-90')}
+                        >
+                            {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
                             {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
                         </button>
-                        <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', marginTop: '8px', margin: '8px 0 0' }}>
-                            Lưu để cập nhật bước xác thực thông tin công ty
-                        </p>
+                        <p className="text-[11px] text-slate-400 text-center mt-2 m-0">Lưu để cập nhật bước xác thực thông tin công ty</p>
                     </div>
                 </div>
-
-                <style>{`
-                    @media (max-width: 768px) { .company-form-layout { grid-template-columns: 1fr !important; } }
-                    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                `}</style>
             </form>
         </div>
     );

@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Upload, Check, Loader, AlertCircle, Clock, CheckCircle, FileText, X } from 'lucide-react';
 import { toast } from 'sonner';
 import api from '@/lib/axios';
+import { cn } from '@/lib/utils';
 import sampleLicence from '@/app/assests/img/sample-licence.7436372.webp';
 import authorityPaper from '@/app/assests/img/authority-paper-sample.d8936ab.webp';
 import identitySample from '@/app/assests/img/identity-sample.7c14dbb.jpg';
@@ -25,79 +26,42 @@ function FileDropzone({ label, hint, accept, file, onChange, disabled }) {
 
     return (
         <div>
-            <p style={{ fontSize: '13px', fontWeight: '600', color: '#374151', margin: '0 0 8px' }}>{label}</p>
+            <p className="text-sm font-semibold text-slate-700 m-0 mb-2">{label}</p>
             <div
                 onClick={() => !disabled && inputRef.current?.click()}
-                onDragOver={(e) => {
-                    e.preventDefault();
-                    if (!disabled) setDragging(true);
-                }}
+                onDragOver={(e) => { e.preventDefault(); if (!disabled) setDragging(true); }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={handleDrop}
-                style={{
-                    border: `2px dashed ${dragging ? GREEN : file ? '#86efac' : '#d1d5db'}`,
-                    borderRadius: '10px',
-                    padding: '20px',
-                    textAlign: 'center',
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                    background: dragging ? '#f0fdf4' : file ? '#f0fdf4' : '#fafafa',
-                    transition: 'all 0.15s',
-                    position: 'relative',
-                }}
+                className={cn(
+                    'border-2 border-dashed rounded-xl p-5 text-center transition-all relative',
+                    disabled ? 'cursor-not-allowed' : 'cursor-pointer',
+                    dragging ? 'border-green-500 bg-green-50'
+                        : file ? 'border-green-300 bg-green-50'
+                        : 'border-slate-300 bg-slate-50 hover:border-slate-400'
+                )}
             >
                 {file ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+                    <div className="flex items-center gap-2.5 justify-center">
                         <FileText size={18} color={GREEN} />
-                        <span
-                            style={{
-                                fontSize: '13px',
-                                fontWeight: '600',
-                                color: '#166534',
-                                maxWidth: '200px',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            {file.name}
-                        </span>
+                        <span className="text-sm font-semibold text-green-800 max-w-[200px] truncate">{file.name}</span>
                         <button
                             type="button"
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onChange(null);
-                            }}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                cursor: 'pointer',
-                                color: '#dc2626',
-                                display: 'flex',
-                                padding: '2px',
-                            }}
+                            onClick={(e) => { e.stopPropagation(); onChange(null); }}
+                            className="bg-transparent border-none cursor-pointer text-red-500 flex p-0.5"
                         >
                             <X size={16} />
                         </button>
                     </div>
                 ) : (
                     <>
-                        <Upload size={22} color="#9ca3af" style={{ marginBottom: '8px' }} />
-                        <p style={{ fontSize: '13px', color: '#6b7280', margin: 0 }}>Chọn hoặc kéo file vào đây</p>
-                        <p style={{ fontSize: '12px', color: '#9ca3af', margin: '4px 0 0' }}>
-                            Dung lượng tối đa 5MB, định dạng: jpeg, jpg, png, pdf
-                        </p>
+                        <Upload size={22} className="text-slate-400 mx-auto mb-2" />
+                        <p className="text-sm text-slate-500 m-0">Chọn hoặc kéo file vào đây</p>
+                        <p className="text-xs text-slate-400 mt-1 m-0">Dung lượng tối đa 5MB, định dạng: jpeg, jpg, png, pdf</p>
                     </>
                 )}
-                <input
-                    ref={inputRef}
-                    type="file"
-                    accept={accept}
-                    style={{ display: 'none' }}
-                    onChange={(e) => onChange(e.target.files?.[0] || null)}
-                    disabled={disabled}
-                />
+                <input ref={inputRef} type="file" accept={accept} className="hidden" onChange={(e) => onChange(e.target.files?.[0] || null)} disabled={disabled} />
             </div>
-            {hint && <p style={{ fontSize: '12px', color: '#ef4444', margin: '6px 0 0' }}>{hint}</p>}
+            {hint && <p className="text-xs text-red-500 mt-1.5 m-0">{hint}</p>}
         </div>
     );
 }
@@ -120,13 +84,10 @@ export default function GiayDkkdPage() {
             .finally(() => setLoading(false));
     };
 
-    useEffect(() => {
-        reloadStatus();
-    }, []);
+    useEffect(() => { reloadStatus(); }, []);// eslint-disable-line
 
     const step3 = vstatus?.step3;
     const docStatus = step3?.status;
-    const alreadyHasDoc = !!step3?.docUrl;
 
     const uploadFile = async (file) => {
         const fd = new FormData();
@@ -136,18 +97,9 @@ export default function GiayDkkdPage() {
     };
 
     const handleSave = async () => {
-        if (!file1) {
-            toast.error('Vui lòng chọn tài liệu');
-            return;
-        }
-        if (docType === 'DELEGATION' && !file2) {
-            toast.error('Vui lòng chọn file CCCD/Hộ chiếu');
-            return;
-        }
-        if (file1.size > 5 * 1024 * 1024 || (file2 && file2.size > 5 * 1024 * 1024)) {
-            toast.error('File tối đa 5MB');
-            return;
-        }
+        if (!file1) { toast.error('Vui lòng chọn tài liệu'); return; }
+        if (docType === 'DELEGATION' && !file2) { toast.error('Vui lòng chọn file CCCD/Hộ chiếu'); return; }
+        if (file1.size > 5 * 1024 * 1024 || (file2 && file2.size > 5 * 1024 * 1024)) { toast.error('File tối đa 5MB'); return; }
 
         setSaving(true);
         try {
@@ -165,190 +117,87 @@ export default function GiayDkkdPage() {
         }
     };
 
-    if (loading) {
+    if (loading)
         return (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
-                <Loader size={24} color={GREEN} style={{ animation: 'spin 1s linear infinite' }} />
-                <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+            <div className="flex justify-center items-center py-16">
+                <div className="w-7 h-7 border-[3px] border-slate-200 border-t-green-500 rounded-full animate-spin" />
             </div>
         );
-    }
 
     const isApproved = docStatus === 'APPROVED';
     const isPending = docStatus === 'PENDING';
     const isRejected = docStatus === 'REJECTED';
 
+    const RadioDot = ({ selected }) => (
+        <div className={cn('w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0 transition-all', selected ? 'border-green-500 bg-green-500' : 'border-slate-300 bg-white')}>
+            {selected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+        </div>
+    );
+
     return (
         <div>
-            <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>
-                    Giấy đăng ký doanh nghiệp
-                </h2>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>
-                    Vui lòng lựa chọn phương thức đăng tải phù hợp
-                </p>
+            <div className="mb-5">
+                <h2 className="text-base font-extrabold text-slate-900 m-0">Giấy đăng ký doanh nghiệp</h2>
+                <p className="text-sm text-slate-500 mt-1">Vui lòng lựa chọn phương thức đăng tải phù hợp</p>
             </div>
 
-            {/* Status banner */}
+            {/* Status banners */}
             {isApproved && (
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '14px 18px',
-                        background: '#f0fdf4',
-                        border: '1px solid #bbf7d0',
-                        borderRadius: '12px',
-                        marginBottom: '20px',
-                    }}
-                >
+                <div className="flex items-center gap-3 px-4 py-3.5 bg-green-50 border border-green-200 rounded-xl mb-5">
                     <CheckCircle size={20} color={GREEN} />
                     <div>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#166534' }}>
-                            Tài liệu đã được phê duyệt
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#15803d' }}>
-                            Tài khoản của bạn đã được xác thực đầy đủ
-                        </div>
+                        <div className="text-sm font-bold text-green-800">Tài liệu đã được phê duyệt</div>
+                        <div className="text-xs text-green-700 mt-0.5">Tài khoản của bạn đã được xác thực đầy đủ</div>
                     </div>
                 </div>
             )}
             {isPending && (
-                <div
-                    style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '12px',
-                        padding: '14px 18px',
-                        background: '#fef3c7',
-                        border: '1px solid #fde68a',
-                        borderRadius: '12px',
-                        marginBottom: '20px',
-                    }}
-                >
-                    <Clock size={20} color="#d97706" />
+                <div className="flex items-center gap-3 px-4 py-3.5 bg-amber-50 border border-amber-200 rounded-xl mb-5">
+                    <Clock size={20} className="text-amber-600" />
                     <div>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#92400e' }}>
-                            Đang chờ admin duyệt
-                        </div>
-                        <div style={{ fontSize: '12px', color: '#b45309' }}>
-                            Thường trong 1–2 ngày làm việc. Bạn có thể cập nhật lại tài liệu nếu cần.
-                        </div>
+                        <div className="text-sm font-bold text-amber-800">Đang chờ admin duyệt</div>
+                        <div className="text-xs text-amber-700 mt-0.5">Thường trong 1–2 ngày làm việc. Bạn có thể cập nhật lại tài liệu nếu cần.</div>
                     </div>
                 </div>
             )}
             {isRejected && (
-                <div
-                    style={{
-                        padding: '14px 18px',
-                        background: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '12px',
-                        marginBottom: '20px',
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-                        <AlertCircle size={20} color="#dc2626" />
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#dc2626' }}>Tài liệu bị từ chối</div>
+                <div className="px-4 py-3.5 bg-red-50 border border-red-200 rounded-xl mb-5">
+                    <div className="flex items-center gap-2.5 mb-1.5">
+                        <AlertCircle size={20} className="text-red-600" />
+                        <div className="text-sm font-bold text-red-600">Tài liệu bị từ chối</div>
                     </div>
                     {step3?.rejectReason && (
-                        <div
-                            style={{
-                                fontSize: '13px',
-                                color: '#7f1d1d',
-                                background: 'rgba(220,38,38,0.07)',
-                                borderRadius: '8px',
-                                padding: '8px 12px',
-                                marginTop: '4px',
-                            }}
-                        >
+                        <div className="text-sm text-red-900 bg-red-100/60 rounded-lg px-3 py-2 mt-1">
                             <strong>Lý do:</strong> {step3.rejectReason}
                         </div>
                     )}
-                    <p style={{ fontSize: '12px', color: '#b91c1c', margin: '8px 0 0' }}>
-                        Vui lòng upload lại tài liệu hợp lệ bên dưới.
-                    </p>
+                    <p className="text-xs text-red-700 mt-2 m-0">Vui lòng upload lại tài liệu hợp lệ bên dưới.</p>
                 </div>
             )}
 
             {/* Upload form */}
-            <div
-                style={{
-                    background: 'white',
-                    borderRadius: '14px',
-                    padding: '28px',
-                    border: '1px solid #e2e8f0',
-                    boxShadow: '0 1px 6px rgba(0,0,0,0.05)',
-                }}
-            >
-                <h3
-                    style={{
-                        fontSize: '14px',
-                        fontWeight: '700',
-                        color: '#0f172a',
-                        margin: '0 0 20px',
-                        paddingBottom: '14px',
-                        borderBottom: '1px solid #f1f5f9',
-                    }}
-                >
+            <div className="bg-white rounded-xl p-7 border border-slate-200 shadow-sm">
+                <h3 className="text-sm font-bold text-slate-900 m-0 mb-5 pb-3.5 border-b border-slate-100">
                     Thông tin Giấy đăng ký doanh nghiệp
                 </h3>
 
-                {/* Option 1 */}
+                {/* Option 1 — REGISTRATION */}
                 <div
                     onClick={() => setDocType('REGISTRATION')}
-                    style={{
-                        border: `2px solid ${docType === 'REGISTRATION' ? GREEN : '#e5e7eb'}`,
-                        borderRadius: '12px',
-                        padding: '20px',
-                        marginBottom: '16px',
-                        cursor: 'pointer',
-                        background: docType === 'REGISTRATION' ? '#f0fdf4' : 'white',
-                        transition: 'all 0.15s',
-                    }}
+                    className={cn(
+                        'border-2 rounded-xl p-5 mb-4 cursor-pointer transition-all',
+                        docType === 'REGISTRATION' ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white hover:border-slate-300'
+                    )}
                 >
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            marginBottom: docType === 'REGISTRATION' ? '20px' : 0,
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: '18px',
-                                height: '18px',
-                                borderRadius: '50%',
-                                border: `2px solid ${docType === 'REGISTRATION' ? GREEN : '#d1d5db'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                background: docType === 'REGISTRATION' ? GREEN : 'white',
-                            }}
-                        >
-                            {docType === 'REGISTRATION' && (
-                                <div
-                                    style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'white' }}
-                                />
-                            )}
-                        </div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
+                    <div className={cn('flex items-center gap-2.5', docType === 'REGISTRATION' ? 'mb-5' : 'mb-0')}>
+                        <RadioDot selected={docType === 'REGISTRATION'} />
+                        <span className="text-sm font-semibold text-slate-900">
                             Giấy đăng ký doanh nghiệp hoặc Giấy tờ tương đương khác
                         </span>
                     </div>
 
                     {docType === 'REGISTRATION' && (
-                        <div
-                            style={{
-                                display: 'grid',
-                                gridTemplateColumns: '1fr 200px',
-                                gap: '20px',
-                                alignItems: 'flex-start',
-                            }}
-                        >
+                        <div className="grid grid-cols-[1fr_200px] gap-5 items-start">
                             <div>
                                 <FileDropzone
                                     label="Giấy tờ *"
@@ -357,117 +206,46 @@ export default function GiayDkkdPage() {
                                     onChange={setFile1}
                                     disabled={saving}
                                 />
-                                <div style={{ marginTop: '12px' }}>
-                                    <p
-                                        style={{
-                                            fontSize: '12px',
-                                            color: '#ef4444',
-                                            margin: '0 0 4px',
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: '6px',
-                                        }}
-                                    >
-                                        <AlertCircle size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
-                                        Các văn bản đăng tải cần đầy đủ các mặt và không có dấu hiệu chỉnh sửa/cắt thông
-                                        tin
+                                <div className="mt-3 flex flex-col gap-1">
+                                    <p className="text-xs text-red-500 m-0 flex items-start gap-1.5">
+                                        <AlertCircle size={13} className="shrink-0 mt-0.5" />
+                                        Các văn bản đăng tải cần đầy đủ các mặt và không có dấu hiệu chỉnh sửa/cắt thông tin
                                     </p>
-                                    <p
-                                        style={{
-                                            fontSize: '12px',
-                                            color: '#ef4444',
-                                            margin: 0,
-                                            display: 'flex',
-                                            alignItems: 'flex-start',
-                                            gap: '6px',
-                                        }}
-                                    >
-                                        <AlertCircle size={13} style={{ flexShrink: 0, marginTop: '1px' }} />
-                                        Vui lòng đăng tải Giấy đăng ký doanh nghiệp có thông tin trùng khớp với dữ liệu
-                                        của doanh nghiệp theo Trang thông tin điện tử của Cục Thuế
+                                    <p className="text-xs text-red-500 m-0 flex items-start gap-1.5">
+                                        <AlertCircle size={13} className="shrink-0 mt-0.5" />
+                                        Vui lòng đăng tải Giấy đăng ký doanh nghiệp có thông tin trùng khớp với dữ liệu của doanh nghiệp theo Trang thông tin điện tử của Cục Thuế
                                     </p>
                                 </div>
                             </div>
-                            <div style={{ textAlign: 'center' }}>
-                                <p style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', margin: '0 0 8px' }}>
-                                    Minh họa
-                                </p>
-                                <Image
-                                    src={sampleLicence}
-                                    alt="Minh họa ĐKKD"
-                                    style={{
-                                        width: '100%',
-                                        height: 'auto',
-                                        borderRadius: '8px',
-                                        border: '1px solid #e5e7eb',
-                                    }}
-                                />
+                            <div className="text-center">
+                                <p className="text-xs font-semibold text-slate-500 m-0 mb-2">Minh họa</p>
+                                <Image src={sampleLicence} alt="Minh họa ĐKKD" className="w-full h-auto rounded-lg border border-slate-200" />
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Option 2 */}
+                {/* Option 2 — DELEGATION */}
                 <div
                     onClick={() => setDocType('DELEGATION')}
-                    style={{
-                        border: `2px solid ${docType === 'DELEGATION' ? GREEN : '#e5e7eb'}`,
-                        borderRadius: '12px',
-                        padding: '20px',
-                        cursor: 'pointer',
-                        background: docType === 'DELEGATION' ? '#f0fdf4' : 'white',
-                        transition: 'all 0.15s',
-                    }}
+                    className={cn(
+                        'border-2 rounded-xl p-5 cursor-pointer transition-all',
+                        docType === 'DELEGATION' ? 'border-green-500 bg-green-50' : 'border-slate-200 bg-white hover:border-slate-300'
+                    )}
                 >
-                    <div
-                        style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '10px',
-                            marginBottom: docType === 'DELEGATION' ? '20px' : 0,
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: '18px',
-                                height: '18px',
-                                borderRadius: '50%',
-                                border: `2px solid ${docType === 'DELEGATION' ? GREEN : '#d1d5db'}`,
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                flexShrink: 0,
-                                background: docType === 'DELEGATION' ? GREEN : 'white',
-                            }}
-                        >
-                            {docType === 'DELEGATION' && (
-                                <div
-                                    style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'white' }}
-                                />
-                            )}
-                        </div>
-                        <span style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>
-                            Giấy ủy quyền và Giấy tờ tạm danh
-                        </span>
+                    <div className={cn('flex items-center gap-2.5', docType === 'DELEGATION' ? 'mb-5' : 'mb-0')}>
+                        <RadioDot selected={docType === 'DELEGATION'} />
+                        <span className="text-sm font-semibold text-slate-900">Giấy ủy quyền và Giấy tờ tạm danh</span>
                     </div>
 
                     {docType === 'DELEGATION' && (
                         <div>
-                            <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 16px' }}>
-                                Dùng khi người đại diện không phải giám đốc/chủ doanh nghiệp. Cần cung cấp cả Giấy ủy
-                                quyền lẫn CCCD/Hộ chiếu.
+                            <p className="text-sm text-slate-500 m-0 mb-4">
+                                Dùng khi người đại diện không phải giám đốc/chủ doanh nghiệp. Cần cung cấp cả Giấy ủy quyền lẫn CCCD/Hộ chiếu.
                             </p>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                {/* Giấy ủy quyền */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                                 <div>
-                                    <div
-                                        style={{
-                                            display: 'grid',
-                                            gridTemplateColumns: '1fr 140px',
-                                            gap: '12px',
-                                            marginBottom: '12px',
-                                        }}
-                                    >
+                                    <div className="grid grid-cols-[1fr_140px] gap-3">
                                         <FileDropzone
                                             label="Giấy ủy quyền *"
                                             accept="image/jpeg,image/jpg,image/png,.pdf"
@@ -475,33 +253,14 @@ export default function GiayDkkdPage() {
                                             onChange={setFile1}
                                             disabled={saving}
                                         />
-                                        <div style={{ textAlign: 'center' }}>
-                                            <p
-                                                style={{
-                                                    fontSize: '11px',
-                                                    fontWeight: '600',
-                                                    color: '#6b7280',
-                                                    margin: '0 0 6px',
-                                                }}
-                                            >
-                                                Minh họa
-                                            </p>
-                                            <Image
-                                                src={authorityPaper}
-                                                alt="Giấy ủy quyền mẫu"
-                                                style={{
-                                                    width: '100%',
-                                                    height: 'auto',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid #e5e7eb',
-                                                }}
-                                            />
+                                        <div className="text-center">
+                                            <p className="text-[11px] font-semibold text-slate-500 m-0 mb-1.5">Minh họa</p>
+                                            <Image src={authorityPaper} alt="Giấy ủy quyền mẫu" className="w-full h-auto rounded-md border border-slate-200" />
                                         </div>
                                     </div>
                                 </div>
-                                {/* CCCD */}
                                 <div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px', gap: '12px' }}>
+                                    <div className="grid grid-cols-[1fr_140px] gap-3">
                                         <FileDropzone
                                             label="CCCD / Hộ chiếu *"
                                             accept="image/jpeg,image/jpg,image/png,.pdf"
@@ -509,27 +268,9 @@ export default function GiayDkkdPage() {
                                             onChange={setFile2}
                                             disabled={saving}
                                         />
-                                        <div style={{ textAlign: 'center' }}>
-                                            <p
-                                                style={{
-                                                    fontSize: '11px',
-                                                    fontWeight: '600',
-                                                    color: '#6b7280',
-                                                    margin: '0 0 6px',
-                                                }}
-                                            >
-                                                Minh họa
-                                            </p>
-                                            <Image
-                                                src={identitySample}
-                                                alt="CCCD mẫu"
-                                                style={{
-                                                    width: '100%',
-                                                    height: 'auto',
-                                                    borderRadius: '6px',
-                                                    border: '1px solid #e5e7eb',
-                                                }}
-                                            />
+                                        <div className="text-center">
+                                            <p className="text-[11px] font-semibold text-slate-500 m-0 mb-1.5">Minh họa</p>
+                                            <Image src={identitySample} alt="CCCD mẫu" className="w-full h-auto rounded-md border border-slate-200" />
                                         </div>
                                     </div>
                                 </div>
@@ -538,37 +279,23 @@ export default function GiayDkkdPage() {
                     )}
                 </div>
 
-                {/* Save button */}
-                <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'flex-end' }}>
+                {/* Save */}
+                <div className="mt-6 flex justify-end">
                     <button
                         onClick={handleSave}
                         disabled={saving || !file1}
-                        style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            background: saving || !file1 ? '#86efac' : `linear-gradient(135deg, ${GREEN}, #00934a)`,
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '10px',
-                            padding: '12px 32px',
-                            fontSize: '14px',
-                            fontWeight: '700',
-                            cursor: saving || !file1 ? 'not-allowed' : 'pointer',
-                            boxShadow: saving || !file1 ? 'none' : '0 4px 12px rgba(0,177,79,0.3)',
-                        }}
-                    >
-                        {saving ? (
-                            <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />
-                        ) : (
-                            <Check size={16} />
+                        className={cn(
+                            'inline-flex items-center gap-2 text-white border-none rounded-xl px-8 py-3 text-sm font-bold transition-all',
+                            saving || !file1
+                                ? 'bg-green-200 cursor-not-allowed'
+                                : 'bg-gradient-to-r from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.3)] cursor-pointer hover:opacity-90'
                         )}
+                    >
+                        {saving ? <Loader size={16} className="animate-spin" /> : <Check size={16} />}
                         {saving ? 'Đang gửi...' : 'Lưu'}
                     </button>
                 </div>
             </div>
-
-            <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
     );
 }

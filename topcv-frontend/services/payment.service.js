@@ -5,9 +5,12 @@ export const paymentService = {
 
     getStatus: (orderId) => api.get(`/payments/status/${orderId}`),
 
+    confirmMoMo: (params) => api.post('/payments/momo/confirm', params),
+    confirmZaloPay: (params) => api.post('/payments/zalopay/confirm', params),
     verifyVNPay: (params) => api.post('/payments/vnpay/verify', params),
 
     getMyPlan: () => api.get('/payments/my-plan'),
+    getMyHistory: (params) => api.get('/payments/my-history', { params }),
 };
 
 export const PLAN_LIMITS = {

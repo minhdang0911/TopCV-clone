@@ -172,7 +172,7 @@ export class PaymentsService {
     });
     const data = await res.json() as any;
     if (data.resultCode === 0) return 'SUCCESS';
-    if (data.resultCode === 9000 || data.resultCode === 7000) return 'PENDING';
+    if ([1000, 7000, 7002, 9000].includes(data.resultCode)) return 'PENDING';
     return 'FAILED';
   }
 
@@ -194,6 +194,77 @@ export class PaymentsService {
     if (result.return_code === 1) return 'SUCCESS';
     if (result.return_code === 3) return 'PENDING';
     return 'FAILED';
+  }
+
+  // ─── MoMo confirm redirect ─────────────────────────────────────────────────
+
+  async confirmMoMo(userId: string, params: Record<string, string>) {
+    const accessKey = this.config.get('MOMO_ACCESS_KEY');
+    const secretKey = this.config.get('MOMO_SECRET_KEY');
+    const { signature, ...rest } = params;
+
+    const rawSig = [
+      `accessKey=${accessKey}`,
+      `amount=${rest.amount}`,
+      `extraData=${rest.extraData ?? ''}`,
+      `message=${rest.message ?? ''}`,
+      `orderId=${rest.orderId}`,
+      `orderInfo=${rest.orderInfo ?? ''}`,
+      `orderType=${rest.orderType ?? ''}`,
+      `partnerCode=${rest.partnerCode}`,
+      `payType=${rest.payType ?? ''}`,
+      `requestId=${rest.requestId}`,
+      `responseTime=${rest.responseTime ?? ''}`,
+      `resultCode=${rest.resultCode}`,
+      `transId=${rest.transId ?? ''}`,
+    ].join('&');
+    const expected = this.hmac256(rawSig, secretKey);
+
+    if (signature !== expected) return { status: 'INVALID_SIGNATURE' };
+
+    const orderId = rest.orderId;
+    const payment = await this.prisma.payment.findUnique({ where: { orderId } });
+    if (!payment) return { status: 'NOT_FOUND' };
+    if (payment.userId !== userId) return { status: 'FORBIDDEN' };
+    if (payment.status === 'SUCCESS') return { status: 'SUCCESS', plan: payment.plan };
+
+    if (rest.resultCode === '0') {
+      await this.activatePlan(payment);
+      return { status: 'SUCCESS', plan: payment.plan };
+    }
+
+    await this.prisma.payment.update({ where: { orderId }, data: { status: 'FAILED' } });
+    return { status: 'FAILED' };
+  }
+
+  // ─── ZaloPay confirm redirect ──────────────────────────────────────────────
+
+  async confirmZaloPay(userId: string, params: Record<string, string>) {
+    const orderId = params.apptransid
+      ? await this.findOrderByAppTransId(params.apptransid)
+      : params.orderId;
+
+    if (!orderId) return { status: 'NOT_FOUND' };
+    const payment = await this.prisma.payment.findUnique({ where: { orderId } });
+    if (!payment) return { status: 'NOT_FOUND' };
+    if (payment.userId !== userId) return { status: 'FORBIDDEN' };
+    if (payment.status === 'SUCCESS') return { status: 'SUCCESS', plan: payment.plan };
+
+    if (params.status === '1') {
+      await this.activatePlan(payment);
+      return { status: 'SUCCESS', plan: payment.plan };
+    }
+
+    await this.prisma.payment.update({ where: { orderId }, data: { status: 'FAILED' } });
+    return { status: 'FAILED' };
+  }
+
+  private async findOrderByAppTransId(appTransId: string): Promise<string | null> {
+    const payment = await this.prisma.payment.findFirst({
+      where: { gatewayData: { path: ['appTransId'], equals: appTransId } },
+      select: { orderId: true },
+    });
+    return payment?.orderId ?? null;
   }
 
   // ─── VNPay verify ──────────────────────────────────────────────────────────
@@ -224,6 +295,11 @@ export class PaymentsService {
   // ─── Activate plan ─────────────────────────────────────────────────────────
 
   private async activatePlan(payment: any) {
+    if (payment.plan?.startsWith('VIEW_APPLICANTS:')) {
+      await this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'SUCCESS' } });
+      return;
+    }
+
     const months = payment.plan === 'PREMIUM' ? 12 : 1;
     const expiresAt = new Date();
     expiresAt.setMonth(expiresAt.getMonth() + months);
@@ -232,6 +308,36 @@ export class PaymentsService {
       this.prisma.user.update({ where: { id: payment.userId }, data: { plan: payment.plan, planExpiresAt: expiresAt } }),
       this.prisma.payment.update({ where: { id: payment.id }, data: { status: 'SUCCESS' } }),
     ]);
+  }
+
+  // ─── View job applicants ───────────────────────────────────────────────────
+
+  async createViewJob(userId: string, jobId: string, gateway: string) {
+    const plan = `VIEW_APPLICANTS:${jobId}`;
+    const existing = await this.prisma.payment.findFirst({
+      where: { userId, plan, status: 'SUCCESS' },
+    });
+    if (existing) throw new ForbiddenException('Bạn đã mua quyền xem việc làm này');
+
+    const gwUp = gateway.toUpperCase();
+    const orderId = this.generateOrderId(`TOPCVVJ`);
+    const planCfg = { amount: 10000, label: 'Xem số người ứng tuyển' };
+
+    await this.prisma.payment.create({
+      data: { userId, gateway: gwUp, orderId, amount: planCfg.amount, plan },
+    });
+
+    if (gwUp === 'MOMO') return this.createMoMo(orderId, planCfg);
+    if (gwUp === 'ZALOPAY') return this.createZaloPay(orderId, planCfg);
+    if (gwUp === 'VNPAY') return this.createVNPay(orderId, planCfg);
+    throw new ForbiddenException('Cổng thanh toán không hợp lệ');
+  }
+
+  async checkViewJobPurchased(userId: string, jobId: string) {
+    const payment = await this.prisma.payment.findFirst({
+      where: { userId, plan: `VIEW_APPLICANTS:${jobId}`, status: 'SUCCESS' },
+    });
+    return !!payment;
   }
 
   // ─── My plan ───────────────────────────────────────────────────────────────
@@ -245,5 +351,43 @@ export class PaymentsService {
       return { plan: 'FREE', planExpiresAt: null };
     }
     return { plan: user.plan ?? 'FREE', planExpiresAt: user.planExpiresAt };
+  }
+
+  // ─── My history ────────────────────────────────────────────────────────────
+
+  async getMyHistory(userId: string, opts: { page: number; pageSize: number; startDate?: string; endDate?: string }) {
+    const { page, pageSize, startDate, endDate } = opts;
+    const skip = (page - 1) * pageSize;
+
+    const where: any = { userId };
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) where.createdAt.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        end.setHours(23, 59, 59, 999);
+        where.createdAt.lte = end;
+      }
+    }
+
+    const [total, payments] = await this.prisma.$transaction([
+      this.prisma.payment.count({ where }),
+      this.prisma.payment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: pageSize,
+        select: { id: true, orderId: true, plan: true, amount: true, gateway: true, status: true, createdAt: true },
+      }),
+    ]);
+
+    return { data: payments, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+  }
+
+  async getJobApplicantCount(userId: string, jobId: string) {
+    const paid = await this.checkViewJobPurchased(userId, jobId);
+    if (!paid) throw new ForbiddenException('Bạn chưa mua quyền xem số ứng tuyển của việc làm này');
+    const count = await this.prisma.application.count({ where: { jobId } });
+    return { count };
   }
 }

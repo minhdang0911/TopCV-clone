@@ -5,10 +5,8 @@ import { History, LogIn, LogOut, UserPlus, Shield, Globe } from 'lucide-react';
 import api from '@/lib/axios';
 import DateRangePicker from '@/components/DateRangePicker';
 
-const GREEN = '#00b14f';
-
 const ACTION_META = {
-  LOGIN:    { label: 'Đăng nhập',                    icon: LogIn,    color: GREEN },
+  LOGIN:    { label: 'Đăng nhập',                    icon: LogIn,    color: '#00b14f' },
   LOGOUT:   { label: 'Đăng xuất',                    icon: LogOut,   color: '#64748b' },
   REGISTER: { label: 'Đăng ký tài khoản thành công', icon: UserPlus, color: '#3b82f6' },
 };
@@ -47,7 +45,7 @@ export default function LichSuHoatDongPage() {
   const [range, setRange] = useState({ start: today0(), end: today0() });
   const [total, setTotal] = useState(0);
 
-  const fetch = useCallback(async (r) => {
+  const fetchLogs = useCallback(async (r) => {
     setLoading(true);
     try {
       const params = new URLSearchParams({ limit: '200' });
@@ -70,11 +68,11 @@ export default function LichSuHoatDongPage() {
     }
   }, []);
 
-  useEffect(() => { fetch(range); }, []);
+  useEffect(() => { fetchLogs(range); }, []); // eslint-disable-line
 
   const handleRangeChange = (r) => {
     setRange(r);
-    fetch(r);
+    fetchLogs(r);
   };
 
   const groups = groupByDate(logs);
@@ -82,10 +80,10 @@ export default function LichSuHoatDongPage() {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
+      <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
         <div>
-          <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Lịch sử hoạt động</h2>
-          <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>
+          <h2 className="text-base font-extrabold text-slate-900 m-0">Lịch sử hoạt động</h2>
+          <p className="text-sm text-slate-500 mt-1 mb-0">
             {total > 0 ? `${total} hoạt động` : 'Chưa có hoạt động nào'}
           </p>
         </div>
@@ -93,53 +91,41 @@ export default function LichSuHoatDongPage() {
       </div>
 
       {/* Content */}
-      <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#94a3b8', fontSize: '14px' }}>
-            Đang tải...
-          </div>
+          <div className="py-12 text-center text-slate-400 text-sm">Đang tải...</div>
         ) : groups.length === 0 ? (
-          <div style={{ padding: '64px 24px', textAlign: 'center' }}>
-            <History size={40} color="#d1d5db" style={{ margin: '0 auto 12px' }} />
-            <p style={{ fontSize: '14px', color: '#94a3b8', margin: 0 }}>Không có hoạt động nào trong khoảng thời gian này</p>
+          <div className="py-16 px-6 text-center">
+            <History size={40} className="text-slate-300 mx-auto mb-3" />
+            <p className="text-sm text-slate-400 m-0">Không có hoạt động nào trong khoảng thời gian này</p>
           </div>
         ) : (
           groups.map(([date, items], gi) => (
             <div key={date}>
-              {/* Date header */}
-              <div style={{ padding: '12px 20px', background: '#f8fafc', borderBottom: '1px solid #f1f5f9', borderTop: gi > 0 ? '1px solid #e2e8f0' : 'none' }}>
-                <span style={{ fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{date}</span>
+              <div className={`px-5 py-3 bg-slate-50 border-b border-slate-100 ${gi > 0 ? 'border-t border-slate-200' : ''}`}>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{date}</span>
               </div>
-
-              {/* Log items */}
               {items.map((log, i) => {
                 const meta = getMeta(log.action);
                 const Icon = meta.icon;
                 return (
                   <div
                     key={log.id}
-                    style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '14px 20px', borderBottom: i < items.length - 1 ? '1px solid #f8fafc' : 'none' }}
+                    className={`flex items-center gap-4 px-5 py-3.5 ${i < items.length - 1 ? 'border-b border-slate-50' : ''}`}
                   >
-                    {/* Time */}
-                    <div style={{ width: '44px', flexShrink: 0 }}>
-                      <span style={{ fontSize: '13px', fontWeight: '700', color: GREEN }}>{fmtTime(log.createdAt)}</span>
+                    <div className="w-11 shrink-0">
+                      <span className="text-sm font-bold text-green-600">{fmtTime(log.createdAt)}</span>
                     </div>
-
-                    {/* Icon */}
-                    <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: `${meta.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: `${meta.color}18` }}>
                       <Icon size={16} color={meta.color} />
                     </div>
-
-                    {/* Description */}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ fontSize: '13px', color: '#0f172a', fontWeight: '500' }}>{meta.label}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-slate-900 font-medium">{meta.label}</span>
                     </div>
-
-                    {/* IP */}
                     {log.ipAddress && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', flexShrink: 0 }}>
-                        <Globe size={12} color="#94a3b8" />
-                        <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>{log.ipAddress}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Globe size={12} className="text-slate-400" />
+                        <span className="text-xs text-slate-400 font-mono">{log.ipAddress}</span>
                       </div>
                     )}
                   </div>

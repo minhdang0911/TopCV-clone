@@ -33,11 +33,12 @@ export class ApplicationsService {
   private async attachCoverLetterFiles(items: any[]) {
     const ids = items.map((a) => a.id);
     if (!ids.length) return;
-    const rows = await this.sql`
-      SELECT id, cover_letter_file_url FROM applications WHERE id = ANY(${ids}::text[])
-    `;
+    const rows = await (this.prisma as any).application.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, coverLetterFileUrl: true },
+    });
     const map: Record<string, string | null> = {};
-    for (const r of rows) map[r.id] = r.cover_letter_file_url ?? null;
+    for (const r of rows) map[r.id] = r.coverLetterFileUrl ?? null;
     for (const item of items) item.coverLetterFileUrl = map[item.id] ?? null;
   }
 
@@ -69,21 +70,13 @@ export class ApplicationsService {
         cvFileUrl: cvFileUrl || null,
         coverLetter: coverLetter || null,
         coverLetterId: coverLetterId || null,
+        coverLetterFileUrl: coverLetterFileUrl || null,
         status: 'PENDING',
       },
       include: {
         job: { select: { id: true, title: true } },
       },
     });
-
-    // Persist cover letter file URL (not in Prisma schema — raw SQL)
-    if (coverLetterFileUrl) {
-      await this.sql`
-        UPDATE applications SET cover_letter_file_url = ${coverLetterFileUrl}
-        WHERE id = ${application.id}
-      `;
-      application.coverLetterFileUrl = coverLetterFileUrl;
-    }
 
     // Notify employer in real-time (fire-and-forget)
     (this.prisma as any).employerProfile

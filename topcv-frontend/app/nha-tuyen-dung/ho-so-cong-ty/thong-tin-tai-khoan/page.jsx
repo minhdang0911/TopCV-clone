@@ -2,24 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Phone, Building2, FileText, CheckCircle, Circle, ArrowRight, Loader, Save } from 'lucide-react';
+import { Phone, Building2, FileText, CheckCircle, ArrowRight, Loader, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
+import { cn } from '@/lib/utils';
 
 const GREEN = '#00b14f';
 
-const inputStyle = {
-    width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0',
-    borderRadius: '10px', fontSize: '14px', color: '#0f172a',
-    outline: 'none', background: '#fafafa', boxSizing: 'border-box',
-};
-
 const STEPS = [
-    { key: 'step1', label: 'Xác thực số điện thoại', href: '/nha-tuyen-dung/ho-so-cong-ty/xac-thuc-sdt', icon: Phone },
-    { key: 'step2', label: 'Cập nhật thông tin công ty', href: '/nha-tuyen-dung/ho-so-cong-ty', icon: Building2 },
-    { key: 'step3', label: 'Xác thực Giấy đăng ký doanh nghiệp', href: '/nha-tuyen-dung/ho-so-cong-ty/giay-dkkd', icon: FileText },
+    { key: 'step1', label: 'Xác thực số điện thoại',             href: '/nha-tuyen-dung/ho-so-cong-ty/xac-thuc-sdt', icon: Phone },
+    { key: 'step2', label: 'Cập nhật thông tin công ty',          href: '/nha-tuyen-dung/ho-so-cong-ty',             icon: Building2 },
+    { key: 'step3', label: 'Xác thực Giấy đăng ký doanh nghiệp', href: '/nha-tuyen-dung/ho-so-cong-ty/giay-dkkd',   icon: FileText },
 ];
+
+const fieldCls = 'w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm text-slate-900 outline-none bg-slate-50 box-border focus:border-green-400 focus:bg-white transition-colors';
 
 export default function ThongTinTaiKhoanPage() {
     const { user, setUser } = useAuthStore();
@@ -52,46 +49,48 @@ export default function ThongTinTaiKhoanPage() {
 
     return (
         <div>
-            <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Thông tin tài khoản</h2>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>Cập nhật thông tin cá nhân và trạng thái xác thực tài khoản</p>
+            <div className="mb-5">
+                <h2 className="text-base font-extrabold text-slate-900 m-0">Thông tin tài khoản</h2>
+                <p className="text-sm text-slate-500 mt-1">Cập nhật thông tin cá nhân và trạng thái xác thực tài khoản</p>
             </div>
 
             {/* Verification checklist */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '24px', border: '1px solid #e2e8f0', marginBottom: '16px', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm mb-4">
+                <div className="flex items-center justify-between mb-3">
                     <div>
-                        <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', margin: 0 }}>Xác thực thông tin</h3>
-                        <p style={{ fontSize: '12px', color: '#64748b', margin: '3px 0 0' }}>
+                        <h3 className="text-sm font-bold text-slate-900 m-0">Xác thực thông tin</h3>
+                        <p className="text-xs text-slate-500 mt-1 m-0">
                             Tài khoản xác thực:{' '}
-                            <span style={{ fontWeight: '700', color: levelColor }}>Cấp {level}/3</span>
+                            <span className="font-bold" style={{ color: levelColor }}>Cấp {level}/3</span>
                         </p>
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: '700', color: levelColor }}>Hoàn thành {pct}%</div>
+                    <div className="text-sm font-bold" style={{ color: levelColor }}>Hoàn thành {pct}%</div>
                 </div>
 
-                {/* Progress bar */}
-                <div style={{ height: '4px', background: '#f1f5f9', borderRadius: '2px', marginBottom: '16px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', width: `${pct}%`, background: canPost ? GREEN : '#f59e0b', borderRadius: '2px', transition: 'width 0.4s ease' }} />
+                <div className="h-1 bg-slate-100 rounded-full mb-4 overflow-hidden">
+                    <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct}%`, background: canPost ? GREEN : '#f59e0b' }}
+                    />
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div className="flex flex-col gap-2">
                     {STEPS.map(s => {
                         const done = vstatus?.[s.key]?.done;
                         const Icon = s.icon;
                         return (
-                            <Link key={s.key} href={s.href} style={{ textDecoration: 'none' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', border: `1px solid ${done ? '#d1fae5' : '#f3f4f6'}`, background: done ? '#f0fdf4' : '#fafafa', transition: 'all 0.12s', cursor: 'pointer' }}
-                                    onMouseEnter={e => e.currentTarget.style.borderColor = done ? '#86efac' : '#e5e7eb'}
-                                    onMouseLeave={e => e.currentTarget.style.borderColor = done ? '#d1fae5' : '#f3f4f6'}
-                                >
-                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: done ? '#dcfce7' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                            <Link key={s.key} href={s.href} className="no-underline">
+                                <div className={cn(
+                                    'flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-colors cursor-pointer',
+                                    done ? 'border-green-100 bg-green-50 hover:border-green-200' : 'border-slate-100 bg-slate-50 hover:border-slate-200'
+                                )}>
+                                    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0', done ? 'bg-green-100' : 'bg-slate-100')}>
                                         <Icon size={15} color={done ? GREEN : '#94a3b8'} />
                                     </div>
-                                    <span style={{ flex: 1, fontSize: '13px', fontWeight: '500', color: done ? '#166534' : '#374151' }}>{s.label}</span>
+                                    <span className={cn('flex-1 text-sm font-medium', done ? 'text-green-800' : 'text-slate-700')}>{s.label}</span>
                                     {done
                                         ? <CheckCircle size={18} color={GREEN} />
-                                        : <ArrowRight size={16} color="#94a3b8" />
+                                        : <ArrowRight size={16} className="text-slate-400" />
                                     }
                                 </div>
                             </Link>
@@ -100,41 +99,34 @@ export default function ThongTinTaiKhoanPage() {
                 </div>
             </div>
 
-            {/* Personal account info */}
-            <div style={{ background: 'white', borderRadius: '14px', padding: '24px', border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', paddingBottom: '14px', borderBottom: '1px solid #f1f5f9' }}>
-                    <h3 style={{ fontSize: '14px', fontWeight: '700', color: '#0f172a', margin: 0 }}>Cập nhật thông tin tài khoản</h3>
-                </div>
+            {/* Account info */}
+            <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                <h3 className="text-sm font-bold text-slate-900 m-0 mb-5 pb-3.5 border-b border-slate-100">Cập nhật thông tin tài khoản</h3>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
                     <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>Email</label>
-                        <input value={user?.email || ''} disabled style={{ ...inputStyle, background: '#f8fafc', color: '#94a3b8', cursor: 'not-allowed' }} />
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+                        <input value={user?.email || ''} disabled className={cn(fieldCls, 'text-slate-400 cursor-not-allowed')} />
                     </div>
                     <div>
-                        <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>Số điện thoại</label>
-                        <input
-                            value={phone}
-                            onChange={e => setPhone(e.target.value)}
-                            placeholder="0912345678"
-                            style={inputStyle}
-                        />
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Số điện thoại</label>
+                        <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0912345678" className={fieldCls} />
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <div className="flex justify-end">
                     <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: saving ? '#86efac' : `linear-gradient(135deg, ${GREEN}, #00934a)`, color: 'white', border: 'none', borderRadius: '10px', padding: '10px 24px', fontSize: '13px', fontWeight: '700', cursor: saving ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,177,79,0.25)' }}
+                        onClick={handleSave} disabled={saving}
+                        className={cn(
+                            'inline-flex items-center gap-1.5 text-white border-none rounded-xl px-6 py-2.5 text-sm font-bold transition-opacity',
+                            saving ? 'bg-green-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.25)] cursor-pointer hover:opacity-90'
+                        )}
                     >
-                        {saving ? <Loader size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Save size={14} />}
+                        {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
                         {saving ? 'Đang lưu...' : 'Lưu'}
                     </button>
                 </div>
             </div>
-
-            <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
     );
 }

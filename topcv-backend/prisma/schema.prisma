@@ -92,6 +92,7 @@ model User {
   sentMessages             Message[]                   @relation("SentMessages")
   connectsAsCandidate      EmployerCandidateConnect[]  @relation("ConnectCandidate")
   jobAlerts                JobAlert[]
+  feedbacks                Feedback[]
 
   @@map("users")
 }
@@ -131,6 +132,13 @@ model EmployerProfile {
   createdAt   DateTime @default(now()) @map("created_at")
 
   emailNotificationEnabled Boolean @default(false) @map("email_notification_enabled")
+
+  phoneVerified          Boolean  @default(false) @map("phone_verified")
+  businessDocType        String?  @map("business_doc_type")   // REGISTRATION | DELEGATION
+  businessDocUrl         String?  @map("business_doc_url")    // ĐKKD hoặc Giấy ủy quyền
+  businessDocUrl2        String?  @map("business_doc_url2")   // CCCD (chỉ khi DELEGATION)
+  businessDocStatus      String?  @map("business_doc_status") // PENDING | APPROVED | REJECTED
+  businessDocRejectReason String? @map("business_doc_reject_reason")
 
   user           User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
   industry       Industry?                  @relation(fields: [industryId], references: [id])
@@ -270,9 +278,10 @@ model Application {
   locationId      String?           @map("location_id")
   resumeId        String?           @map("resume_id")
   cvFileUrl       String?           @map("cv_file_url")
-  coverLetter     String?           @map("cover_letter") @db.Text
-  coverLetterId   String?           @map("cover_letter_id")
-  status          ApplicationStatus @default(PENDING)
+  coverLetter        String?           @map("cover_letter") @db.Text
+  coverLetterId      String?           @map("cover_letter_id")
+  coverLetterFileUrl String?           @map("cover_letter_file_url")
+  status             ApplicationStatus @default(PENDING)
   note            String?           @db.Text
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
@@ -448,4 +457,19 @@ model JobAlert {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("job_alerts")
+}
+model Feedback {
+  id          String    @id @default(uuid())
+  userId      String    @map("user_id")
+  topic       String
+  description String
+  rating      Int
+  replyText   String?   @map("reply_text")
+  repliedAt   DateTime? @map("replied_at")
+  repliedBy   String?   @map("replied_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("feedbacks")
 }

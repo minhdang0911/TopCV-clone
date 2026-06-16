@@ -8,7 +8,10 @@ import {
     DollarSign, Calendar, LayoutList, LayoutGrid,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
+import ViewApplicantButton from '@/components/ViewApplicantButton';
 
 const GREEN = '#00b14f';
 
@@ -17,16 +20,16 @@ function formatDeadline(date) {
     const d = new Date(date);
     const diff = Math.ceil((d.getTime() - Date.now()) / 86400000);
     const label = d.toLocaleDateString('vi-VN');
-    if (diff < 0) return { text: `${label}`, color: '#ef4444' };
-    if (diff <= 3) return { text: `${label} (${diff}n)`, color: '#f97316' };
-    return { text: label, color: '#64748b' };
+    if (diff < 0) return { text: label, cls: 'text-red-500' };
+    if (diff <= 3) return { text: `${label} (${diff}n)`, cls: 'text-orange-500' };
+    return { text: label, cls: 'text-slate-500' };
 }
 
 function statusInfo(job) {
     const isExpired = job.deadline && new Date(job.deadline) < new Date();
-    if (!job.isActive) return { label: 'Tạm ẩn', color: '#d97706', bg: '#fef3c7' };
-    if (isExpired) return { label: 'Hết hạn', color: '#ef4444', bg: '#fee2e2' };
-    return { label: 'Đang hiển thị', color: GREEN, bg: '#dcfce7' };
+    if (!job.isActive) return { label: 'Tạm ẩn',       cls: 'bg-amber-50 text-amber-700 border-amber-200' };
+    if (isExpired)    return { label: 'Hết hạn',        cls: 'bg-red-50 text-red-600 border-red-200' };
+    return                  { label: 'Đang hiển thị',  cls: 'bg-green-50 text-green-700 border-green-200' };
 }
 
 function salaryText(job) {
@@ -41,110 +44,75 @@ function locationText(job) {
         : job.provinceName || null;
 }
 
-// ── Table view ─────────────────────────────────────────────────────────────────
+// Table view
 function JobTable({ jobs, onToggle, onDelete, toggling, deleting }) {
     return (
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                <thead>
-                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        {['Tiêu đề', 'Trạng thái', 'Lương', 'Địa điểm', 'Hạn nộp', 'Hành động'].map(h => (
-                            <th key={h} style={{
-                                padding: '10px 14px', textAlign: 'left',
-                                fontSize: '11px', fontWeight: '700', color: '#64748b',
-                                textTransform: 'uppercase', letterSpacing: '0.03em', whiteSpace: 'nowrap',
-                            }}>{h}</th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody>
-                    {jobs.map((job, idx) => {
-                        const st = statusInfo(job);
-                        const deadline = formatDeadline(job.deadline);
-                        const salary = salaryText(job);
-                        const location = locationText(job);
-                        return (
-                            <tr key={job.id} style={{
-                                borderBottom: idx < jobs.length - 1 ? '1px solid #f1f5f9' : 'none',
-                                background: 'white',
-                            }}>
-                                <td style={{ padding: '12px 14px', minWidth: '200px', maxWidth: '280px' }}>
-                                    <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} style={{
-                                        fontWeight: '600', color: '#0f172a', textDecoration: 'none',
-                                        display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                    }}>
-                                        {job.title}
-                                    </Link>
-                                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                                        {new Date(job.createdAt).toLocaleDateString('vi-VN')}
-                                    </div>
-                                </td>
-                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                    <span style={{
-                                        fontSize: '11px', fontWeight: '700', padding: '3px 9px',
-                                        borderRadius: '20px', background: st.bg, color: st.color,
-                                    }}>
-                                        {st.label}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '12px 14px', color: salary ? GREEN : '#d1d5db', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                                    {salary || '—'}
-                                </td>
-                                <td style={{ padding: '12px 14px', color: '#374151', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {location || <span style={{ color: '#d1d5db' }}>—</span>}
-                                </td>
-                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap', color: deadline?.color || '#94a3b8' }}>
-                                    {deadline?.text || '—'}
-                                </td>
-                                <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                                        <button
-                                            onClick={() => onToggle(job.id)}
-                                            disabled={toggling === job.id}
-                                            title={job.isActive ? 'Tạm ẩn' : 'Hiển thị'}
-                                            style={{
-                                                display: 'flex', alignItems: 'center',
-                                                background: 'none', border: 'none',
-                                                cursor: toggling === job.id ? 'not-allowed' : 'pointer',
-                                                color: job.isActive ? GREEN : '#94a3b8', padding: '2px',
-                                            }}
-                                        >
-                                            {job.isActive ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
-                                        </button>
-                                        <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} style={{
-                                            display: 'flex', alignItems: 'center', gap: '4px',
-                                            padding: '5px 10px', borderRadius: '7px',
-                                            border: '1px solid #e2e8f0', color: '#374151',
-                                            textDecoration: 'none', fontSize: '12px', fontWeight: '600',
-                                            background: 'white',
-                                        }}>
-                                            <Pencil size={12} /> Sửa
+        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+            <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-sm">
+                    <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200">
+                            {['Tiêu đề', 'Trạng thái', 'Lương', 'Địa điểm', 'Hạn nộp', 'Hành động'].map(h => (
+                                <th key={h} className="px-3.5 py-2.5 text-left text-[11px] font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {jobs.map((job, idx) => {
+                            const st = statusInfo(job);
+                            const deadline = formatDeadline(job.deadline);
+                            const salary = salaryText(job);
+                            const location = locationText(job);
+                            return (
+                                <tr key={job.id} className={`border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors`}>
+                                    <td className="px-3.5 py-3 min-w-[200px] max-w-[280px]">
+                                        <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} className="font-semibold text-slate-900 no-underline truncate block hover:text-green-600 transition-colors">
+                                            {job.title}
                                         </Link>
-                                        <button
-                                            onClick={() => onDelete(job.id, job.title)}
-                                            disabled={deleting === job.id}
-                                            style={{
-                                                display: 'flex', alignItems: 'center', gap: '4px',
-                                                padding: '5px 10px', borderRadius: '7px',
-                                                border: '1px solid #fee2e2', color: '#ef4444',
-                                                background: '#fff5f5', fontSize: '12px', fontWeight: '600',
-                                                cursor: deleting === job.id ? 'not-allowed' : 'pointer',
-                                            }}
-                                        >
-                                            <Trash2 size={12} /> Xóa
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
+                                        <div className="text-[11px] text-slate-400 mt-0.5">{new Date(job.createdAt).toLocaleDateString('vi-VN')}</div>
+                                    </td>
+                                    <td className="px-3.5 py-3 whitespace-nowrap">
+                                        <Badge variant="outline" className={`text-[11px] font-bold ${st.cls}`}>{st.label}</Badge>
+                                    </td>
+                                    <td className={`px-3.5 py-3 font-semibold whitespace-nowrap ${salary ? 'text-green-600' : 'text-slate-300'}`}>
+                                        {salary || '—'}
+                                    </td>
+                                    <td className="px-3.5 py-3 text-slate-700 max-w-[160px] truncate">{location || <span className="text-slate-300">—</span>}</td>
+                                    <td className={`px-3.5 py-3 whitespace-nowrap text-xs ${deadline?.cls || 'text-slate-400'}`}>{deadline?.text || '—'}</td>
+                                    <td className="px-3.5 py-3 whitespace-nowrap">
+                                        <div className="flex gap-1.5 items-center">
+                                            <button
+                                                onClick={() => onToggle(job.id)}
+                                                disabled={toggling === job.id}
+                                                title={job.isActive ? 'Tạm ẩn' : 'Hiển thị'}
+                                                className={cn('flex items-center bg-none border-none cursor-pointer p-0.5 disabled:opacity-50', job.isActive ? 'text-green-500' : 'text-slate-400')}
+                                            >
+                                                {job.isActive ? <ToggleRight size={22} /> : <ToggleLeft size={22} />}
+                                            </button>
+                                            <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 no-underline text-xs font-semibold bg-white hover:bg-slate-50 transition-colors">
+                                                <Pencil size={12} /> Sửa
+                                            </Link>
+                                            <ViewApplicantButton jobId={job.id} />
+                                            <button
+                                                onClick={() => onDelete(job.id, job.title)}
+                                                disabled={deleting === job.id}
+                                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-100 text-red-500 bg-red-50 text-xs font-semibold cursor-pointer hover:bg-red-100 transition-colors disabled:opacity-50"
+                                            >
+                                                <Trash2 size={12} /> Xóa
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }
 
-// ── Card view ──────────────────────────────────────────────────────────────────
+// Card view
 function JobCard({ job, onToggle, onDelete, toggling, deleting }) {
     const st = statusInfo(job);
     const deadline = formatDeadline(job.deadline);
@@ -152,83 +120,53 @@ function JobCard({ job, onToggle, onDelete, toggling, deleting }) {
     const location = locationText(job);
 
     return (
-        <div style={{
-            background: 'white', borderRadius: '12px',
-            border: '1px solid #e2e8f0',
-            padding: '14px 16px',
-            display: 'flex', flexDirection: 'column', gap: '10px',
-        }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} style={{
-                        fontSize: '14px', fontWeight: '700', color: '#0f172a',
-                        textDecoration: 'none', display: 'block',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    }}>
+        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col gap-2.5 hover:shadow-sm transition-shadow">
+            <div className="flex items-start justify-between gap-2.5">
+                <div className="flex-1 min-w-0">
+                    <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} className="text-sm font-bold text-slate-900 no-underline truncate block hover:text-green-600 transition-colors">
                         {job.title}
                     </Link>
-                    <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '3px' }}>
-                        Đăng ngày {new Date(job.createdAt).toLocaleDateString('vi-VN')}
-                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1">Đăng ngày {new Date(job.createdAt).toLocaleDateString('vi-VN')}</div>
                 </div>
-                <span style={{
-                    fontSize: '11px', fontWeight: '700', padding: '3px 9px',
-                    borderRadius: '20px', background: st.bg, color: st.color, flexShrink: 0,
-                }}>
-                    {st.label}
-                </span>
+                <Badge variant="outline" className={`text-[11px] font-bold shrink-0 ${st.cls}`}>{st.label}</Badge>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div className="flex gap-3 flex-wrap">
                 {salary && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
-                        <DollarSign size={12} color="#9ca3af" />
-                        <span style={{ fontWeight: '600', color: GREEN }}>{salary}</span>
+                    <div className="flex items-center gap-1 text-xs text-green-600 font-semibold">
+                        <DollarSign size={12} className="text-slate-400" />{salary}
                     </div>
                 )}
                 {location && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: '#374151' }}>
-                        <MapPin size={12} color="#9ca3af" />{location}
+                    <div className="flex items-center gap-1 text-xs text-slate-600">
+                        <MapPin size={12} className="text-slate-400" />{location}
                     </div>
                 )}
                 {deadline && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px' }}>
-                        <Calendar size={12} color="#9ca3af" />
-                        <span style={{ color: deadline.color, fontWeight: '500' }}>{deadline.text}</span>
+                    <div className={`flex items-center gap-1 text-xs font-medium ${deadline.cls}`}>
+                        <Calendar size={12} className="text-slate-400" />{deadline.text}
                     </div>
                 )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '6px', borderTop: '1px solid #f1f5f9' }}>
+            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100">
                 <button
                     onClick={() => onToggle(job.id)}
                     disabled={toggling === job.id}
-                    style={{
-                        display: 'flex', alignItems: 'center', gap: '5px',
-                        background: 'none', border: 'none', cursor: toggling === job.id ? 'not-allowed' : 'pointer',
-                        fontSize: '12px', fontWeight: '600', color: job.isActive ? GREEN : '#94a3b8', padding: '4px 0',
-                    }}
+                    className={cn('flex items-center gap-1.5 border-none cursor-pointer text-xs font-semibold bg-transparent p-0 disabled:opacity-50', job.isActive ? 'text-green-500' : 'text-slate-400')}
                 >
                     {job.isActive ? <ToggleRight size={20} /> : <ToggleLeft size={20} />}
                     {job.isActive ? 'Đang hiển thị' : 'Tạm ẩn'}
                 </button>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                    <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} style={{
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                        padding: '5px 10px', borderRadius: '7px', border: '1px solid #e2e8f0',
-                        color: '#374151', textDecoration: 'none', fontSize: '12px', fontWeight: '600', background: 'white',
-                    }}>
+                <div className="flex gap-1.5">
+                    <ViewApplicantButton jobId={job.id} />
+                    <Link href={`/nha-tuyen-dung/dang-tin/${job.id}`} className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 no-underline text-xs font-semibold bg-white hover:bg-slate-50 transition-colors">
                         <Pencil size={12} /> Sửa
                     </Link>
                     <button
                         onClick={() => onDelete(job.id, job.title)}
                         disabled={deleting === job.id}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '4px',
-                            padding: '5px 10px', borderRadius: '7px',
-                            border: '1px solid #fee2e2', color: '#ef4444', background: '#fff5f5',
-                            fontSize: '12px', fontWeight: '600', cursor: deleting === job.id ? 'not-allowed' : 'pointer',
-                        }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-red-100 text-red-500 bg-red-50 text-xs font-semibold cursor-pointer hover:bg-red-100 transition-colors disabled:opacity-50"
                     >
                         <Trash2 size={12} /> Xóa
                     </button>
@@ -238,7 +176,7 @@ function JobCard({ job, onToggle, onDelete, toggling, deleting }) {
     );
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────────
+// Main page
 export default function QuanLyTinPage() {
     const [jobs, setJobs] = useState([]);
     const [meta, setMeta] = useState({ total: 0, totalPages: 1, page: 1 });
@@ -269,11 +207,8 @@ export default function QuanLyTinPage() {
             await employerDashboardService.toggleActive(id);
             fetchJobs();
             toast.success('Đã cập nhật trạng thái tin');
-        } catch {
-            toast.error('Lỗi khi thay đổi trạng thái');
-        } finally {
-            setToggling(null);
-        }
+        } catch { toast.error('Lỗi khi thay đổi trạng thái'); }
+        finally { setToggling(null); }
     };
 
     const handleDelete = async (id, title) => {
@@ -283,84 +218,53 @@ export default function QuanLyTinPage() {
             await employerDashboardService.deleteJob(id);
             fetchJobs();
             toast.success('Đã xoá tin tuyển dụng');
-        } catch {
-            toast.error('Lỗi khi xoá tin');
-        } finally {
-            setDeleting(null);
-        }
+        } catch { toast.error('Lỗi khi xoá tin'); }
+        finally { setDeleting(null); }
     };
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+        <div className="flex flex-col gap-4">
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+            <div className="flex items-center justify-between flex-wrap gap-3">
                 <div>
-                    <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Quản lý tin tuyển dụng</h1>
-                    <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>{meta.total} tin đã đăng</p>
+                    <h1 className="text-xl font-extrabold text-slate-900 m-0">Quản lý tin tuyển dụng</h1>
+                    <p className="text-sm text-slate-500 mt-1">{meta.total} tin đã đăng</p>
                 </div>
-                <Link href="/nha-tuyen-dung/dang-tin" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '7px',
-                    background: `linear-gradient(135deg, ${GREEN}, #00934a)`,
-                    color: 'white', padding: '9px 18px',
-                    borderRadius: '9px', textDecoration: 'none',
-                    fontSize: '14px', fontWeight: '600',
-                }}>
+                <Link href="/nha-tuyen-dung/dang-tin" className="inline-flex items-center gap-2 bg-gradient-to-br from-green-500 to-green-700 text-white px-4 py-2.5 rounded-xl no-underline text-sm font-semibold hover:opacity-90 transition-opacity">
                     <PlusCircle size={16} /> Đăng tin mới
                 </Link>
             </div>
 
             {/* Search + view toggle */}
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <div style={{
-                    flex: 1, display: 'flex', alignItems: 'center', gap: '8px',
-                    background: 'white', border: '1px solid #e2e8f0', borderRadius: '9px',
-                    padding: '8px 14px',
-                }}>
-                    <Search size={15} color="#94a3b8" />
+            <div className="flex gap-2.5 items-center">
+                <div className="flex-1 flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-3.5 py-2">
+                    <Search size={15} className="text-slate-400 shrink-0" />
                     <input
                         value={searchInput}
                         onChange={e => setSearchInput(e.target.value)}
                         onKeyDown={e => { if (e.key === 'Enter') { setSearch(searchInput); setPage(1); } }}
                         placeholder="Tìm theo tiêu đề tin..."
-                        style={{ border: 'none', outline: 'none', flex: 1, fontSize: '14px', color: '#0f172a', background: 'transparent' }}
+                        className="border-none outline-none flex-1 text-sm text-slate-900 bg-transparent"
                     />
                 </div>
                 <button
                     onClick={() => { setSearch(searchInput); setPage(1); }}
-                    style={{
-                        background: GREEN, color: 'white', border: 'none', borderRadius: '9px',
-                        padding: '9px 18px', fontSize: '14px', fontWeight: '600', cursor: 'pointer',
-                    }}
+                    className="bg-green-500 text-white border-none rounded-xl px-4 py-2.5 text-sm font-semibold cursor-pointer hover:bg-green-600 transition-colors"
                 >
                     Tìm
                 </button>
-
-                {/* View toggle */}
-                <div style={{
-                    display: 'flex', border: '1px solid #e2e8f0', borderRadius: '9px',
-                    overflow: 'hidden', background: 'white',
-                }}>
+                <div className="flex border border-slate-200 rounded-xl overflow-hidden bg-white">
                     <button
                         onClick={() => setViewMode('table')}
                         title="Dạng bảng"
-                        style={{
-                            display: 'flex', alignItems: 'center', padding: '8px 12px', border: 'none',
-                            background: viewMode === 'table' ? '#f0fdf4' : 'white',
-                            color: viewMode === 'table' ? GREEN : '#6b7280',
-                            cursor: 'pointer', borderRight: '1px solid #e2e8f0',
-                        }}
+                        className={cn('flex items-center p-2.5 border-none cursor-pointer border-r border-slate-200', viewMode === 'table' ? 'bg-green-50 text-green-600' : 'bg-white text-slate-500 hover:bg-slate-50')}
                     >
                         <LayoutList size={17} />
                     </button>
                     <button
                         onClick={() => setViewMode('card')}
                         title="Dạng thẻ"
-                        style={{
-                            display: 'flex', alignItems: 'center', padding: '8px 12px', border: 'none',
-                            background: viewMode === 'card' ? '#f0fdf4' : 'white',
-                            color: viewMode === 'card' ? GREEN : '#6b7280',
-                            cursor: 'pointer',
-                        }}
+                        className={cn('flex items-center p-2.5 border-none cursor-pointer', viewMode === 'card' ? 'bg-green-50 text-green-600' : 'bg-white text-slate-500 hover:bg-slate-50')}
                     >
                         <LayoutGrid size={17} />
                     </button>
@@ -369,95 +273,50 @@ export default function QuanLyTinPage() {
 
             {/* Content */}
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0', gap: '10px', color: '#94a3b8' }}>
-                    <div style={{ width: '28px', height: '28px', border: '3px solid #e2e8f0', borderTopColor: GREEN, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+                <div className="flex justify-center py-16">
+                    <div className="w-7 h-7 border-[3px] border-slate-200 border-t-green-500 rounded-full animate-spin" />
                 </div>
             ) : !jobs.length ? (
-                <div style={{
-                    textAlign: 'center', padding: '60px 20px',
-                    background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0',
-                }}>
-                    <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
-                        <Briefcase size={26} color="#94a3b8" />
+                <div className="text-center py-16 bg-white rounded-xl border border-slate-200">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                        <Briefcase size={26} className="text-slate-400" />
                     </div>
-                    <p style={{ fontSize: '15px', fontWeight: '700', color: '#374151', margin: '0 0 6px' }}>Chưa có tin tuyển dụng nào</p>
-                    <p style={{ fontSize: '13px', color: '#94a3b8', margin: '0 0 18px' }}>Hãy đăng tin đầu tiên của bạn</p>
-                    <Link href="/nha-tuyen-dung/dang-tin" style={{
-                        display: 'inline-flex', alignItems: 'center', gap: '6px',
-                        background: `linear-gradient(135deg, ${GREEN}, #00934a)`,
-                        color: 'white', padding: '9px 22px',
-                        borderRadius: '9px', textDecoration: 'none', fontSize: '14px', fontWeight: '600',
-                    }}>
+                    <p className="text-base font-bold text-slate-700 m-0 mb-1.5">Chưa có tin tuyển dụng nào</p>
+                    <p className="text-sm text-slate-400 m-0 mb-5">Hãy đăng tin đầu tiên của bạn</p>
+                    <Link href="/nha-tuyen-dung/dang-tin" className="inline-flex items-center gap-1.5 bg-gradient-to-br from-green-500 to-green-700 text-white px-5 py-2.5 rounded-xl no-underline text-sm font-semibold hover:opacity-90 transition-opacity">
                         <PlusCircle size={16} /> Đăng tin ngay
                     </Link>
                 </div>
             ) : viewMode === 'table' ? (
-                <div style={{ overflowX: 'auto' }}>
-                    <JobTable
-                        jobs={jobs}
-                        onToggle={handleToggle}
-                        onDelete={handleDelete}
-                        toggling={toggling}
-                        deleting={deleting}
-                    />
-                </div>
+                <JobTable jobs={jobs} onToggle={handleToggle} onDelete={handleDelete} toggling={toggling} deleting={deleting} />
             ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div className="flex flex-col gap-2.5">
                     {jobs.map(job => (
-                        <JobCard
-                            key={job.id}
-                            job={job}
-                            onToggle={handleToggle}
-                            onDelete={handleDelete}
-                            toggling={toggling}
-                            deleting={deleting}
-                        />
+                        <JobCard key={job.id} job={job} onToggle={handleToggle} onDelete={handleDelete} toggling={toggling} deleting={deleting} />
                     ))}
                 </div>
             )}
 
             {/* Pagination */}
             {meta.totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px' }}>
+                <div className="flex justify-center items-center gap-1.5">
                     <button
                         onClick={() => setPage(p => p - 1)} disabled={page === 1}
-                        style={{
-                            width: '34px', height: '34px', borderRadius: '8px',
-                            border: '1px solid #e2e8f0', background: page === 1 ? '#f8fafc' : 'white',
-                            cursor: page === 1 ? 'default' : 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: page === 1 ? '#cbd5e1' : '#374151',
-                        }}
+                        className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center cursor-pointer disabled:cursor-default disabled:text-slate-300 disabled:bg-slate-50 text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                         <ChevronLeft size={15} />
                     </button>
-                    {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => {
-                        const p = i + 1;
-                        return (
-                            <button key={p} onClick={() => setPage(p)}
-                                style={{
-                                    width: '34px', height: '34px', borderRadius: '8px',
-                                    border: `1px solid ${p === page ? GREEN : '#e2e8f0'}`,
-                                    background: p === page ? GREEN : 'white',
-                                    color: p === page ? 'white' : '#374151',
-                                    fontSize: '13px', fontWeight: p === page ? '700' : '400',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                {p}
-                            </button>
-                        );
-                    })}
+                    {Array.from({ length: Math.min(5, meta.totalPages) }, (_, i) => i + 1).map(p => (
+                        <button
+                            key={p} onClick={() => setPage(p)}
+                            className={cn('w-8 h-8 rounded-lg text-sm cursor-pointer border transition-colors', p === page ? 'border-green-500 bg-green-500 text-white font-bold' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50')}
+                        >
+                            {p}
+                        </button>
+                    ))}
                     <button
                         onClick={() => setPage(p => p + 1)} disabled={page === meta.totalPages}
-                        style={{
-                            width: '34px', height: '34px', borderRadius: '8px',
-                            border: '1px solid #e2e8f0', background: page === meta.totalPages ? '#f8fafc' : 'white',
-                            cursor: page === meta.totalPages ? 'default' : 'pointer',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: page === meta.totalPages ? '#cbd5e1' : '#374151',
-                        }}
+                        className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center cursor-pointer disabled:cursor-default disabled:text-slate-300 disabled:bg-slate-50 text-slate-600 hover:bg-slate-50 transition-colors"
                     >
                         <ChevronRight size={15} />
                     </button>

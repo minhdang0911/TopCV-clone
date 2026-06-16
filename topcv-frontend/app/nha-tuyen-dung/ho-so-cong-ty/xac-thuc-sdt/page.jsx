@@ -5,14 +5,9 @@ import { Phone, Check, Loader, ShieldCheck, ArrowRight, RotateCcw } from 'lucide
 import { toast } from 'sonner';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
+import { cn } from '@/lib/utils';
 
 const GREEN = '#00b14f';
-
-const inputStyle = {
-    width: '100%', padding: '11px 16px', border: '1.5px solid #e2e8f0',
-    borderRadius: '10px', fontSize: '15px', color: '#0f172a',
-    outline: 'none', background: '#fafafa', boxSizing: 'border-box',
-};
 
 const BENEFITS = [
     'Tăng cường bảo mật tài khoản nhà tuyển dụng',
@@ -20,6 +15,8 @@ const BENEFITS = [
     'Tăng khả năng hiển thị tin tuyển dụng với ứng viên phù hợp',
     'Tăng tỷ lệ hồ sơ ứng tuyển',
 ];
+
+const fieldCls = 'w-full px-4 py-2.5 border-[1.5px] border-slate-200 rounded-xl text-sm text-slate-900 outline-none bg-slate-50 box-border focus:border-green-400 focus:bg-white transition-colors';
 
 export default function XacThucSdtPage() {
     const { user } = useAuthStore();
@@ -29,7 +26,7 @@ export default function XacThucSdtPage() {
 
     const [phone, setPhone] = useState('');
     const [otp, setOtp] = useState('');
-    const [step, setStep] = useState('phone'); // 'phone' | 'otp'
+    const [step, setStep] = useState('phone');
     const [sending, setSending] = useState(false);
     const [confirming, setConfirming] = useState(false);
 
@@ -38,9 +35,8 @@ export default function XacThucSdtPage() {
             setVerified(res.data.step1.done);
             setLoading(false);
         }).catch(() => setLoading(false));
-
         if (user?.phone) setUserPhone(user.phone);
-    }, []);
+    }, []); // eslint-disable-line
 
     const sendOtp = async () => {
         const digits = phone.replace(/\D/g, '');
@@ -72,43 +68,43 @@ export default function XacThucSdtPage() {
         }
     };
 
-    if (loading) {
-        return <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}><Loader size={24} color={GREEN} style={{ animation: 'spin 1s linear infinite' }} /><style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style></div>;
-    }
+    if (loading)
+        return (
+            <div className="flex justify-center items-center py-16">
+                <div className="w-7 h-7 border-[3px] border-slate-200 border-t-green-500 rounded-full animate-spin" />
+            </div>
+        );
 
     return (
         <div>
-            <div style={{ marginBottom: '20px' }}>
-                <h2 style={{ fontSize: '16px', fontWeight: '800', color: '#0f172a', margin: 0 }}>Xác thực số điện thoại</h2>
-                <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0' }}>Xác minh số điện thoại để nâng cao độ uy tín tài khoản nhà tuyển dụng</p>
+            <div className="mb-5">
+                <h2 className="text-base font-extrabold text-slate-900 m-0">Xác thực số điện thoại</h2>
+                <p className="text-sm text-slate-500 mt-1">Xác minh số điện thoại để nâng cao độ uy tín tài khoản nhà tuyển dụng</p>
             </div>
 
             {verified ? (
-                /* Already verified */
-                <div style={{ background: 'white', borderRadius: '14px', border: '1px solid #bbf7d0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)', overflow: 'hidden' }}>
-                    <div style={{ background: 'linear-gradient(135deg, #00b14f 0%, #00934a 100%)', padding: '32px 28px', display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div className="bg-white rounded-xl border border-green-100 shadow-sm overflow-hidden">
+                    <div className="bg-gradient-to-r from-green-500 to-green-700 px-7 py-8 flex items-center gap-5">
+                        <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center shrink-0">
                             <ShieldCheck size={28} color="white" />
                         </div>
                         <div>
-                            <h3 style={{ fontSize: '18px', fontWeight: '800', color: 'white', margin: 0 }}>Số điện thoại đã được xác thực</h3>
-                            <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', margin: '4px 0 0' }}>
-                                Tài khoản của bạn đã hoàn thành bước xác thực số điện thoại
-                            </p>
+                            <h3 className="text-lg font-extrabold text-white m-0">Số điện thoại đã được xác thực</h3>
+                            <p className="text-sm text-white/80 mt-1 m-0">Tài khoản đã hoàn thành bước xác thực số điện thoại</p>
                         </div>
                     </div>
-                    <div style={{ padding: '24px 28px' }}>
+                    <div className="px-7 py-6">
                         {userPhone && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px 16px', background: '#f0fdf4', borderRadius: '10px', border: '1px solid #d1fae5' }}>
+                            <div className="flex items-center gap-3 px-4 py-3.5 bg-green-50 rounded-xl border border-green-100 mb-5">
                                 <Phone size={18} color={GREEN} />
-                                <span style={{ fontSize: '14px', fontWeight: '700', color: '#166534' }}>{userPhone}</span>
-                                <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '600', color: GREEN, background: '#dcfce7', padding: '2px 10px', borderRadius: '20px', border: `1px solid ${GREEN}` }}>Đã xác thực</span>
+                                <span className="text-sm font-bold text-green-800">{userPhone}</span>
+                                <span className="ml-auto text-xs font-bold text-green-600 bg-green-100 px-2.5 py-1 rounded-full border border-green-500">Đã xác thực</span>
                             </div>
                         )}
-                        <div style={{ marginTop: '20px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                             {BENEFITS.map((b, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', fontSize: '13px', color: '#374151' }}>
-                                    <Check size={15} color={GREEN} style={{ flexShrink: 0, marginTop: '1px' }} />
+                                <div key={i} className="flex items-start gap-2 text-sm text-slate-700">
+                                    <Check size={15} color={GREEN} className="shrink-0 mt-0.5" />
                                     {b}
                                 </div>
                             ))}
@@ -116,74 +112,90 @@ export default function XacThucSdtPage() {
                     </div>
                 </div>
             ) : (
-                /* Not verified */
                 <div>
-                    {/* Banner */}
-                    <div style={{ background: 'linear-gradient(135deg, #00b14f 0%, #00934a 100%)', borderRadius: '14px', padding: '28px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '24px', boxShadow: '0 4px 20px rgba(0,177,79,0.25)' }}>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', marginBottom: '6px', textTransform: 'uppercase' }}>TopCV for Business</div>
-                            <h3 style={{ fontSize: '20px', fontWeight: '800', color: 'white', margin: '0 0 16px', lineHeight: 1.3 }}>Xác thực số điện thoại nhà tuyển dụng</h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div className="bg-gradient-to-r from-green-500 to-green-700 rounded-xl p-7 mb-5 flex items-center gap-6 shadow-[0_4px_20px_rgba(0,177,79,0.25)]">
+                        <div className="flex-1">
+                            <div className="text-[11px] font-bold text-white/70 uppercase tracking-widest mb-1.5">TopCV for Business</div>
+                            <h3 className="text-xl font-extrabold text-white m-0 mb-4 leading-snug">Xác thực số điện thoại nhà tuyển dụng</h3>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 {BENEFITS.map((b, i) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', fontSize: '12px', color: 'rgba(255,255,255,0.9)' }}>
-                                        <Check size={13} color="white" style={{ flexShrink: 0, marginTop: '2px' }} />
+                                    <div key={i} className="flex items-start gap-1.5 text-xs text-white/90">
+                                        <Check size={12} color="white" className="shrink-0 mt-0.5" />
                                         {b}
                                     </div>
                                 ))}
                             </div>
                         </div>
-                        <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <div className="w-20 h-20 rounded-full bg-white/15 flex items-center justify-center shrink-0">
                             <Phone size={36} color="white" strokeWidth={1.5} />
                         </div>
                     </div>
 
-                    {/* Form */}
-                    <div style={{ background: 'white', borderRadius: '14px', padding: '28px', border: '1px solid #e2e8f0', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#0f172a', margin: '0 0 20px', paddingBottom: '14px', borderBottom: '1px solid #f1f5f9' }}>
+                    <div className="bg-white rounded-xl p-7 border border-slate-200 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-900 m-0 mb-5 pb-3.5 border-b border-slate-100">
                             {step === 'phone' ? 'Cập nhật và xác thực số điện thoại' : 'Nhập mã OTP'}
                         </h3>
 
                         {step === 'phone' ? (
-                            <div style={{ maxWidth: '480px' }}>
-                                <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 14px' }}>
-                                    Nhập số điện thoại để nhận mã xác thực qua SMS
-                                </p>
-                                <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
-                                    <span style={{ padding: '11px 14px', background: '#f1f5f9', borderRadius: '10px', fontSize: '14px', fontWeight: '600', color: '#475569', border: '1.5px solid #e2e8f0', whiteSpace: 'nowrap' }}>+84</span>
+                            <div className="max-w-md">
+                                <p className="text-sm text-slate-500 m-0 mb-3.5">Nhập số điện thoại để nhận mã xác thực qua SMS</p>
+                                <div className="flex gap-2.5 mb-4">
+                                    <span className="px-3.5 py-2.5 bg-slate-100 rounded-xl text-sm font-bold text-slate-500 border border-slate-200 whitespace-nowrap">+84</span>
                                     <input
                                         value={phone}
                                         onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 11))}
                                         placeholder="901234567"
-                                        style={{ ...inputStyle, flex: 1 }}
+                                        className={cn(fieldCls, 'flex-1')}
                                         maxLength={11}
                                         onKeyDown={e => e.key === 'Enter' && sendOtp()}
                                     />
                                 </div>
-                                <button onClick={sendOtp} disabled={sending || phone.replace(/\D/g,'').length < 9} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: sending ? '#86efac' : `linear-gradient(135deg, ${GREEN}, #00934a)`, color: 'white', border: 'none', borderRadius: '10px', padding: '12px 28px', fontSize: '14px', fontWeight: '700', cursor: sending ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,177,79,0.3)' }}>
-                                    {sending ? <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <ArrowRight size={16} />}
+                                <button
+                                    onClick={sendOtp}
+                                    disabled={sending || phone.replace(/\D/g, '').length < 9}
+                                    className={cn(
+                                        'inline-flex items-center gap-2 text-white border-none rounded-xl px-7 py-3 text-sm font-bold',
+                                        sending || phone.replace(/\D/g, '').length < 9
+                                            ? 'bg-green-200 cursor-not-allowed'
+                                            : 'bg-gradient-to-r from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.3)] cursor-pointer hover:opacity-90'
+                                    )}
+                                >
+                                    {sending ? <Loader size={16} className="animate-spin" /> : <ArrowRight size={16} />}
                                     {sending ? 'Đang gửi...' : 'Gửi mã xác thực'}
                                 </button>
                             </div>
                         ) : (
-                            <div style={{ maxWidth: '400px' }}>
-                                <p style={{ fontSize: '13px', color: '#64748b', margin: '0 0 14px' }}>
+                            <div className="max-w-sm">
+                                <p className="text-sm text-slate-500 m-0 mb-3.5">
                                     Mã OTP đã được gửi đến <strong>+84{phone.replace(/^0/, '')}</strong>. Có hiệu lực trong 5 phút.
                                 </p>
                                 <input
                                     value={otp}
                                     onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                                     placeholder="Nhập 6 chữ số"
-                                    style={{ ...inputStyle, letterSpacing: '8px', fontSize: '22px', textAlign: 'center', fontWeight: '700', marginBottom: '16px' }}
+                                    className={cn(fieldCls, 'tracking-[8px] text-2xl text-center font-bold mb-4')}
                                     maxLength={6}
                                     autoFocus
                                     onKeyDown={e => e.key === 'Enter' && confirmOtp()}
                                 />
-                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                    <button onClick={() => { setStep('phone'); setOtp(''); }} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '10px', padding: '11px 18px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: '#374151' }}>
+                                <div className="flex gap-2.5 items-center">
+                                    <button
+                                        onClick={() => { setStep('phone'); setOtp(''); }}
+                                        className="inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-50 transition-colors"
+                                    >
                                         <RotateCcw size={14} /> Gửi lại
                                     </button>
-                                    <button onClick={confirmOtp} disabled={confirming || otp.length !== 6} style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px', background: confirming || otp.length !== 6 ? '#86efac' : `linear-gradient(135deg, ${GREEN}, #00934a)`, color: 'white', border: 'none', borderRadius: '10px', padding: '12px', fontSize: '14px', fontWeight: '700', cursor: confirming || otp.length !== 6 ? 'not-allowed' : 'pointer', boxShadow: '0 4px 12px rgba(0,177,79,0.3)' }}>
-                                        {confirming ? <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Check size={16} />}
+                                    <button
+                                        onClick={confirmOtp}
+                                        disabled={confirming || otp.length !== 6}
+                                        className={cn(
+                                            'flex-1 inline-flex items-center justify-center gap-2 text-white border-none rounded-xl py-2.5 text-sm font-bold',
+                                            confirming || otp.length !== 6
+                                                ? 'bg-green-200 cursor-not-allowed'
+                                                : 'bg-gradient-to-r from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.3)] cursor-pointer hover:opacity-90'
+                                        )}
+                                    >
+                                        {confirming ? <Loader size={16} className="animate-spin" /> : <Check size={16} />}
                                         {confirming ? 'Đang xác thực...' : 'Xác nhận'}
                                     </button>
                                 </div>
@@ -192,8 +204,6 @@ export default function XacThucSdtPage() {
                     </div>
                 </div>
             )}
-
-            <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
         </div>
     );
 }

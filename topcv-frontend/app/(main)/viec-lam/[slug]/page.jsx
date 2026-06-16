@@ -11,6 +11,8 @@ import { chatService } from '@/services/chat.service';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import ShareSocial from '@/components/ShareSocial';
+import ViewApplicantButton from '@/components/ViewApplicantButton';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -779,7 +781,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const { isAuthenticated, role } = useAuthStore();
+    const { isAuthenticated, role, hydrated } = useAuthStore();
 
     const [job, setJob] = useState(null);
     const [related, setRelated] = useState([]);
@@ -991,6 +993,11 @@ export default function JobDetailPage({ params: paramsPromise }) {
                 />
             )}
 
+            <ShareSocial
+                url={typeof window !== 'undefined' ? `${window.location.origin}/viec-lam/${slug}` : ''}
+                title={job?.title || ''}
+            />
+
             <div style={containerStyle} className="jd-wrap">
                 {/* ── LEFT COLUMN ── */}
                 <div style={leftStyle}>
@@ -1031,6 +1038,12 @@ export default function JobDetailPage({ params: paramsPromise }) {
                         <a href="#" style={{ fontSize: '13px', color: '#00b14f', textDecoration: 'none', display: 'block', marginBottom: '14px' }}>
                             Xem mức lương thị trường cho vị trí này
                         </a>
+
+                        {hydrated && isAuthenticated && job?.id && (
+                            <div style={{ marginBottom: '14px' }}>
+                                <ViewApplicantButton jobId={job.id} variant="inline" />
+                            </div>
+                        )}
 
                         {deadline && (
                             <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>

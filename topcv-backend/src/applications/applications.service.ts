@@ -9,7 +9,6 @@ import { FirebaseService } from '../firebase/firebase.service';
 import { UsersService } from '../users/users.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { MailService } from '../mail/mail.service';
-import { neon } from '@neondatabase/serverless';
 
 const STATUS_NOTIF: Record<string, { title: string; body: string }> = {
   REVIEWING: { title: 'Hồ sơ đang được xem xét', body: 'Nhà tuyển dụng đang xem hồ sơ của bạn.' },
@@ -20,8 +19,6 @@ const STATUS_NOTIF: Record<string, { title: string; body: string }> = {
 
 @Injectable()
 export class ApplicationsService {
-  private sql = neon(process.env.DATABASE_URL!);
-
   constructor(
     private prisma: PrismaService,
     private firebase: FirebaseService,
@@ -129,6 +126,14 @@ export class ApplicationsService {
           },
           resume: { select: { id: true, title: true } },
           location: true,
+          meetings: {
+            select: {
+              id: true, roomCode: true, title: true,
+              scheduledAt: true, status: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
         },
       }),
     ]);
@@ -199,6 +204,142 @@ export class ApplicationsService {
     await this.attachCoverLetters(items);
     await this.attachCoverLetterFiles(items);
     return { data: items, total, page: Number(page), limit: Number(limit) };
+  }
+
+  async getCandidateInterviews(candidateId: string, month: number, year: number) {
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const items = await (this.prisma as any).application.findMany({
+      where: {
+        candidateId,
+        status: 'INTERVIEW',
+        interviewAt: { gte: start, lte: end },
+      },
+      include: {
+        job: {
+          select: {
+            id: true, title: true, slug: true,
+            employer: { select: { companyName: true, logoUrl: true } },
+          },
+        },
+        meetings: {
+          select: { roomCode: true, status: true, scheduledAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+      orderBy: { interviewAt: 'asc' },
+    });
+
+    return { data: items };
+  }
+
+  async getApplicationReport(employerId: string, period: 'daily' | 'monthly' = 'daily') {
+    const employer = await this.prisma.employerProfile.findUnique({ where: { userId: employerId } });
+    if (!employer) throw new ForbiddenException();
+
+    const apps = await (this.prisma as any).application.findMany({
+      where: { job: { employerId: employer.id } },
+      select: {
+        id: true, status: true, createdAt: true, jobId: true,
+        job: { select: { title: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    // Status funnel counts
+    const STATUSES = ['PENDING', 'REVIEWING', 'INTERVIEW', 'OFFERED', 'REJECTED', 'WITHDRAWN'];
+    const statusCounts: Record<string, number> = {};
+    for (const s of STATUSES) statusCounts[s] = 0;
+    for (const app of apps) {
+      if (statusCounts[app.status] !== undefined) statusCounts[app.status]++;
+    }
+
+    // Time series
+    const now = new Date();
+    const timeSeries: any[] = [];
+    if (period === 'monthly') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        timeSeries.push({
+          key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+          label: `T${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}`,
+          total: 0, INTERVIEW: 0, OFFERED: 0, REJECTED: 0,
+        });
+      }
+      for (const app of apps) {
+        const d = new Date(app.createdAt);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const m = timeSeries.find(x => x.key === key);
+        if (m) {
+          m.total++;
+          if (m[app.status] !== undefined) m[app.status]++;
+        }
+      }
+    } else {
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        timeSeries.push({
+          key: d.toISOString().split('T')[0],
+          label: `${d.getDate()}/${d.getMonth() + 1}`,
+          total: 0, INTERVIEW: 0, OFFERED: 0, REJECTED: 0,
+        });
+      }
+      for (const app of apps) {
+        const key = new Date(app.createdAt).toISOString().split('T')[0];
+        const m = timeSeries.find(x => x.key === key);
+        if (m) {
+          m.total++;
+          if (m[app.status] !== undefined) m[app.status]++;
+        }
+      }
+    }
+
+    // Per-job breakdown
+    const jobMap = new Map<string, any>();
+    for (const app of apps) {
+      if (!jobMap.has(app.jobId)) {
+        jobMap.set(app.jobId, {
+          jobId: app.jobId, jobTitle: app.job?.title || '—',
+          total: 0, PENDING: 0, REVIEWING: 0, INTERVIEW: 0, OFFERED: 0, REJECTED: 0, WITHDRAWN: 0,
+        });
+      }
+      const j = jobMap.get(app.jobId);
+      j.total++;
+      if (j[app.status] !== undefined) j[app.status]++;
+    }
+    const perJob = Array.from(jobMap.values()).sort((a, b) => b.total - a.total);
+
+    return { statusCounts, timeSeries, perJob, total: apps.length };
+  }
+
+  async getInterviewSchedule(employerId: string, month: number, year: number) {
+    const employerProfileId = await this.resolveEmployerProfileId(employerId);
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const items = await (this.prisma as any).application.findMany({
+      where: {
+        status: 'INTERVIEW',
+        interviewAt: { gte: start, lte: end },
+        job: { employerId: employerProfileId },
+      },
+      include: {
+        candidate: {
+          select: {
+            id: true,
+            email: true,
+            candidateProfile: { select: { fullName: true, avatarUrl: true } },
+          },
+        },
+        job: { select: { id: true, title: true } },
+      },
+      orderBy: { interviewAt: 'asc' },
+    });
+
+    return { data: items };
   }
 
   // Employer: list all applications across their jobs
@@ -284,29 +425,41 @@ export class ApplicationsService {
       throw new BadRequestException('Trạng thái không hợp lệ');
     }
 
+    const statusChanged = app.status !== status;
+
+    const interviewData = status === 'INTERVIEW' ? {
+      interviewAt: (interviewDate && interviewTime)
+        ? new Date(`${interviewDate}T${interviewTime}`)
+        : interviewDate ? new Date(`${interviewDate}T09:00`) : null,
+      interviewLocation: interviewLocation || null,
+      interviewType: interviewType || null,
+    } : {};
+
     const updated = await (this.prisma as any).application.update({
       where: { id: applicationId },
-      data: { status, note: note || null },
+      data: { status, note: note || null, ...interviewData },
     });
 
-    // WebSocket in-app notification to candidate
-    const notif = STATUS_NOTIF[status];
-    if (notif) {
-      this.notifications.create(app.candidateId, {
-        type: 'APPLICATION_STATUS',
-        title: notif.title,
-        body: `${app.job.title} — ${notif.body}`,
-        url: '/viec-da-ung-tuyen',
-        data: { applicationId, status },
-      }).catch(() => {});
-    }
-
-    // FCM push notification to candidate
-    this.users.getFcmToken(app.candidateId).then((token) => {
-      if (token) {
-        this.firebase.sendApplicationStatusNotification(token, app.job.title, status);
+    // Only send notifications when status actually changes
+    if (statusChanged) {
+      const notif = STATUS_NOTIF[status];
+      if (notif) {
+        this.notifications.create(app.candidateId, {
+          type: 'APPLICATION_STATUS',
+          title: notif.title,
+          body: `${app.job.title} — ${notif.body}`,
+          url: '/viec-da-ung-tuyen',
+          data: { applicationId, status },
+        }).catch(() => {});
       }
-    });
+
+      // FCM push notification to candidate
+      this.users.getFcmToken(app.candidateId).then((token) => {
+        if (token) {
+          this.firebase.sendApplicationStatusNotification(token, app.job.title, status);
+        }
+      });
+    }
 
     const candidateEmail = app.candidate?.email;
     const candidateName = app.candidate?.candidateProfile?.fullName || candidateEmail || '';
@@ -354,6 +507,47 @@ export class ApplicationsService {
 
     await (this.prisma as any).application.delete({ where: { id: applicationId } });
     return { message: 'Đã rút đơn ứng tuyển' };
+  }
+
+  // Employer: get urgent items for dashboard widget
+  async getUrgentItems(userId: string) {
+    const employer = await this.prisma.employerProfile.findFirst({ where: { userId } });
+    if (!employer) return { data: { pendingApplications: [], upcomingMeetings: [] } };
+
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    const [pendingApplications, upcomingMeetings] = await Promise.all([
+      (this.prisma as any).application.findMany({
+        where: {
+          status: 'REVIEWING',
+          createdAt: { gte: sevenDaysAgo },
+          job: { employerId: employer.id },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        include: {
+          candidate: { select: { id: true, candidateProfile: { select: { fullName: true, avatarUrl: true } } } },
+          job: { select: { id: true, title: true } },
+        },
+      }),
+      (this.prisma as any).meeting.findMany({
+        where: {
+          hostEmployerId: employer.id,
+          scheduledAt: {
+            gte: new Date(),
+            lte: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+          status: { not: 'ended' },
+        },
+        orderBy: { scheduledAt: 'asc' },
+        take: 5,
+        include: {
+          candidate: { select: { id: true, candidateProfile: { select: { fullName: true, avatarUrl: true } } } },
+        },
+      }),
+    ]);
+
+    return { data: { pendingApplications, upcomingMeetings } };
   }
 
   // Check if candidate already applied

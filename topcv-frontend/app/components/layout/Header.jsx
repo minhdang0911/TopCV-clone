@@ -166,6 +166,7 @@ const USER_MENU_SECTIONS = [
         items: [
             { label: 'Việc làm đã lưu', href: '/viec-lam-da-luu' },
             { label: 'Việc làm đã ứng tuyển', href: '/viec-da-ung-tuyen' },
+            { label: 'Lịch phỏng vấn của tôi', href: '/lich-phong-van' },
             { label: 'Việc làm phù hợp với bạn', href: '/viec-lam/phu-hop' },
             { label: 'Cài đặt gợi ý việc làm', href: '/cai-dat-goi-y-viec-lam' },
         ],

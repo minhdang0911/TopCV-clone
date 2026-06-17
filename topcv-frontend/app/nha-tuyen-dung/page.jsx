@@ -4,10 +4,14 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Briefcase, CheckCircle, PauseCircle, Clock, PlusCircle,
-    TrendingUp, ArrowRight, Activity, BarChart2,
+    TrendingUp, ArrowRight, Activity, BarChart2, Bell, Video, UserCircle2,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
+import { applicationsService } from '@/services/applications.service';
 
 const GREEN = '#00b14f';
 
@@ -75,10 +79,69 @@ function timeAgo(dateStr) {
     return `${Math.floor(diff / 86400)} ngày trước`;
 }
 
+function UrgentWidget({ pendingApplications, upcomingMeetings, loading }) {
+    const total = (pendingApplications?.length || 0) + (upcomingMeetings?.length || 0);
+    return (
+        <Card className="border-amber-200 bg-amber-50/40">
+            <CardHeader className="pb-2 pt-4 px-5">
+                <CardTitle className="text-[13px] font-bold text-amber-800 flex items-center gap-2">
+                    <Bell size={14} className="text-amber-500" />
+                    Cần xử lý ngay
+                    {!loading && total > 0 && (
+                        <Badge className="bg-amber-500 text-white text-[10px] h-4 px-1.5 ml-1">{total}</Badge>
+                    )}
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="px-5 pb-4 space-y-1.5">
+                {loading ? (
+                    <>
+                        <Skeleton className="h-9 rounded-lg" />
+                        <Skeleton className="h-9 rounded-lg" />
+                    </>
+                ) : total === 0 ? (
+                    <p className="text-[12px] text-amber-700/60 py-1">Không có việc cần xử lý</p>
+                ) : (
+                    <>
+                        {pendingApplications?.map(app => (
+                            <Link key={app.id} href={`/nha-tuyen-dung/ho-so-ung-vien?jobId=${app.jobId}`}
+                                className="flex items-center gap-2.5 bg-white rounded-lg px-3 py-2 border border-amber-100 no-underline hover:border-amber-300 transition-colors">
+                                {app.candidate?.candidateProfile?.avatarUrl
+                                    ? <img src={app.candidate.candidateProfile.avatarUrl} className="w-7 h-7 rounded-full object-cover shrink-0" alt="" />
+                                    : <UserCircle2 size={28} className="text-slate-300 shrink-0" />
+                                }
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[12px] font-semibold text-slate-700 truncate">{app.candidate?.candidateProfile?.fullName || 'Ứng viên'}</p>
+                                    <p className="text-[11px] text-slate-400 truncate">{app.job?.title}</p>
+                                </div>
+                                <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-300 shrink-0">Chờ xử lý</Badge>
+                            </Link>
+                        ))}
+                        {upcomingMeetings?.map(mt => (
+                            <Link key={mt.id} href={`/meet/${mt.roomCode}`}
+                                className="flex items-center gap-2.5 bg-white rounded-lg px-3 py-2 border border-violet-100 no-underline hover:border-violet-300 transition-colors">
+                                <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center shrink-0">
+                                    <Video size={13} className="text-violet-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-[12px] font-semibold text-slate-700 truncate">{mt.candidate?.candidateProfile?.fullName || 'Ứng viên'}</p>
+                                    <p className="text-[11px] text-slate-400">{new Date(mt.scheduledAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })} hôm nay</p>
+                                </div>
+                                <Badge variant="outline" className="text-[10px] text-violet-600 border-violet-300 shrink-0">Meeting</Badge>
+                            </Link>
+                        ))}
+                    </>
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function EmployerDashboardPage() {
     const [stats, setStats] = useState(null);
     const [logs, setLogs] = useState([]);
+    const [urgent, setUrgent] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [urgentLoading, setUrgentLoading] = useState(true);
 
     useEffect(() => {
         Promise.all([
@@ -91,6 +154,11 @@ export default function EmployerDashboardPage() {
             })
             .catch(console.error)
             .finally(() => setLoading(false));
+
+        applicationsService.getUrgent()
+            .then(res => setUrgent(res.data?.data))
+            .catch(() => {})
+            .finally(() => setUrgentLoading(false));
     }, []);
 
     if (loading)
@@ -130,6 +198,13 @@ export default function EmployerDashboardPage() {
                     />
                 ))}
             </div>
+
+            {/* Urgent widget */}
+            <UrgentWidget
+                pendingApplications={urgent?.pendingApplications}
+                upcomingMeetings={urgent?.upcomingMeetings}
+                loading={urgentLoading}
+            />
 
             {/* Charts + recent jobs */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

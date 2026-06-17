@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, ChevronLeft } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
-import { chatService } from '@/services/chat.service';
+import { chatgioService as chatService } from '@/services/chat.service';
 import api from '@/lib/axios';
 import ChatMessageArea, { Avatar, timeAgo } from '@/app/components/chat/ChatMessageArea';
 

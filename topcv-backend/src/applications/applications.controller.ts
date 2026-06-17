@@ -35,12 +35,37 @@ export class ApplicationsController {
     return this.applicationsService.checkApplied(req.user.sub, jobId);
   }
 
+  // Employer: urgent items for dashboard widget
+  @Get('urgent')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYER')
+  getUrgent(@Req() req: any) {
+    return this.applicationsService.getUrgentItems(req.user.sub);
+  }
+
   // Candidate: list own applications
   @Get('my')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('CANDIDATE')
   findMy(@Req() req: any, @Query() query: any) {
     return this.applicationsService.findMyApplications(req.user.sub, query);
+  }
+
+  // Candidate: get own interview schedule for calendar
+  @Get('my-interviews')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('CANDIDATE')
+  getMyInterviews(
+    @Req() req: any,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    const now = new Date();
+    return this.applicationsService.getCandidateInterviews(
+      req.user.sub,
+      month ? parseInt(month) : now.getMonth() + 1,
+      year ? parseInt(year) : now.getFullYear(),
+    );
   }
 
   // Candidate: withdraw application
@@ -57,6 +82,31 @@ export class ApplicationsController {
   @Roles('EMPLOYER')
   findAllByEmployer(@Req() req: any, @Query() query: any) {
     return this.applicationsService.findAllByEmployer(req.user.sub, query);
+  }
+
+  // Employer: recruitment report with status funnel, time series, per-job breakdown
+  @Get('report')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYER')
+  getReport(@Req() req: any, @Query('period') period: string) {
+    return this.applicationsService.getApplicationReport(req.user.sub, period as 'daily' | 'monthly');
+  }
+
+  // Employer: get interview schedule for calendar
+  @Get('interviews')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYER')
+  getInterviewSchedule(
+    @Req() req: any,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    const now = new Date();
+    return this.applicationsService.getInterviewSchedule(
+      req.user.sub,
+      month ? parseInt(month) : now.getMonth() + 1,
+      year ? parseInt(year) : now.getFullYear(),
+    );
   }
 
   // Employer: list applications for a specific job

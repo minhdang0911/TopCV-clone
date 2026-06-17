@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, MapPin, DollarSign, Clock, MessageSquare, Trash2 } from 'lucide-react';
+import { Building2, MapPin, DollarSign, Clock, MessageSquare, Trash2, Video, CalendarCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { applicationsService } from '@/services/applications.service';
-import { chatService } from '@/services/chat.service';
+import { chatgioService as chatService } from '@/services/chat.service';
 import api from '@/lib/axios';
 import useAuthStore from '@/stores/auth.store';
 import ProfileSidebar from '@/app/components/profile/ProfileSidebar';
@@ -149,10 +149,41 @@ function ApplicationCard({ item, onWithdraw }) {
                         {item.note}
                     </div>
                 )}
+
+                {/* Interview appointment info */}
+                {item.status === 'INTERVIEW' && item.interviewAt && (
+                    <div style={{ marginTop: '10px', padding: '8px 12px', background: '#f5f3ff', borderRadius: '6px', fontSize: '12px', borderLeft: '3px solid #7c3aed', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <CalendarCheck size={13} color="#7c3aed" />
+                        <span style={{ color: '#5b21b6', fontWeight: '600' }}>Lịch phỏng vấn: </span>
+                        <span style={{ color: '#374151' }}>
+                            {new Date(item.interviewAt).toLocaleString('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                        {item.interviewLocation && (
+                            <span style={{ color: '#6b7280' }}>— {item.interviewLocation}</span>
+                        )}
+                    </div>
+                )}
             </div>
 
             {/* Actions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flexShrink: 0, alignItems: 'flex-end' }}>
+                {/* Video meeting join button */}
+                {item.meetings?.[0] && item.meetings[0].status !== 'ended' && (
+                    <a
+                        href={`/meet/${item.meetings[0].roomCode}`}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                            padding: '5px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: '600',
+                            background: '#7c3aed', color: 'white', textDecoration: 'none',
+                            whiteSpace: 'nowrap', transition: 'opacity 0.15s',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                        onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                    >
+                        <Video size={12} />
+                        Vào phòng
+                    </a>
+                )}
                 {employer.id && (
                     <button
                         onClick={handleChat}

@@ -4,11 +4,14 @@ import {
   Controller,
   Get,
   Patch,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorator/roles.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -94,5 +97,12 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   saveFcmToken(@Req() req: any, @Body() body: { token: string }) {
     return this.usersService.saveFcmToken(req.user.sub, body.token);
+  }
+
+  @Get('candidates')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('EMPLOYER')
+  searchCandidates(@Query() query: any) {
+    return this.usersService.searchCandidates(query);
   }
 }

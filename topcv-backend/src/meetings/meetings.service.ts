@@ -166,6 +166,57 @@ export class MeetingsService {
     return { data: { token, meetingUrl } };
   }
 
+  async getMyMeetings(userId: string, month: number, year: number) {
+    const employer = await this.prisma.employerProfile.findUnique({ where: { userId } });
+    if (!employer) throw new ForbiddenException('Không tìm thấy hồ sơ nhà tuyển dụng');
+
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const meetings = await this.prisma.meeting.findMany({
+      where: {
+        hostEmployerId: employer.id,
+        scheduledAt: { gte: start, lte: end },
+      },
+      include: {
+        candidate: {
+          select: {
+            id: true,
+            email: true,
+            candidateProfile: { select: { fullName: true, avatarUrl: true } },
+          },
+        },
+        application: {
+          select: { job: { select: { id: true, title: true } } },
+        },
+      },
+      orderBy: { scheduledAt: 'asc' },
+    });
+
+    return { data: meetings };
+  }
+
+  async getCandidateMeetings(candidateId: string, month: number, year: number) {
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const meetings = await this.prisma.meeting.findMany({
+      where: {
+        candidateId,
+        scheduledAt: { gte: start, lte: end },
+      },
+      include: {
+        hostEmployer: { select: { companyName: true, logoUrl: true } },
+        application: {
+          select: { job: { select: { id: true, title: true } } },
+        },
+      },
+      orderBy: { scheduledAt: 'asc' },
+    });
+
+    return { data: meetings };
+  }
+
   async endMeeting(code: string, userId: string) {
     const employer = await this.prisma.employerProfile.findUnique({ where: { userId } });
     if (!employer) throw new ForbiddenException();

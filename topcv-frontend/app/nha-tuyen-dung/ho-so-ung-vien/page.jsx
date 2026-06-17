@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Eye, ClipboardList, CheckCircle, RotateCcw, MessageSquare, Video, Copy, X, Calendar } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ChevronDown, Eye, ClipboardList, CheckCircle, RotateCcw, MessageSquare, Video, Copy, X, Calendar, LayoutList, LayoutGrid, GripVertical } from 'lucide-react';
+import { DndContext, DragOverlay, useDroppable, useDraggable, rectIntersection, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { applicationsService } from '@/services/applications.service';
-import { chatService } from '@/services/chat.service';
+import { chatgioService as chatService } from '@/services/chat.service';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
 import { meetingsService } from '@/services/meetings.service';
 import useAuthStore from '@/stores/auth.store';
 import { cn } from '@/lib/utils';
+import RatingDialog from '@/components/RatingDialog';
 
 const GREEN = '#00b14f';
 
@@ -759,9 +762,203 @@ function CreateMeetingModal({ application, onClose }) {
     );
 }
 
+// ─── Kanban Components ───────────────────────────────────────────────────────
+
+function KanbanCard({ item, onViewDetail, onCreateMeeting, openChat }) {
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id });
+    const candidate = item.candidate || {};
+    const profile = candidate.candidateProfile || {};
+    const displayName = profile.fullName || candidate.email || '?';
+    const cfg = STATUS_CONFIG[item.status] || STATUS_CONFIG.PENDING;
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={{
+                transform: CSS.Translate.toString(transform),
+                opacity: isDragging ? 0.2 : 1,
+                boxShadow: '0 1px 2px rgba(9,30,66,.25), 0 0 0 1px rgba(9,30,66,.08)',
+            }}
+            className="bg-white rounded select-none relative group cursor-grab active:cursor-grabbing"
+            {...attributes}
+            {...listeners}
+        >
+            <div className="px-3 pt-3 pb-2.5">
+                {/* Name + email */}
+                <div className="text-[13px] font-semibold text-[#172b4d] leading-snug mb-0.5">
+                    {displayName}
+                </div>
+                <div className="text-[11px] text-slate-400 mb-2 truncate">{candidate.email}</div>
+
+                {/* Job badge — solid fill, white text, Jira style */}
+                <div className="mb-3">
+                    <span className="text-[11px] font-bold text-white px-1.5 py-0.5 rounded-sm leading-none"
+                        style={{ background: cfg.color }}>
+                        {item.job?.title || '—'}
+                    </span>
+                </div>
+
+                {/* Bottom row */}
+                <div className="flex items-center gap-1.5">
+                    <span className="text-[11px] text-[#5e6c84] flex-1">{timeAgo(item.createdAt)}</span>
+
+                    {/* CV badge */}
+                    {(item.resume || item.cvFileUrl) && (
+                        <a
+                            href={item.resume ? `/xem-cv/${item.resume.id}` : item.cvFileUrl}
+                            target="_blank" rel="noopener noreferrer"
+                            onPointerDown={e => e.stopPropagation()}
+                            className="text-[10px] font-bold bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-sm no-underline hover:bg-blue-100 transition-colors"
+                        >
+                            CV
+                        </a>
+                    )}
+
+                    {/* Avatar */}
+                    <div className="w-6 h-6 rounded-full shrink-0 flex items-center justify-center text-[10px] font-bold overflow-hidden"
+                        style={{ background: cfg.bg, color: cfg.color }}>
+                        {profile.avatarUrl
+                            ? <img src={profile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                            : displayName[0].toUpperCase()
+                        }
+                    </div>
+                </div>
+            </div>
+
+            {/* Hover actions — top right, like Jira's hover menu */}
+            <div
+                className="absolute top-2 right-2 hidden group-hover:flex items-center gap-0.5 bg-white rounded border border-slate-200 shadow-sm px-0.5 py-0.5"
+                onPointerDown={e => e.stopPropagation()}
+            >
+                <button onClick={() => onViewDetail(item)} title="Chi tiết"
+                    className="w-7 h-7 flex items-center justify-center rounded bg-transparent border-none cursor-pointer text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+                    <Eye size={13} />
+                </button>
+                <button onClick={() => openChat(item)} title="Nhắn tin"
+                    className="w-7 h-7 flex items-center justify-center rounded bg-transparent border-none cursor-pointer text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors">
+                    <MessageSquare size={13} />
+                </button>
+                <button onClick={() => onCreateMeeting(item)} title="Video"
+                    className="w-7 h-7 flex items-center justify-center rounded bg-transparent border-none cursor-pointer text-slate-400 hover:bg-slate-100 hover:text-blue-600 transition-colors">
+                    <Video size={13} />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function KanbanColumn({ status, items, onViewDetail, onCreateMeeting, openChat }) {
+    const { setNodeRef, isOver } = useDroppable({ id: status });
+    const cfg = STATUS_CONFIG[status];
+
+    return (
+        <div className="flex flex-col shrink-0" style={{ width: 260 }}>
+            {/* Column header — Jira style: "TO DO 6" */}
+            <div className="flex items-center gap-2 mb-2 px-1 py-1">
+                <span className="text-[11.5px] font-bold text-[#5e6c84] uppercase tracking-wider">{cfg.label}</span>
+                <span className="text-[11.5px] font-bold text-[#5e6c84]">{items.length}</span>
+            </div>
+
+            {/* Drop area */}
+            <div
+                ref={setNodeRef}
+                className="flex-1 rounded-[3px] p-1.5 space-y-1.5 min-h-[520px] transition-colors duration-100"
+                style={{ background: isOver ? '#e8edff' : '#f4f5f7' }}
+            >
+                {items.map(item => (
+                    <KanbanCard
+                        key={item.id}
+                        item={item}
+                        onViewDetail={onViewDetail}
+                        onCreateMeeting={onCreateMeeting}
+                        openChat={openChat}
+                    />
+                ))}
+                {items.length === 0 && isOver && (
+                    <div className="h-20 rounded border-2 border-dashed border-blue-300 flex items-center justify-center text-[12px] text-blue-400">
+                        Thả vào đây
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function KanbanBoard({ items, onStatusChange, onModalStatus, onViewDetail, onCreateMeeting, openChat }) {
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+    const [activeItem, setActiveItem] = useState(null);
+
+    const grouped = STATUS_OPTIONS.reduce((acc, s) => {
+        acc[s] = items.filter(i => i.status === s);
+        return acc;
+    }, {});
+
+    const handleDragStart = ({ active }) => {
+        setActiveItem(items.find(i => i.id === active.id) || null);
+    };
+
+    const handleDragEnd = ({ active, over }) => {
+        setActiveItem(null);
+        if (!over) return;
+        const draggedItem = items.find(i => i.id === active.id);
+        if (!draggedItem) return;
+        const targetStatus = over.id;
+        if (!STATUS_OPTIONS.includes(targetStatus) || draggedItem.status === targetStatus) return;
+
+        if (['INTERVIEW', 'OFFERED', 'REJECTED'].includes(targetStatus)) {
+            onModalStatus(draggedItem, targetStatus);
+        } else {
+            onStatusChange(draggedItem.id, targetStatus);
+            applicationsService.updateStatus(draggedItem.id, { status: targetStatus }).catch(() => {
+                onStatusChange(draggedItem.id, draggedItem.status);
+                toast.error('Cập nhật thất bại');
+            });
+        }
+    };
+
+    const activeDisplayName = activeItem
+        ? (activeItem.candidate?.candidateProfile?.fullName || activeItem.candidate?.email || '?')
+        : '';
+
+    return (
+        <DndContext sensors={sensors} collisionDetection={rectIntersection} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            <div className="flex gap-4 overflow-x-auto pb-4 pt-1">
+                {STATUS_OPTIONS.map(status => (
+                    <KanbanColumn
+                        key={status}
+                        status={status}
+                        items={grouped[status] || []}
+                        onViewDetail={onViewDetail}
+                        onCreateMeeting={onCreateMeeting}
+                        openChat={openChat}
+                    />
+                ))}
+            </div>
+
+            <DragOverlay dropAnimation={{ duration: 180, easing: 'ease' }}>
+                {activeItem ? (
+                    <div className="bg-white rounded-xl border border-slate-300 shadow-2xl p-3 w-[248px] opacity-95 rotate-1">
+                        <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center bg-green-50 text-sm font-bold overflow-hidden" style={{ color: GREEN }}>
+                                {activeItem.candidate?.candidateProfile?.avatarUrl
+                                    ? <img src={activeItem.candidate.candidateProfile.avatarUrl} alt="" className="w-full h-full object-cover" />
+                                    : activeDisplayName[0]?.toUpperCase()
+                                }
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[13px] font-bold text-slate-900 truncate">{activeDisplayName}</div>
+                                <div className="text-[12px] text-slate-500 truncate">{activeItem.job?.title}</div>
+                            </div>
+                        </div>
+                    </div>
+                ) : null}
+            </DragOverlay>
+        </DndContext>
+    );
+}
+
 // ─── Application Row ──────────────────────────────────────────────────────────
-function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onViewDetail, onModalStatus, onCreateMeeting }) {
-    const router = useRouter();
+function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onViewDetail, onModalStatus, onCreateMeeting, openChat }) {
     const candidate = item.candidate || {};
     const profile = candidate.candidateProfile || {};
     const job = item.job || {};
@@ -844,13 +1041,7 @@ function ApplicationRow({ item, selected, onToggleSelect, onStatusChange, onView
                         <Eye size={16} />
                     </button>
                     <button
-                        onClick={async () => {
-                            try {
-                                const res = await chatService.findOrCreate({ candidateUserId: item.candidateId, employerProfileId: item.job?.employerId });
-                                const convId = res.data?.data?.id;
-                                if (convId) router.push(`/nha-tuyen-dung/tin-nhan?conv=${convId}`);
-                            } catch {}
-                        }}
+                        onClick={() => openChat(item)}
                         title="Nhắn tin"
                         className="bg-transparent border-none cursor-pointer text-slate-400 p-1 hover:text-green-600 transition-colors"
                     >
@@ -1020,6 +1211,7 @@ function DetailModal({ item, onClose, onStatusChange, onModalStatus }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function CandidateProfilesPage() {
     const { user } = useAuthStore();
+    const router = useRouter();
     const companyName = user?.employerProfile?.companyName || 'Công ty';
     const logoUrl = user?.employerProfile?.logoUrl || null;
     const companyAddress = user?.employerProfile?.address || '';
@@ -1037,6 +1229,10 @@ export default function CandidateProfilesPage() {
     const [rejectItem, setRejectItem] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [meetingItem, setMeetingItem] = useState(null);
+    const [ratingItem, setRatingItem] = useState(null);
+    const [viewMode, setViewMode] = useState('table');
+    const [kanbanItems, setKanbanItems] = useState([]);
+    const [kanbanLoading, setKanbanLoading] = useState(false);
 
     const LIMIT = 20;
 
@@ -1059,8 +1255,32 @@ export default function CandidateProfilesPage() {
 
     useEffect(() => { fetchApplications(); setSelectedIds(new Set()); }, [page, statusFilter, jobFilter]); // eslint-disable-line
 
+    const openChat = useCallback(async (item) => {
+        try {
+            const res = await chatService.findOrCreate({ candidateUserId: item.candidateId, employerProfileId: item.job?.employerId });
+            const convId = res.data?.data?.id;
+            if (convId) router.push(`/nha-tuyen-dung/tin-nhan?conv=${convId}`);
+        } catch {}
+    }, [router]);
+
+    const fetchKanban = useCallback(() => {
+        setKanbanLoading(true);
+        const params = { page: 1, limit: 500 };
+        if (jobFilter) params.jobId = jobFilter;
+        applicationsService.getAllByEmployer(params)
+            .then(res => setKanbanItems(res.data?.data || []))
+            .catch(() => {})
+            .finally(() => setKanbanLoading(false));
+    }, [jobFilter]);
+
+    useEffect(() => {
+        if (viewMode === 'kanban') fetchKanban();
+    }, [viewMode, jobFilter]); // eslint-disable-line
+
     const handleStatusChange = (applicationId, newStatus) => {
-        setItems(prev => prev.map(i => i.id === applicationId ? { ...i, status: newStatus } : i));
+        const updater = prev => prev.map(i => i.id === applicationId ? { ...i, status: newStatus } : i);
+        setItems(updater);
+        setKanbanItems(updater);
     };
 
     const handleInterviewConfirm = async ({ sendEmail, interviewDate, interviewTime, interviewLocation, interviewType, interviewNote, emailSubject, emailBodyTemplate }) => {
@@ -1089,8 +1309,10 @@ export default function CandidateProfilesPage() {
         try {
             await applicationsService.updateStatus(offerItem.id, { status: 'OFFERED', sendEmail, offerSalary, offerStartDate, offerProbation, offerNote, emailSubject, emailBody });
             handleStatusChange(offerItem.id, 'OFFERED');
+            const saved = offerItem;
             setOfferItem(null);
             toast.success('Đã gửi Offer Letter');
+            setTimeout(() => setRatingItem(saved), 400);
         } catch (e) { toast.error(e?.response?.data?.message || 'Cập nhật thất bại'); }
     };
 
@@ -1099,8 +1321,10 @@ export default function CandidateProfilesPage() {
         try {
             await applicationsService.updateStatus(rejectItem.id, { status: 'REJECTED', sendEmail, emailSubject, emailBody });
             handleStatusChange(rejectItem.id, 'REJECTED');
+            const saved = rejectItem;
             setRejectItem(null);
             toast.success('Đã cập nhật trạng thái');
+            setTimeout(() => setRatingItem(saved), 400);
         } catch (e) { toast.error(e?.response?.data?.message || 'Cập nhật thất bại'); }
     };
 
@@ -1135,6 +1359,13 @@ export default function CandidateProfilesPage() {
             {meetingItem && (
                 <CreateMeetingModal application={meetingItem} onClose={() => setMeetingItem(null)} />
             )}
+            <RatingDialog
+                open={!!ratingItem}
+                onClose={() => setRatingItem(null)}
+                applicationId={ratingItem?.id}
+                type="EMPLOYER_TO_CANDIDATE"
+                targetName={ratingItem?.candidate?.candidateProfile?.fullName}
+            />
             {detailItem && (
                 <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onStatusChange={handleStatusChange} onModalStatus={openStatusModal} />
             )}
@@ -1156,6 +1387,24 @@ export default function CandidateProfilesPage() {
                 <div>
                     <h1 className="text-[22px] font-extrabold text-slate-900 mb-1">Hồ sơ ứng viên</h1>
                     <p className="text-sm text-slate-500">{total > 0 ? `${total} đơn ứng tuyển` : 'Chưa có đơn ứng tuyển'}</p>
+                </div>
+                <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
+                    <button
+                        onClick={() => setViewMode('table')}
+                        className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors cursor-pointer border-none',
+                            viewMode === 'table' ? 'bg-white text-slate-900 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'
+                        )}
+                    >
+                        <LayoutList size={14} /> Bảng
+                    </button>
+                    <button
+                        onClick={() => setViewMode('kanban')}
+                        className={cn('flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold transition-colors cursor-pointer border-none',
+                            viewMode === 'kanban' ? 'bg-white text-slate-900 shadow-sm' : 'bg-transparent text-slate-500 hover:text-slate-700'
+                        )}
+                    >
+                        <LayoutGrid size={14} /> Kanban
+                    </button>
                 </div>
             </div>
 
@@ -1187,8 +1436,8 @@ export default function CandidateProfilesPage() {
                 </div>
             </div>
 
-            {/* Bulk action bar */}
-            {selectedIds.size > 0 && (
+            {/* Bulk action bar — table only */}
+            {viewMode === 'table' && selectedIds.size > 0 && (
                 <div className="flex items-center gap-3 px-4 py-2.5 mb-2.5 bg-green-50 border border-green-300 rounded-lg">
                     <span className="text-[13px] text-slate-700">
                         Đã chọn <strong>{selectedIds.size}</strong> ứng viên
@@ -1209,78 +1458,97 @@ export default function CandidateProfilesPage() {
                 </div>
             )}
 
-            {/* Table */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="ap-thead">
-                                <th className="px-2 py-2.5 pl-4 w-9 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
-                                    <input type="checkbox" checked={allChecked}
-                                        ref={el => { if (el) el.indeterminate = someChecked; }}
-                                        onChange={() => setSelectedIds(allChecked ? new Set() : new Set(items.map(i => i.id)))}
-                                        style={{ width: '15px', height: '15px', accentColor: GREEN, cursor: 'pointer' }} />
-                                </th>
-                                {['Ứng viên', 'Vị trí', 'CV', 'Thời gian', 'Trạng thái'].map(h => (
-                                    <th key={h} className="px-4 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">{h}</th>
-                                ))}
-                                <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">Chi tiết</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={7} className="py-10 text-center text-slate-400 text-sm">Đang tải...</td>
-                                </tr>
-                            ) : items.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="py-16 text-center">
-                                        <ClipboardList size={40} className="text-slate-300 mx-auto mb-3" />
-                                        <p className="text-[15px] font-semibold text-slate-700 mb-1">Chưa có hồ sơ ứng viên</p>
-                                        <p className="text-[13px] text-slate-400">Ứng viên sẽ hiển thị tại đây khi họ nộp hồ sơ</p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                items.map(item => (
-                                    <ApplicationRow
-                                        key={item.id}
-                                        item={item}
-                                        selected={selectedIds.has(item.id)}
-                                        onToggleSelect={id => setSelectedIds(prev => {
-                                            const next = new Set(prev);
-                                            next.has(id) ? next.delete(id) : next.add(id);
-                                            return next;
-                                        })}
-                                        onStatusChange={handleStatusChange}
-                                        onViewDetail={setDetailItem}
-                                        onModalStatus={openStatusModal}
-                                        onCreateMeeting={setMeetingItem}
-                                    />
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+            {/* Kanban view */}
+            {viewMode === 'kanban' && (
+                kanbanLoading ? (
+                    <div className="py-20 text-center text-slate-400 text-sm">Đang tải...</div>
+                ) : (
+                    <KanbanBoard
+                        items={kanbanItems}
+                        onStatusChange={handleStatusChange}
+                        onModalStatus={openStatusModal}
+                        onViewDetail={setDetailItem}
+                        onCreateMeeting={setMeetingItem}
+                        openChat={openChat}
+                    />
+                )
+            )}
 
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div className="flex justify-center gap-1.5 p-4 border-t border-slate-100">
-                        {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                            <button key={p} onClick={() => setPage(p)}
-                                className={cn(
-                                    'w-8 h-8 rounded-md text-[13px] cursor-pointer border transition-colors',
-                                    p === page
-                                        ? 'font-bold'
-                                        : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+            {/* Table */}
+            {viewMode === 'table' && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <table className="w-full border-collapse">
+                            <thead>
+                                <tr className="ap-thead">
+                                    <th className="px-2 py-2.5 pl-4 w-9 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">
+                                        <input type="checkbox" checked={allChecked}
+                                            ref={el => { if (el) el.indeterminate = someChecked; }}
+                                            onChange={() => setSelectedIds(allChecked ? new Set() : new Set(items.map(i => i.id)))}
+                                            style={{ width: '15px', height: '15px', accentColor: GREEN, cursor: 'pointer' }} />
+                                    </th>
+                                    {['Ứng viên', 'Vị trí', 'CV', 'Thời gian', 'Trạng thái'].map(h => (
+                                        <th key={h} className="px-4 py-2.5 text-left text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">{h}</th>
+                                    ))}
+                                    <th className="px-4 py-2.5 text-center text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50 border-b border-slate-200">Chi tiết</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={7} className="py-10 text-center text-slate-400 text-sm">Đang tải...</td>
+                                    </tr>
+                                ) : items.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="py-16 text-center">
+                                            <ClipboardList size={40} className="text-slate-300 mx-auto mb-3" />
+                                            <p className="text-[15px] font-semibold text-slate-700 mb-1">Chưa có hồ sơ ứng viên</p>
+                                            <p className="text-[13px] text-slate-400">Ứng viên sẽ hiển thị tại đây khi họ nộp hồ sơ</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    items.map(item => (
+                                        <ApplicationRow
+                                            key={item.id}
+                                            item={item}
+                                            selected={selectedIds.has(item.id)}
+                                            onToggleSelect={id => setSelectedIds(prev => {
+                                                const next = new Set(prev);
+                                                next.has(id) ? next.delete(id) : next.add(id);
+                                                return next;
+                                            })}
+                                            onStatusChange={handleStatusChange}
+                                            onViewDetail={setDetailItem}
+                                            onModalStatus={openStatusModal}
+                                            onCreateMeeting={setMeetingItem}
+                                            openChat={openChat}
+                                        />
+                                    ))
                                 )}
-                                style={p === page ? { borderColor: GREEN, background: '#f0fdf4', color: GREEN } : {}}
-                            >
-                                {p}
-                            </button>
-                        ))}
+                            </tbody>
+                        </table>
                     </div>
-                )}
-            </div>
+
+                    {/* Pagination */}
+                    {totalPages > 1 && (
+                        <div className="flex justify-center gap-1.5 p-4 border-t border-slate-100">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                                <button key={p} onClick={() => setPage(p)}
+                                    className={cn(
+                                        'w-8 h-8 rounded-md text-[13px] cursor-pointer border transition-colors',
+                                        p === page
+                                            ? 'font-bold'
+                                            : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50'
+                                    )}
+                                    style={p === page ? { borderColor: GREEN, background: '#f0fdf4', color: GREEN } : {}}
+                                >
+                                    {p}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

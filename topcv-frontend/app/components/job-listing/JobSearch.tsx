@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
-import { Search, MapPin, X, ChevronDown } from 'lucide-react';
+import { Search, MapPin, X, ChevronDown, Banknote } from 'lucide-react';
 
 const GREEN = '#00b14f';
 
@@ -174,6 +174,19 @@ const QUICK_CATEGORIES = [
     },
 ];
 
+const SALARY_RANGES = [
+    { label: 'Tất cả mức lương', min: null, max: null, type: null },
+    { label: 'Dưới 3 triệu', min: null, max: 3, type: null },
+    { label: '3 - 5 triệu', min: 3, max: 5, type: null },
+    { label: '5 - 7 triệu', min: 5, max: 7, type: null },
+    { label: '7 - 10 triệu', min: 7, max: 10, type: null },
+    { label: '10 - 15 triệu', min: 10, max: 15, type: null },
+    { label: '15 - 20 triệu', min: 15, max: 20, type: null },
+    { label: '20 - 30 triệu', min: 20, max: 30, type: null },
+    { label: 'Trên 30 triệu', min: 30, max: null, type: null },
+    { label: 'Thỏa thuận', min: null, max: null, type: 'negotiable' },
+];
+
 interface JobSearchProps {
     totalJobs?: number;
     provinceName?: string;
@@ -190,17 +203,34 @@ export default function JobSearch({ totalJobs, provinceName }: JobSearchProps) {
         name: searchParams.get('provinceName') || provinceName || '',
     });
     const [showProvinces, setShowProvinces] = useState(false);
+    const [showSalary, setShowSalary] = useState(false);
+    const [salaryIdx, setSalaryIdx] = useState(() => {
+        const min = searchParams.get('salaryMin');
+        const max = searchParams.get('salaryMax');
+        const type = searchParams.get('salaryType');
+        if (!min && !max && !type) return 0;
+        return SALARY_RANGES.findIndex(
+            r => String(r.min ?? '') === (min ?? '') && String(r.max ?? '') === (max ?? '') && (r.type ?? '') === (type ?? '')
+        ) || 0;
+    });
     const provinceRef = useRef<HTMLDivElement>(null);
+    const salaryRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handler = (e: MouseEvent) => {
-            if (provinceRef.current && !provinceRef.current.contains(e.target as Node)) {
-                setShowProvinces(false);
-            }
+            if (provinceRef.current && !provinceRef.current.contains(e.target as Node)) setShowProvinces(false);
+            if (salaryRef.current && !salaryRef.current.contains(e.target as Node)) setShowSalary(false);
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
+
+    const applySalaryParams = (params: URLSearchParams, idx: number) => {
+        const r = SALARY_RANGES[idx];
+        if (r.min != null) params.set('salaryMin', String(r.min)); else params.delete('salaryMin');
+        if (r.max != null) params.set('salaryMax', String(r.max)); else params.delete('salaryMax');
+        if (r.type) params.set('salaryType', r.type); else params.delete('salaryType');
+    };
 
     const handleSearch = () => {
         const params = new URLSearchParams(searchParams.toString());
@@ -214,6 +244,16 @@ export default function JobSearch({ totalJobs, provinceName }: JobSearchProps) {
             params.delete('provinceCode');
             params.delete('provinceName');
         }
+        applySalaryParams(params, salaryIdx);
+        router.push(`${pathname}?${params.toString()}`);
+    };
+
+    const selectSalary = (idx: number) => {
+        setSalaryIdx(idx);
+        setShowSalary(false);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('page', '1');
+        applySalaryParams(params, idx);
         router.push(`${pathname}?${params.toString()}`);
     };
 
@@ -389,6 +429,86 @@ export default function JobSearch({ totalJobs, provinceName }: JobSearchProps) {
                                         }}
                                     >
                                         {p.name}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Divider */}
+                <div style={{ width: '1px', background: '#e5e7eb', margin: '10px 0' }} />
+
+                {/* Salary selector */}
+                <div ref={salaryRef} style={{ position: 'relative' }}>
+                    <button
+                        onClick={() => setShowSalary(!showSalary)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '7px',
+                            padding: '0 16px',
+                            height: '100%',
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: salaryIdx > 0 ? '#111827' : '#9ca3af',
+                            whiteSpace: 'nowrap',
+                            minWidth: '160px',
+                        }}
+                    >
+                        <Banknote size={15} color={salaryIdx > 0 ? GREEN : '#9ca3af'} />
+                        <span style={{ flex: 1, textAlign: 'left' }}>{SALARY_RANGES[salaryIdx].label}</span>
+                        {salaryIdx > 0 ? (
+                            <span onClick={(e) => { e.stopPropagation(); selectSalary(0); }}>
+                                <X size={13} color="#9ca3af" />
+                            </span>
+                        ) : (
+                            <ChevronDown size={13} color="#9ca3af" />
+                        )}
+                    </button>
+
+                    {showSalary && (
+                        <div
+                            style={{
+                                position: 'absolute',
+                                top: 'calc(100% + 8px)',
+                                right: 0,
+                                background: 'white',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '10px',
+                                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                                zIndex: 300,
+                                minWidth: '190px',
+                                overflow: 'hidden',
+                            }}
+                        >
+                            <div style={{ padding: '6px' }}>
+                                {SALARY_RANGES.map((r, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => selectSalary(i)}
+                                        style={{
+                                            width: '100%',
+                                            textAlign: 'left',
+                                            padding: '7px 10px',
+                                            borderRadius: '6px',
+                                            border: 'none',
+                                            background: salaryIdx === i ? '#f0fdf4' : 'none',
+                                            color: salaryIdx === i ? GREEN : '#374151',
+                                            fontSize: '13px',
+                                            fontWeight: salaryIdx === i ? '600' : '400',
+                                            cursor: 'pointer',
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            if (salaryIdx !== i) (e.currentTarget as HTMLButtonElement).style.background = '#f9fafb';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            if (salaryIdx !== i) (e.currentTarget as HTMLButtonElement).style.background = 'none';
+                                        }}
+                                    >
+                                        {r.label}
                                     </button>
                                 ))}
                             </div>

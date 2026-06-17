@@ -10,6 +10,10 @@ export const applicationsService = {
   getByJob: (jobId, params = {}) => api.get(`/applications/job/${jobId}`, { params }),
   getAllByEmployer: (params = {}) => api.get('/applications/employer', { params }),
   updateStatus: (id, data) => api.patch(`/applications/${id}/status`, data),
+  getInterviewSchedule: (month, year) => api.get(`/applications/interviews?month=${month}&year=${year}`),
+  getReport: (period = 'daily') => api.get(`/applications/report?period=${period}`),
+  getMyInterviews: (month, year) => api.get(`/applications/my-interviews?month=${month}&year=${year}`),
+  getUrgent: () => api.get('/applications/urgent'),
 };
 
 export const savedJobsService = {

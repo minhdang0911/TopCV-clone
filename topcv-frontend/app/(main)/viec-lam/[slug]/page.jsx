@@ -7,7 +7,7 @@ import { jobService } from '@/services/job.service';
 import { resumeService } from '@/services/resume.service';
 import { coverLetterService } from '@/services/cover-letter.service';
 import { applicationsService, savedJobsService } from '@/services/applications.service';
-import { chatService } from '@/services/chat.service';
+import { chatgioService as chatService } from '@/services/chat.service';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
 import { toast } from 'sonner';

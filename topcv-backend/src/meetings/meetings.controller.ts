@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { MeetingsService } from './meetings.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -13,6 +13,34 @@ export class MeetingsController {
     @Body() body: { applicationId?: string; candidateId: string; title?: string; scheduledAt?: string },
   ) {
     return this.meetingsService.create(req.user.sub, body);
+  }
+
+  @Get('my')
+  getMyMeetings(
+    @Req() req: any,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    const now = new Date();
+    return this.meetingsService.getMyMeetings(
+      req.user.sub,
+      month ? parseInt(month) : now.getMonth() + 1,
+      year ? parseInt(year) : now.getFullYear(),
+    );
+  }
+
+  @Get('my-candidate')
+  getMyCandidateMeetings(
+    @Req() req: any,
+    @Query('month') month: string,
+    @Query('year') year: string,
+  ) {
+    const now = new Date();
+    return this.meetingsService.getCandidateMeetings(
+      req.user.sub,
+      month ? parseInt(month) : now.getMonth() + 1,
+      year ? parseInt(year) : now.getFullYear(),
+    );
   }
 
   @Get(':code')

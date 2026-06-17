@@ -253,4 +253,58 @@ export class UsersService {
     });
     return user?.fcmToken ?? null;
   }
+
+  async searchCandidates(query: { keyword?: string; page?: string; limit?: string; lookingForJob?: string }) {
+    const page = Math.max(1, parseInt(query.page || '1'));
+    const limit = Math.min(50, parseInt(query.limit || '20'));
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      role: 'CANDIDATE',
+      candidateProfile: { allowEmployerSearch: true },
+    };
+
+    if (query.keyword) {
+      where.OR = [
+        { candidateProfile: { fullName: { contains: query.keyword, mode: 'insensitive' } } },
+        { email: { contains: query.keyword, mode: 'insensitive' } },
+      ];
+    }
+
+    if (query.lookingForJob === 'true') {
+      where.candidateProfile = { ...where.candidateProfile, isLookingForJob: true };
+    }
+
+    const [total, users] = await Promise.all([
+      (this.prisma as any).user.count({ where }),
+      (this.prisma as any).user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          createdAt: true,
+          candidateProfile: {
+            select: {
+              fullName: true,
+              avatarUrl: true,
+              isLookingForJob: true,
+              jobPreferences: true,
+              gender: true,
+              dob: true,
+            },
+          },
+          resumes: {
+            where: { isPublic: true },
+            take: 1,
+            select: { id: true, title: true, fileUrl: true },
+          },
+        },
+      }),
+    ]);
+
+    return { data: users, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
 }

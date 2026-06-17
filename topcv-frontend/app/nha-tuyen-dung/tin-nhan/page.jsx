@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, ChevronLeft, MessageSquare } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
-import { chatService } from '@/services/chat.service';
+import { chatgioService as chatService } from '@/services/chat.service';
 import ChatMessageArea, { Avatar, timeAgo } from '@/app/components/chat/ChatMessageArea';
 import { cn } from '@/lib/utils';
 

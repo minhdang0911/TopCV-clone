@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect, createElement } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Plus, Trash2, Edit2, Eye } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import { resumeService } from '@/services/resume.service';
+import { coverLetterService } from '@/services/cover-letter.service';
 import { getTemplate } from '@/app/components/cv/templateRegistry';
+import { getCLTemplate, DEFAULT_CL_CONTENT } from '@/app/components/cover-letter/templateRegistry';
 import JobSuggestions from '@/app/components/jobs/JobSuggestions';
 import chartArrown from '../assests/img/chart_banner_update_cv.png';
 
@@ -104,6 +106,35 @@ function formatDate(iso) {
     return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
+function CoverLetterThumbnail({ cl }) {
+    const TemplateComponent = getCLTemplate(cl.template);
+    const content =
+        cl.content &&
+        Object.keys(cl.content).some((k) => {
+            const v = cl.content[k];
+            return v && (Array.isArray(v) ? v.length > 0 : typeof v === 'object' ? Object.keys(v).length > 0 : !!v);
+        })
+            ? cl.content
+            : DEFAULT_CL_CONTENT;
+    const color = cl.color || '#1e3a5f';
+
+    if (!TemplateComponent) return null;
+
+    return (
+        <div style={{ width: `${CARD_W}px`, height: `${THUMB_H}px`, overflow: 'hidden', flexShrink: 0 }}>
+            <div style={{
+                width: `${A4_W}px`,
+                transform: `scale(${SCALE})`,
+                transformOrigin: 'top left',
+                pointerEvents: 'none',
+                userSelect: 'none',
+            }}>
+                {createElement(TemplateComponent, { content, color })}
+            </div>
+        </div>
+    );
+}
+
 function CvThumbnail({ cv }) {
     const TemplateComponent = getTemplate(cv.template);
     const content =
@@ -144,6 +175,8 @@ function CvThumbnail({ cv }) {
 
 export default function QuanLyCvPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const type = searchParams.get('type') || 'resume';
     const { hydrated, isAuthenticated } = useAuthStore();
     const [resumes, setResumes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -156,20 +189,24 @@ export default function QuanLyCvPage() {
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        resumeService
-            .list('resume')
-            .then((res) => {
-                setResumes(res.data);
-            })
-            .catch(() => {})
+        const fetch = type === 'cover-letter'
+            ? coverLetterService.getAll()
+            : resumeService.list('resume');
+        fetch
+            .then((res) => setResumes(res.data?.data || res.data || []))
+            .catch(() => setResumes([]))
             .finally(() => setLoading(false));
-    }, [isAuthenticated]);
+    }, [isAuthenticated, type]);
 
     const handleDelete = async (id) => {
-        if (!confirm('Bạn có chắc chắn muốn xóa CV này?')) return;
+        if (!confirm('Bạn có chắc chắn muốn xóa?')) return;
         setDeletingId(id);
         try {
-            await resumeService.remove(id);
+            if (type === 'cover-letter') {
+                await coverLetterService.remove(id);
+            } else {
+                await resumeService.remove(id);
+            }
             setResumes((prev) => prev.filter((r) => r.id !== id));
         } catch {}
         setDeletingId(null);
@@ -178,6 +215,7 @@ export default function QuanLyCvPage() {
     if (!hydrated || !isAuthenticated) return null;
 
     return (
+        <>
         <div style={{ background: '#f3f4f6', minHeight: '100vh', padding: '24px 16px' }}>
             <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
 
@@ -192,14 +230,14 @@ export default function QuanLyCvPage() {
                 >
                     <div>
                         <h1 style={{ fontSize: '22px', fontWeight: '700', color: '#111827', margin: 0 }}>
-                            CV đã tạo trên TopCV
+                            {type === 'cover-letter' ? 'Cover Letter đã tạo' : 'CV đã tạo trên TopCV'}
                         </h1>
                         <p style={{ fontSize: '13px', color: '#6b7280', margin: '4px 0 0' }}>
-                            {resumes.length} CV
+                            {resumes.length} {type === 'cover-letter' ? 'cover letter' : 'CV'}
                         </p>
                     </div>
                     <Link
-                        href="/tao-cv"
+                        href={type === 'cover-letter' ? '/mau-cover-letter' : '/tao-cv'}
                         style={{
                             display: 'inline-flex',
                             alignItems: 'center',
@@ -214,7 +252,7 @@ export default function QuanLyCvPage() {
                         }}
                     >
                         <Plus size={16} />
-                        Tạo CV
+                        {type === 'cover-letter' ? 'Tạo Cover Letter' : 'Tạo CV'}
                     </Link>
                 </div>
 
@@ -345,13 +383,15 @@ export default function QuanLyCvPage() {
                             </svg>
                         </div>
                         <p style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
-                            Bạn chưa có CV nào
+                            {type === 'cover-letter' ? 'Bạn chưa có Cover Letter nào' : 'Bạn chưa có CV nào'}
                         </p>
                         <p style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '20px' }}>
-                            Tạo CV để tăng cơ hội được các nhà tuyển dụng tìm thấy bạn
+                            {type === 'cover-letter'
+                                ? 'Tạo Cover Letter ấn tượng để gây chú ý với nhà tuyển dụng'
+                                : 'Tạo CV để tăng cơ hội được các nhà tuyển dụng tìm thấy bạn'}
                         </p>
                         <Link
-                            href="/tao-cv"
+                            href={type === 'cover-letter' ? '/mau-cover-letter' : '/tao-cv'}
                             style={{
                                 display: 'inline-flex',
                                 alignItems: 'center',
@@ -366,7 +406,7 @@ export default function QuanLyCvPage() {
                             }}
                         >
                             <Plus size={16} />
-                            Tạo CV ngay
+                            {type === 'cover-letter' ? 'Tạo Cover Letter ngay' : 'Tạo CV ngay'}
                         </Link>
                     </div>
                 ) : (
@@ -404,9 +444,9 @@ export default function QuanLyCvPage() {
                                         cursor: 'pointer',
                                         background: '#f9fafb',
                                     }}
-                                    onClick={() => router.push(`/tao-cv/${cv.id}`)}
+                                    onClick={() => router.push(type === 'cover-letter' ? `/sua-cover-letter/${cv.id}` : `/tao-cv/${cv.id}`)}
                                 >
-                                    <CvThumbnail cv={cv} />
+                                    {type === 'cover-letter' ? <CoverLetterThumbnail cl={cv} /> : <CvThumbnail cv={cv} />}
 
                                     {/* Hover overlay */}
                                     {hoveredId === cv.id && (
@@ -425,7 +465,7 @@ export default function QuanLyCvPage() {
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    router.push(`/tao-cv/${cv.id}`);
+                                                    router.push(type === 'cover-letter' ? `/sua-cover-letter/${cv.id}` : `/tao-cv/${cv.id}`);
                                                 }}
                                                 style={{
                                                     display: 'inline-flex',
@@ -494,9 +534,9 @@ export default function QuanLyCvPage() {
                                         Cập nhật: {formatDate(cv.updatedAt)}
                                     </div>
 
-                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                    <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
                                         <button
-                                            onClick={() => router.push(`/tao-cv/${cv.id}`)}
+                                            onClick={() => router.push(type === 'cover-letter' ? `/sua-cover-letter/${cv.id}` : `/tao-cv/${cv.id}`)}
                                             style={{
                                                 flex: 1,
                                                 padding: '6px 0',
@@ -539,5 +579,7 @@ export default function QuanLyCvPage() {
                 <JobSuggestions />
             </div>
         </div>
+
+        </>
     );
 }

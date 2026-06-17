@@ -23,6 +23,7 @@ import { ConnectModule } from './connect/connect.module';
 import { JobAlertsModule } from './job-alerts/job-alerts.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { MeetingsModule } from './meetings/meetings.module';
+import { CvScoringModule } from './cv-scoring/cv-scoring.module';
 
 @Module({
   imports: [
@@ -50,6 +51,7 @@ import { MeetingsModule } from './meetings/meetings.module';
     JobAlertsModule,
     FeedbackModule,
     MeetingsModule,
+    CvScoringModule,
   ],
 })
 export class AppModule {}

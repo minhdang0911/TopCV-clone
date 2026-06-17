@@ -74,6 +74,7 @@ const TAO_CV_POSITION = [
 ];
 const TAO_CV_MANAGE = [
     { label: 'Quản lý CV', href: '/quan-ly-cv', Icon: FileText },
+    { label: 'Chấm điểm CV bằng AI', href: '/cham-diem-cv', Icon: TrendingUp },
     { label: 'Tải CV lên', href: '/tai-cv-len', Icon: Upload },
     { label: 'Hướng dẫn viết CV', href: '#', Icon: BookOpen },
     { label: 'Quản lý Cover Letter', href: '/quan-ly-cv?type=cover-letter', Icon: Mail },

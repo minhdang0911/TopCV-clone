@@ -26,11 +26,11 @@ const TOPICS = [
 ];
 
 const RATINGS = [
-    { value: 1, label: 'Rất tệ',     file: '/verry_bad.json' },
-    { value: 2, label: 'Tệ',         file: '/bad.json' },
+    { value: 1, label: 'Rất tệ', file: '/verry_bad.json' },
+    { value: 2, label: 'Tệ', file: '/bad.json' },
     { value: 3, label: 'Bình thường', file: '/normal.json' },
-    { value: 4, label: 'Tốt',        file: '/good.json' },
-    { value: 5, label: 'Tuyệt vời',  file: '/verry_good.json' },
+    { value: 4, label: 'Tốt', file: '/good.json' },
+    { value: 5, label: 'Tuyệt vời', file: '/verry_good.json' },
 ];
 
 function EmojiRating({ value, onChange }) {
@@ -38,10 +38,11 @@ function EmojiRating({ value, onChange }) {
     const [hovered, setHovered] = useState(null);
 
     useEffect(() => {
-        RATINGS.forEach(r => {
-            fetch(r.file).then(res => res.json()).then(data =>
-                setAnims(prev => ({ ...prev, [r.value]: data }))
-            ).catch(() => {});
+        RATINGS.forEach((r) => {
+            fetch(r.file)
+                .then((res) => res.json())
+                .then((data) => setAnims((prev) => ({ ...prev, [r.value]: data })))
+                .catch(() => {});
         });
     }, []);
 
@@ -49,7 +50,7 @@ function EmojiRating({ value, onChange }) {
 
     return (
         <div className="flex justify-center gap-4 flex-wrap">
-            {RATINGS.map(r => (
+            {RATINGS.map((r) => (
                 <button
                     key={r.value}
                     type="button"
@@ -57,15 +58,23 @@ function EmojiRating({ value, onChange }) {
                     onMouseEnter={() => setHovered(r.value)}
                     onMouseLeave={() => setHovered(null)}
                     className="flex flex-col items-center gap-1.5 border-none bg-transparent cursor-pointer p-1 rounded-xl transition-transform"
-                    style={{ transform: active === r.value ? 'scale(1.12)' : 'scale(1)', outline: value === r.value ? `2px solid ${GREEN}` : '2px solid transparent', borderRadius: '12px' }}
+                    style={{
+                        transform: active === r.value ? 'scale(1.12)' : 'scale(1)',
+                        outline: value === r.value ? `2px solid ${GREEN}` : '2px solid transparent',
+                        borderRadius: '12px',
+                    }}
                 >
                     <div className="w-14 h-14">
-                        {anims[r.value]
-                            ? <Lottie animationData={anims[r.value]} loop={active === r.value} />
-                            : <div className="w-14 h-14 rounded-full bg-slate-100" />
-                        }
+                        {anims[r.value] ? (
+                            <Lottie animationData={anims[r.value]} loop={active === r.value} />
+                        ) : (
+                            <div className="w-14 h-14 rounded-full bg-slate-100" />
+                        )}
                     </div>
-                    <span className="text-[11px] font-semibold" style={{ color: value === r.value ? GREEN : '#9ca3af' }}>
+                    <span
+                        className="text-[11px] font-semibold"
+                        style={{ color: value === r.value ? GREEN : '#9ca3af' }}
+                    >
                         {r.label}
                     </span>
                 </button>
@@ -77,11 +86,19 @@ function EmojiRating({ value, onChange }) {
 // Modal: "Bạn muốn?" — choose feedback or zalo
 function ChoiceModal({ onFeedback, onClose }) {
     return (
-        <div className="fixed inset-0 z-[1001] bg-black/40 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div
+            className="fixed inset-0 z-[1001] bg-black/40 flex items-center justify-center p-4"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+        >
             <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
                 <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                     <h3 className="text-base font-extrabold text-slate-900">Bạn muốn?</h3>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 border-none cursor-pointer bg-transparent">
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 border-none cursor-pointer bg-transparent"
+                    >
                         <X size={18} />
                     </button>
                 </div>
@@ -96,7 +113,9 @@ function ChoiceModal({ onFeedback, onClose }) {
                         </div>
                         <div>
                             <p className="text-sm font-bold text-slate-900">Góp ý sản phẩm</p>
-                            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Chia sẻ ý kiến, đề xuất và nhận xét về sản phẩm</p>
+                            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                Chia sẻ ý kiến, đề xuất và nhận xét về sản phẩm
+                            </p>
                         </div>
                     </button>
 
@@ -113,7 +132,9 @@ function ChoiceModal({ onFeedback, onClose }) {
                         </div>
                         <div>
                             <p className="text-sm font-bold text-slate-900">Chat Zalo để được hỗ trợ</p>
-                            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">Yêu cầu hỗ trợ liên quan đến sản phẩm hoặc dịch vụ</p>
+                            <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                                Yêu cầu hỗ trợ liên quan đến sản phẩm hoặc dịch vụ
+                            </p>
                         </div>
                     </a>
                 </div>
@@ -132,9 +153,18 @@ function FeedbackModal({ onClose }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!topic) { toast.error('Vui lòng chọn chủ đề'); return; }
-        if (!description.trim()) { toast.error('Vui lòng nhập mô tả'); return; }
-        if (!rating) { toast.error('Vui lòng chọn đánh giá'); return; }
+        if (!topic) {
+            toast.error('Vui lòng chọn chủ đề');
+            return;
+        }
+        if (!description.trim()) {
+            toast.error('Vui lòng nhập mô tả');
+            return;
+        }
+        if (!rating) {
+            toast.error('Vui lòng chọn đánh giá');
+            return;
+        }
         setSubmitting(true);
         try {
             await api.post('/feedback', { topic, description: description.trim(), rating });
@@ -147,7 +177,12 @@ function FeedbackModal({ onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 z-[1002] bg-black/50 flex items-center justify-center p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+        <div
+            className="fixed inset-0 z-[1002] bg-black/50 flex items-center justify-center p-4"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
+        >
             <div className="bg-white rounded-2xl w-full max-w-[560px] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
@@ -155,7 +190,10 @@ function FeedbackModal({ onClose }) {
                         <h3 className="text-base font-extrabold text-slate-900">Góp ý sản phẩm</h3>
                         <p className="text-xs text-slate-400 mt-0.5">Phản hồi của bạn rất quan trọng với chúng tôi</p>
                     </div>
-                    <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 border-none cursor-pointer bg-transparent">
+                    <button
+                        onClick={onClose}
+                        className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 border-none cursor-pointer bg-transparent"
+                    >
                         <X size={18} />
                     </button>
                 </div>
@@ -168,11 +206,20 @@ function FeedbackModal({ onClose }) {
                             </div>
                             <div>
                                 <h4 className="text-lg font-extrabold text-slate-900 mb-2">Cảm ơn bạn!</h4>
-                                <p className="text-sm text-slate-500">Chúng tôi sẽ xem xét và phản hồi sớm nhất có thể.</p>
+                                <p className="text-sm text-slate-500">
+                                    Chúng tôi sẽ xem xét và phản hồi sớm nhất có thể.
+                                </p>
                             </div>
-                            <button onClick={() => { setDone(false); setTopic(''); setDescription(''); setRating(0); }}
+                            <button
+                                onClick={() => {
+                                    setDone(false);
+                                    setTopic('');
+                                    setDescription('');
+                                    setRating(0);
+                                }}
                                 className="px-5 py-2.5 rounded-lg border text-sm font-semibold cursor-pointer bg-white"
-                                style={{ borderColor: GREEN, color: GREEN }}>
+                                style={{ borderColor: GREEN, color: GREEN }}
+                            >
                                 Gửi phản hồi khác
                             </button>
                         </div>
@@ -184,7 +231,7 @@ function FeedbackModal({ onClose }) {
                                     Chủ đề cần góp ý <span className="text-red-500">*</span>
                                 </p>
                                 <div className="flex flex-wrap gap-2">
-                                    {TOPICS.map(t => (
+                                    {TOPICS.map((t) => (
                                         <button
                                             key={t}
                                             type="button"
@@ -209,7 +256,7 @@ function FeedbackModal({ onClose }) {
                                 </p>
                                 <textarea
                                     value={description}
-                                    onChange={e => setDescription(e.target.value)}
+                                    onChange={(e) => setDescription(e.target.value)}
                                     placeholder="Mô tả góp ý của bạn giúp TopCV cải tiến sản phẩm, hỗ trợ bạn tốt hơn"
                                     rows={4}
                                     className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm text-slate-700 resize-none outline-none box-border leading-relaxed focus:border-green-400"
@@ -254,7 +301,8 @@ function FeedbackModal({ onClose }) {
 
 // One icon button
 function ActionBtn({ icon, label, onClick, href, color = '#6b7280', count }) {
-    const cls = 'relative group w-11 h-11 rounded-full bg-white shadow-md border border-slate-100 flex items-center justify-center cursor-pointer hover:shadow-lg transition-shadow';
+    const cls =
+        'relative group w-11 h-11 rounded-full bg-white shadow-md border border-slate-100 flex items-center justify-center cursor-pointer hover:shadow-lg transition-shadow';
 
     const inner = (
         <>
@@ -272,11 +320,16 @@ function ActionBtn({ icon, label, onClick, href, color = '#6b7280', count }) {
         </>
     );
 
-    if (href) return (
-        <Link href={href} className={cls} title={label}>{inner}</Link>
-    );
+    if (href)
+        return (
+            <Link href={href} className={cls} title={label}>
+                {inner}
+            </Link>
+        );
     return (
-        <button type="button" onClick={onClick} className={cls} title={label}>{inner}</button>
+        <button type="button" onClick={onClick} className={cls} title={label}>
+            {inner}
+        </button>
     );
 }
 
@@ -287,8 +340,9 @@ export default function FloatingActions() {
 
     useEffect(() => {
         if (!isAuthenticated) return;
-        savedJobsService.getMy({ limit: 1 })
-            .then(res => setSavedCount(res.data?.meta?.total ?? res.data?.total ?? 0))
+        savedJobsService
+            .getMy({ limit: 1 })
+            .then((res) => setSavedCount(res.data?.meta?.total ?? res.data?.total ?? 0))
             .catch(() => {});
     }, [isAuthenticated]);
 
@@ -332,15 +386,10 @@ export default function FloatingActions() {
             </div>
 
             {modal === 'choice' && (
-                <ChoiceModal
-                    onFeedback={() => setModal('feedback')}
-                    onClose={() => setModal(null)}
-                />
+                <ChoiceModal onFeedback={() => setModal('feedback')} onClose={() => setModal(null)} />
             )}
 
-            {modal === 'feedback' && (
-                <FeedbackModal onClose={() => setModal(null)} />
-            )}
+            {modal === 'feedback' && <FeedbackModal onClose={() => setModal(null)} />}
         </>
     );
 }

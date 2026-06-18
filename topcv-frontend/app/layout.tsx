@@ -47,8 +47,21 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-    title: 'TopCV - Tìm việc làm nhanh, việc làm tốt',
-    description: 'Nền tảng tuyển dụng và tìm việc làm hàng đầu Việt Nam',
+    title: 'TopCV Clone - Tìm việc làm nhanh, việc làm tốt',
+    description: 'Nền tảng tuyển dụng và tìm việc làm hàng đầu Việt Nam. Kết nối nhà tuyển dụng và ứng viên tiềm năng.',
+    keywords: ['tìm việc làm', 'tuyển dụng', 'việc làm', 'nhân sự', 'ứng tuyển'],
+    icons: {
+        icon: '/favo-icons.png',
+        shortcut: '/favo-icons.png',
+        apple: '/favo-icons.png',
+    },
+    openGraph: {
+        title: 'TopCV Clone - Tìm việc làm nhanh, việc làm tốt',
+        description: 'Nền tảng tuyển dụng và tìm việc làm hàng đầu Việt Nam.',
+        images: ['/favo-icons.png'],
+        locale: 'vi_VN',
+        type: 'website',
+    },
 };
 
 export default function RootLayout({

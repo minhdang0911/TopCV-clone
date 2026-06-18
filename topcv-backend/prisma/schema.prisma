@@ -94,6 +94,10 @@ model User {
   jobAlerts                JobAlert[]
   feedbacks                Feedback[]
   meetingsAsCandidate      Meeting[]                   @relation("MeetingCandidate")
+  ratingsGiven             Rating[]                    @relation("RatingsGiven")
+  ratingsReceived          Rating[]                    @relation("RatingsReceived")
+  quizzesAsEmployer        Quiz[]                      @relation("EmployerQuizzes")
+  quizAttempts             QuizAttempt[]               @relation("CandidateAttempts")
 
   @@map("users")
 }
@@ -285,6 +289,10 @@ model Application {
   coverLetterFileUrl String?           @map("cover_letter_file_url")
   status             ApplicationStatus @default(PENDING)
   note            String?           @db.Text
+  interviewAt           DateTime? @map("interview_at")
+  interviewLocation     String?   @map("interview_location")
+  interviewType         String?   @map("interview_type")
+  interviewReminderSent Boolean   @default(false) @map("interview_reminder_sent")
   createdAt       DateTime          @default(now()) @map("created_at")
   updatedAt       DateTime          @updatedAt @map("updated_at")
 
@@ -293,6 +301,9 @@ model Application {
   location         JobLocation? @relation(fields: [locationId], references: [id])
   resume           Resume?      @relation(fields: [resumeId], references: [id])
   coverLetterDoc   CoverLetter? @relation("ApplicationCoverLetter", fields: [coverLetterId], references: [id])
+  meetings         Meeting[]
+  ratings          Rating[]
+  quizAssignments  QuizAssignment[]
 
   @@unique([jobId, candidateId])
   @@map("applications")
@@ -470,12 +481,32 @@ model Meeting {
   title          String?
   scheduledAt    DateTime? @map("scheduled_at")
   status         String    @default("active")
+  reminderSent   Boolean   @default(false) @map("reminder_sent")
   createdAt      DateTime  @default(now()) @map("created_at")
 
   hostEmployer EmployerProfile @relation(fields: [hostEmployerId], references: [id], onDelete: Cascade)
   candidate    User            @relation("MeetingCandidate", fields: [candidateId], references: [id], onDelete: Cascade)
+  application  Application?    @relation(fields: [applicationId], references: [id], onDelete: SetNull)
 
   @@map("meetings")
+}
+
+model Rating {
+  id            String   @id @default(uuid())
+  fromUserId    String   @map("from_user_id")
+  toUserId      String   @map("to_user_id")
+  applicationId String   @map("application_id")
+  score         Int
+  comment       String?
+  type          String   // EMPLOYER_TO_CANDIDATE | CANDIDATE_TO_EMPLOYER
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  fromUser    User        @relation("RatingsGiven", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUser      User        @relation("RatingsReceived", fields: [toUserId], references: [id], onDelete: Cascade)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@unique([fromUserId, applicationId, type])
+  @@map("ratings")
 }
 
 model Feedback {
@@ -492,4 +523,107 @@ model Feedback {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("feedbacks")
+}
+
+enum ScoringMode {
+  AUTO
+  MANUAL
+}
+
+model Quiz {
+  id               String      @id @default(cuid())
+  employerId       String      @map("employer_id")
+  title            String
+  description      String?
+  totalPoints      Float       @map("total_points")
+  passRate         Float       @default(70) @map("pass_rate")
+  durationMinutes  Int         @default(30) @map("duration_minutes")
+  scoringMode      ScoringMode @default(AUTO) @map("scoring_mode")
+  shuffleQuestions Boolean     @default(false) @map("shuffle_questions")
+  shuffleOptions   Boolean     @default(false) @map("shuffle_options")
+  rules            String?
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  employer    User             @relation("EmployerQuizzes", fields: [employerId], references: [id], onDelete: Cascade)
+  questions   QuizQuestion[]
+  assignments QuizAssignment[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            String  @id @default(cuid())
+  quizId        String  @map("quiz_id")
+  order         Int
+  questionText  String? @map("question_text")
+  imageUrl      String? @map("image_url")
+  isCode        Boolean @default(false) @map("is_code")
+  points        Float   @default(0)
+
+  quiz    Quiz            @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options QuizOption[]
+  answers AttemptAnswer[]
+
+  @@map("quiz_questions")
+}
+
+model QuizOption {
+  id         String  @id @default(cuid())
+  questionId String  @map("question_id")
+  optionText String? @map("option_text")
+  imageUrl   String? @map("image_url")
+  isCorrect  Boolean @default(false) @map("is_correct")
+
+  question QuizQuestion   @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  answers  AttemptAnswer[]
+
+  @@map("quiz_options")
+}
+
+model QuizAssignment {
+  id            String    @id @default(cuid())
+  quizId        String    @map("quiz_id")
+  applicationId String    @map("application_id")
+  sentAt        DateTime  @default(now()) @map("sent_at")
+  startsAt      DateTime? @map("starts_at")
+  endsAt        DateTime? @map("ends_at")
+
+  quiz        Quiz        @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  attempts    QuizAttempt[]
+
+  @@unique([quizId, applicationId])
+  @@map("quiz_assignments")
+}
+
+model QuizAttempt {
+  id             String    @id @default(cuid())
+  assignmentId   String    @map("assignment_id")
+  candidateId    String    @map("candidate_id")
+  startedAt      DateTime  @default(now()) @map("started_at")
+  submittedAt    DateTime? @map("submitted_at")
+  score          Float?
+  passed         Boolean?
+  questionOrder  Json?     @map("question_order")
+  optionOrders   Json?     @map("option_orders")
+
+  assignment QuizAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  candidate  User           @relation("CandidateAttempts", fields: [candidateId], references: [id], onDelete: Cascade)
+  answers    AttemptAnswer[]
+
+  @@map("quiz_attempts")
+}
+
+model AttemptAnswer {
+  id               String @id @default(cuid())
+  attemptId        String @map("attempt_id")
+  questionId       String @map("question_id")
+  selectedOptionId String @map("selected_option_id")
+
+  attempt  QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  option   QuizOption   @relation(fields: [selectedOptionId], references: [id], onDelete: Cascade)
+
+  @@unique([attemptId, questionId])
+  @@map("attempt_answers")
 }

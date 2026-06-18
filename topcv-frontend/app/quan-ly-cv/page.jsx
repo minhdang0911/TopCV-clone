@@ -382,7 +382,7 @@ export default function QuanLyCvPage() {
                                 <line x1="24" y1="34" x2="29" y2="34" stroke="#00b14f" strokeWidth="1.8" strokeLinecap="round" />
                             </svg>
                         </div>
-                        <p style={{ fontSize: '16px', fontWeight: '600', color: '#374151', marginBottom: '8px' }}>
+                        <p style={{ fontSize: '16px', fontWeight: '600', color: '#374151', mgarginBottom: '8px' }}>
                             {type === 'cover-letter' ? 'Bạn chưa có Cover Letter nào' : 'Bạn chưa có CV nào'}
                         </p>
                         <p style={{ fontSize: '13px', color: '#9ca3af', marginBottom: '20px' }}>

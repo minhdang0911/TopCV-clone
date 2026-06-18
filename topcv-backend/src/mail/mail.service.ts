@@ -247,6 +247,40 @@ export class MailService {
     });
   }
 
+  async sendQuizAssigned(params: {
+    to: string;
+    candidateName: string;
+    jobTitle: string;
+    quizTitle: string;
+    durationMinutes: number;
+    totalPoints: number;
+    endsAt?: Date | null;
+    testUrl: string;
+  }) {
+    const { to, candidateName, jobTitle, quizTitle, durationMinutes, totalPoints, endsAt, testUrl } = params;
+    await this.mailer.sendMail({
+      to,
+      subject: `[TopCV] Bài kiểm tra mới: ${quizTitle}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:40px auto;background:#fff;border-radius:8px;padding:32px;border:1px solid #e2e8f0">
+          <div style="color:#00b14f;font-size:22px;font-weight:bold;margin-bottom:16px">TopCV Clone</div>
+          <h2 style="font-size:18px;color:#1e293b">Bạn có bài kiểm tra mới!</h2>
+          <p style="color:#475569">Xin chào <strong>${candidateName}</strong>,</p>
+          <p style="color:#475569">Nhà tuyển dụng đã gửi cho bạn một bài kiểm tra cho vị trí <strong>${jobTitle}</strong>:</p>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:16px;margin:20px 0">
+            <p style="margin:0;font-size:16px;font-weight:bold;color:#166534">${quizTitle}</p>
+            <p style="margin:8px 0 0;color:#475569;font-size:13px">
+              Thời gian: ${durationMinutes} phút &nbsp;|&nbsp; Tổng điểm: ${totalPoints}
+              ${endsAt ? `&nbsp;|&nbsp; Hạn nộp: ${endsAt.toLocaleString('vi-VN')}` : ''}
+            </p>
+          </div>
+          <a href="${testUrl}" style="display:inline-block;background:#00b14f;color:#fff;padding:12px 24px;border-radius:6px;text-decoration:none;font-weight:bold">Làm bài kiểm tra ngay</a>
+          <p style="color:#94a3b8;font-size:12px;margin-top:24px">Nếu bạn không phải ứng viên này, vui lòng bỏ qua email.</p>
+        </div>
+      `,
+    });
+  }
+
   async sendResetPassword(email: string, resetUrl: string) {
     await this.mailer.sendMail({
       to: email,

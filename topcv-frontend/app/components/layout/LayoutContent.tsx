@@ -32,7 +32,8 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     const isEmployerDashboard = /^\/nha-tuyen-dung/.test(pathname);
     const isViewer = /^\/(xem-cv|xem-cover-letter|sua-cover-letter)\//.test(pathname);
     const isMeetingRoom = /^\/meet\//.test(pathname);
-    const hideHeader = HIDDEN_ROUTES.includes(pathname) || isCvEditor || isEmployerDashboard || isViewer || isMeetingRoom;
+    const isQuizPage = /^\/thi\//.test(pathname);
+    const hideHeader = HIDDEN_ROUTES.includes(pathname) || isCvEditor || isEmployerDashboard || isViewer || isMeetingRoom || isQuizPage;
 
     useEffect(() => {
         if (
@@ -57,7 +58,7 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
                 {!hideHeader && <Footer />}
             </div>
             {showOnboarding && <JobPreferencesModal onClose={() => setShowOnboarding(false)} />}
-            {!isEmployerDashboard && !isCvEditor && !isViewer && !isMeetingRoom && <FloatingActions />}
+            {!isEmployerDashboard && !isCvEditor && !isViewer && !isMeetingRoom && !isQuizPage && <FloatingActions />}
         </>
     );
 }

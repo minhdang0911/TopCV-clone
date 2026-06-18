@@ -24,6 +24,9 @@ import { JobAlertsModule } from './job-alerts/job-alerts.module';
 import { FeedbackModule } from './feedback/feedback.module';
 import { MeetingsModule } from './meetings/meetings.module';
 import { CvScoringModule } from './cv-scoring/cv-scoring.module';
+import { RemindersModule } from './reminders/reminders.module';
+import { RatingsModule } from './ratings/ratings.module';
+import { QuizModule } from './quiz/quiz.module';
 
 @Module({
   imports: [
@@ -52,6 +55,9 @@ import { CvScoringModule } from './cv-scoring/cv-scoring.module';
     FeedbackModule,
     MeetingsModule,
     CvScoringModule,
+    RemindersModule,
+    RatingsModule,
+    QuizModule,
   ],
 })
 export class AppModule {}

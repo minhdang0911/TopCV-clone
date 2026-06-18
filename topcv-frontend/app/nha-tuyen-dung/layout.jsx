@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import {
     LayoutDashboard, Briefcase, PlusCircle, Building2, ChevronRight,
-    LogOut, Menu, Users, MessageSquare, UserPlus, Eye, BarChart2, History,
+    LogOut, Menu, Users, MessageSquare, UserPlus, Eye, BarChart2, History, CalendarDays, FileQuestion,
 } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
@@ -27,7 +27,9 @@ const NAV = [
     { href: '/nha-tuyen-dung/ket-noi',            label: 'Kết nối ứng viên',  icon: UserPlus },
     { href: '/nha-tuyen-dung/bao-cao',            label: 'Báo cáo',           icon: BarChart2 },
     { href: '/nha-tuyen-dung/tin-nhan',           label: 'Tin nhắn',          icon: MessageSquare },
+    { href: '/nha-tuyen-dung/lich-phong-van',     label: 'Lịch phỏng vấn',   icon: CalendarDays },
     { href: '/nha-tuyen-dung/lich-su-hoat-dong',  label: 'Lịch sử hoạt động', icon: History },
+    { href: '/nha-tuyen-dung/de-thi',             label: 'Đề thi',            icon: FileQuestion },
 ];
 
 function NavItem({ item, isActive, onClick }) {

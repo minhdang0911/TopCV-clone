@@ -84,6 +84,8 @@ export default function ThongTinCongTyPage() {
     const [saving, setSaving] = useState(false);
     const [logoUploading, setLogoUploading] = useState(false);
     const [logoPreview, setLogoPreview] = useState(profile?.logoUrl || null);
+    const [coverUploading, setCoverUploading] = useState(false);
+    const [coverPreview, setCoverPreview] = useState(profile?.coverImage || null);
 
     useEffect(() => {
         api.get('/industries?limit=100').then(res => {
@@ -97,6 +99,7 @@ export default function ThongTinCongTyPage() {
             if (Array.isArray(ids)) setIndustryIds(ids.map(Number));
             else if (profile.industryId) setIndustryIds([profile.industryId]);
             setLogoPreview(profile.logoUrl || null);
+            setCoverPreview(profile.coverImage || null);
         }
     }, [profile?.id]); // eslint-disable-line
 
@@ -121,6 +124,28 @@ export default function ThongTinCongTyPage() {
             setLogoPreview(profile?.logoUrl || null);
         } finally {
             setLogoUploading(false);
+        }
+    };
+
+    const handleCoverUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        if (file.size > 5 * 1024 * 1024) { toast.error('File tối đa 5MB'); return; }
+        setCoverPreview(URL.createObjectURL(file));
+        setCoverUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post('/upload/cover', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+            const url = res.data?.data?.url;
+            setUser({ ...user, employerProfile: { ...profile, coverImage: url } });
+            setCoverPreview(url);
+            toast.success('Đã cập nhật ảnh bìa');
+        } catch {
+            toast.error('Upload ảnh bìa thất bại');
+            setCoverPreview(profile?.coverImage || null);
+        } finally {
+            setCoverUploading(false);
         }
     };
 
@@ -203,7 +228,7 @@ export default function ThongTinCongTyPage() {
                     {/* Logo */}
                     <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm text-center">
                         <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider m-0 mb-3">Logo công ty</h3>
-                        <div className="w-[90px] h-[90px] rounded-xl border-2 border-dashed border-green-200 flex items-center justify-center mx-auto mb-2.5 overflow-hidden bg-gradient-to-br from-green-50 to-slate-50 relative">
+                        <div className="w-22.5 h-22.5 rounded-xl border-2 border-dashed border-green-200 flex items-center justify-center mx-auto mb-2.5 overflow-hidden bg-linear-to-br from-green-50 to-slate-50 relative">
                             {logoPreview
                                 ? <img src={logoPreview} alt="logo" className="w-full h-full object-contain" />
                                 : <span className="text-3xl font-extrabold text-green-600">{form.companyName[0]?.toUpperCase() || '?'}</span>
@@ -222,11 +247,33 @@ export default function ThongTinCongTyPage() {
                         </label>
                     </div>
 
+                    {/* Cover photo */}
+                    <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                        <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider m-0 mb-3">Ảnh bìa công ty</h3>
+                        <div className="w-full h-24 rounded-xl border-2 border-dashed border-green-200 overflow-hidden bg-linear-to-br from-green-50 to-slate-50 relative mb-2.5">
+                            {coverPreview
+                                ? <img src={coverPreview} alt="cover" className="w-full h-full object-cover" />
+                                : <div className="w-full h-full flex items-center justify-center text-slate-300 text-[11px]">Chưa có ảnh bìa</div>
+                            }
+                            {coverUploading && (
+                                <div className="absolute inset-0 bg-white/80 flex items-center justify-center">
+                                    <Loader size={20} color={GREEN} className="animate-spin" />
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-[11px] text-slate-400 m-0 mb-2.5">PNG, JPG tối đa 5MB · Tỉ lệ 3:1 khuyến nghị</p>
+                        <label className={cn('inline-flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3.5 py-2 text-xs text-slate-600', coverUploading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-slate-50 transition-colors')}>
+                            <Upload size={13} />
+                            Tải ảnh bìa lên
+                            <input type="file" accept="image/png,image/jpeg,image/jpg,image/webp" className="hidden" onChange={handleCoverUpload} disabled={coverUploading} />
+                        </label>
+                    </div>
+
                     {/* Save */}
                     <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
                         <button
                             type="submit" disabled={saving}
-                            className={cn('w-full flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-opacity', saving ? 'bg-green-300 cursor-not-allowed' : 'bg-gradient-to-br from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.3)] hover:opacity-90')}
+                            className={cn('w-full flex items-center justify-center gap-1.5 py-3 rounded-xl text-sm font-bold text-white border-none cursor-pointer transition-opacity', saving ? 'bg-green-300 cursor-not-allowed' : 'bg-linear-to-br from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.3)] hover:opacity-90')}
                         >
                             {saving ? <Loader size={16} className="animate-spin" /> : <Save size={16} />}
                             {saving ? 'Đang lưu...' : 'Lưu thay đổi'}

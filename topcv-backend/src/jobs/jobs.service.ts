@@ -4,6 +4,8 @@
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { FirebaseService } from '../firebase/firebase.service';
 import { Redis } from '@upstash/redis';
 import { Prisma, JobLevel, WorkingType, WorkingDays } from '@prisma/client';
 
@@ -21,7 +23,11 @@ export class JobsService {
     return this._redis;
   }
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationsService,
+    private firebase: FirebaseService,
+  ) {}
 
   private generateSlug(title: string, id: string): string {
     const base = title
@@ -332,6 +338,9 @@ export class JobsService {
       await this.logAudit(userId, 'CREATE', job.id, null, job, ipAddress);
       await this.invalidateCache();
 
+      // Notify followers of this company (fire-and-forget)
+      this.notifyFollowers(employer.id, job).catch(() => {});
+
       return job;
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
@@ -354,7 +363,36 @@ export class JobsService {
     }
   }
 
-  // â”€â”€â”€ FIND ALL PUBLIC â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  private async notifyFollowers(employerProfileId: string, job: any) {
+    const followers = await this.prisma.companyFollow.findMany({
+      where: { employerProfileId },
+      include: { user: { select: { id: true, fcmToken: true } } },
+    });
+    if (!followers.length) return;
+
+    const companyName = job.employer?.companyName ?? 'Công ty';
+    const jobUrl = `/viec-lam/${job.slug}`;
+
+    await Promise.all(
+      followers.map(async (f) => {
+        await this.notifications.create(f.userId, {
+          type: 'NEW_JOB_FROM_FOLLOWED_COMPANY',
+          title: `${companyName} vừa đăng việc làm mới`,
+          body: job.title,
+          url: jobUrl,
+          data: { jobId: job.id, employerProfileId },
+        }).catch(() => {});
+
+        if (f.user.fcmToken) {
+          await this.firebase.send(f.user.fcmToken, {
+            title: `${companyName} vừa đăng việc làm mới`,
+            body: job.title,
+            url: jobUrl,
+          }).catch(() => {});
+        }
+      }),
+    );
+  }
 
   async findAll(query: {
     page?: number;

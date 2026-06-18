@@ -87,7 +87,7 @@ function Breadcrumb({ name }) {
 }
 
 /* ── Company header ── */
-function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLoading }) {
+function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLoading, followerCount }) {
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', marginBottom: 16 }}>
             <div
@@ -128,24 +128,32 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
                     <h1 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', margin: '0 0 6px' }}>
                         {company.companyName}
                     </h1>
-                    {company.website && (
-                        <a
-                            href={company.website}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            style={{
-                                fontSize: 13,
-                                color: '#767676',
-                                textDecoration: 'none',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                            }}
-                        >
-                            <Globe size={13} />
-                            {company.website.replace(/^https?:\/\//, '')}
-                        </a>
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                        {company.website && (
+                            <a
+                                href={company.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                    fontSize: 13,
+                                    color: '#767676',
+                                    textDecoration: 'none',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                }}
+                            >
+                                <Globe size={13} />
+                                {company.website.replace(/^https?:\/\//, '')}
+                            </a>
+                        )}
+                        {followerCount > 0 && (
+                            <span style={{ fontSize: 13, color: '#767676', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                <Users size={13} />
+                                {followerCount.toLocaleString('vi-VN')} người theo dõi
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Follow button */}
@@ -175,7 +183,7 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
             </div>
 
             {/* Tabs */}
-            <div style={{ display: 'flex', gap: 0, marginTop: 16, borderBottom: '1px solid #e8e8e8' }}>
+            <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #e8e8e8', paddingLeft: 8 }}>
                 {[
                     { key: 'home', label: 'Trang chủ' },
                     { key: 'jobs', label: `Tin tuyển dụng${company.jobCount ? ` (${company.jobCount})` : ''}` },
@@ -857,7 +865,11 @@ function HomeTab({ company, jobs, loadingJobs, reviews }) {
                     </Link>
                 </div>
                 {loadingJobs ? (
-                    <div style={{ color: '#999', fontSize: 14 }}>Đang tải...</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {[...Array(3)].map((_, i) => (
+                            <div key={i} style={{ height: 72, background: '#f5f5f5', borderRadius: 8, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                        ))}
+                    </div>
                 ) : jobs.length === 0 ? (
                     <div style={{ color: '#999', fontSize: 14 }}>Công ty chưa có tin tuyển dụng nào.</div>
                 ) : (
@@ -890,6 +902,7 @@ export default function CompanyDetailPage() {
     const [reviews, setReviews] = useState(null);
     const [followed, setFollowed] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
+    const [followerCount, setFollowerCount] = useState(0);
 
     useEffect(() => {
         if (!id) return;
@@ -897,6 +910,7 @@ export default function CompanyDetailPage() {
         api.get(`/employers/${id}`)
             .then((r) => {
                 setCompany(r.data);
+                setFollowerCount(r.data.followerCount ?? 0);
                 // Redirect UUID → slug
                 const slug = r.data.slug;
                 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -924,9 +938,11 @@ export default function CompanyDetailPage() {
             if (followed) {
                 await api.delete(`/employers/${id}/follow`);
                 setFollowed(false);
+                setFollowerCount(c => Math.max(0, c - 1));
             } else {
                 await api.post(`/employers/${id}/follow`);
                 setFollowed(true);
+                setFollowerCount(c => c + 1);
             }
         } catch {
             router.push('/login');
@@ -992,6 +1008,7 @@ export default function CompanyDetailPage() {
                     followed={followed}
                     onFollow={handleFollow}
                     followLoading={followLoading}
+                    followerCount={followerCount}
                 />
 
                 <div

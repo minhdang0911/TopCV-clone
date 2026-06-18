@@ -48,7 +48,7 @@ export class EmployersService {
     private notifications: NotificationsService,
   ) {}
 
-  async findAll(query: { industryId?: string; limit?: string; page?: string }) {
+  async findAll(query: { industryId?: string; limit?: string; page?: string; keyword?: string }) {
     const limit = Math.min(Number(query.limit) || 12, 50);
     const page = Number(query.page) || 1;
     const skip = (page - 1) * limit;
@@ -57,10 +57,16 @@ export class EmployersService {
     if (query.industryId) {
       where.industryId = Number(query.industryId);
     }
+    if (query.keyword) {
+      where.companyName = { contains: query.keyword, mode: 'insensitive' };
+    }
 
+    // Skip cache when keyword filter is active
     const cacheKey = `employers:${query.industryId ?? 'all'}:${page}:${limit}`;
-    const cached = await this.redis.get(cacheKey);
-    if (cached) return cached;
+    if (!query.keyword) {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) return cached;
+    }
 
     const [raw, total] = await Promise.all([
       this.prisma.employerProfile.findMany({
@@ -76,13 +82,16 @@ export class EmployersService {
       this.prisma.employerProfile.count({ where }),
     ]);
 
-    const data = raw.map((e) => ({
+    const data = (raw as any[]).map((e) => ({
       id: e.id,
       companyName: e.companyName,
       logoUrl: e.logoUrl ?? null,
+      coverImage: e.coverImage ?? null,
+      slug: e.slug ?? null,
       companySize: e.companySize ?? null,
       website: e.website ?? null,
       address: e.address ?? null,
+      description: e.description ?? null,
       industryId: e.industryId ?? null,
       industryName: e.industry?.name ?? null,
       industrySlug: e.industry?.slug ?? null,
@@ -99,7 +108,9 @@ export class EmployersService {
       },
     };
 
-    await this.redis.set(cacheKey, result, { ex: 300 });
+    if (!query.keyword) {
+      await this.redis.set(cacheKey, result, { ex: 300 });
+    }
     return result;
   }
 
@@ -157,6 +168,7 @@ export class EmployersService {
       id: company.id,
       companyName: company.companyName,
       logoUrl: company.logoUrl ?? null,
+      coverImage: (company as any).coverImage ?? null,
       companySize: company.companySize ?? null,
       website: company.website ?? null,
       address: company.address ?? null,

@@ -27,6 +27,7 @@ import { CvScoringModule } from './cv-scoring/cv-scoring.module';
 import { RemindersModule } from './reminders/reminders.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { QuizModule } from './quiz/quiz.module';
+import { BlogModule } from './blog/blog.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { QuizModule } from './quiz/quiz.module';
     RemindersModule,
     RatingsModule,
     QuizModule,
+    BlogModule,
   ],
 })
 export class AppModule {}

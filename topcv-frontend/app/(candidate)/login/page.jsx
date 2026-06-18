@@ -34,13 +34,14 @@ export default function CandidateLoginPage() {
 
         try {
             const res = await authService.login(email, password);
+            const data = res.data?.data ?? res.data;
 
-            if (res.data.require2FA) {
-                router.push(`/verify-otp?email=${res.data.email}&type=two_factor_login&role=${res.data.role}`);
+            if (data.require2FA) {
+                router.push(`/verify-otp?email=${data.email}&type=two_factor_login&role=${data.role}`);
                 return;
             }
 
-            setAuth(res.data.accessToken, res.data.refreshToken, res.data.role);
+            setAuth(data.accessToken, data.refreshToken, data.role);
             router.push('/');
         } catch (err) {
             const message = err.response?.data?.message;

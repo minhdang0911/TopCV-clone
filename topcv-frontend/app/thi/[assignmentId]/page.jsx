@@ -80,7 +80,7 @@ function ResultScreen({ result, autoSubmit }) {
 
 export default function CandidateTestPage() {
     const { assignmentId } = useParams();
-    const [state, setState] = useState('loading'); // loading | ready | taking | result | error
+    const [state, setState] = useState('ready'); // ready | loading | taking | result | error
     const [autoSubmit, setAutoSubmit] = useState(false);
     const [attempt, setAttempt] = useState(null);
     const [answers, setAnswers] = useState({});
@@ -117,7 +117,7 @@ export default function CandidateTestPage() {
     // Auto-submit when time runs out
     useEffect(() => {
         if (remaining === 0 && state === 'taking') {
-            handleSubmit(true);
+            setTimeout(() => handleSubmit(true), 0);
         }
     }, [remaining, state, handleSubmit]);
 
@@ -132,10 +132,6 @@ export default function CandidateTestPage() {
             setState('error');
         }
     };
-
-    useEffect(() => {
-        setState('ready');
-    }, []);
 
     if (state === 'result') return <ResultScreen result={result} autoSubmit={autoSubmit} />;
 

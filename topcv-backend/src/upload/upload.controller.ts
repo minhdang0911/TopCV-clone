@@ -130,6 +130,34 @@ export class UploadController {
     return { data: { url } };
   }
 
+  @Post('cover')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', { storage: undefined }))
+  async uploadCover(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    const userId = req.user.sub;
+    const role = req.user.role;
+
+    if (role !== 'EMPLOYER') {
+      throw new BadRequestException('Chỉ nhà tuyển dụng mới có thể upload ảnh bìa công ty');
+    }
+
+    const me = await this.usersService.getMe(userId);
+    const companyName = me?.employerProfile?.companyName || userId;
+    const folderName = slugify(companyName);
+
+    const folder = `topcv-clone/${folderName}/cover`;
+    const url = await this.uploadService.uploadImage(file, folder, 'cover');
+
+    await this.usersService.updateEmployerProfile(userId, { coverImage: url });
+
+    return {
+      code: 200,
+      status: 'success',
+      message: 'Upload ảnh bìa công ty thành công',
+      data: { url },
+    };
+  }
+
   @Post('logo')
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', { storage: undefined }))

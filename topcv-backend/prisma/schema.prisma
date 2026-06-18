@@ -98,6 +98,8 @@ model User {
   ratingsReceived          Rating[]                    @relation("RatingsReceived")
   quizzesAsEmployer        Quiz[]                      @relation("EmployerQuizzes")
   quizAttempts             QuizAttempt[]               @relation("CandidateAttempts")
+  blogPosts                BlogPost[]
+  blogBookmarks            BlogBookmark[]
 
   @@map("users")
 }
@@ -626,4 +628,73 @@ model AttemptAnswer {
 
   @@unique([attemptId, questionId])
   @@map("attempt_answers")
+}
+
+model BlogCategory {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  coverImage  String? @map("cover_image")
+
+  posts BlogPost[]
+
+  @@map("blog_categories")
+}
+
+model BlogPost {
+  id          String    @id @default(cuid())
+  authorId    String    @map("author_id")
+  categoryId  String    @map("category_id")
+  title       String
+  slug        String    @unique
+  description String?
+  content     String    @db.Text
+  thumbnail   String?
+  minRead     Int       @default(1) @map("min_read")
+  isPublished Boolean   @default(false) @map("is_published")
+  publishedAt DateTime? @map("published_at")
+  viewCount   Int       @default(0) @map("view_count")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  author    User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  category  BlogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tags      BlogPostTag[]
+  bookmarks BlogBookmark[]
+
+  @@map("blog_posts")
+}
+
+model BlogTag {
+  id   String @id @default(cuid())
+  name String @unique
+  slug String @unique
+
+  posts BlogPostTag[]
+
+  @@map("blog_tags")
+}
+
+model BlogPostTag {
+  postId String @map("post_id")
+  tagId  String @map("tag_id")
+
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@map("blog_post_tags")
+}
+
+model BlogBookmark {
+  userId    String   @map("user_id")
+  postId    String   @map("post_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([userId, postId])
+  @@map("blog_bookmarks")
 }

@@ -77,13 +77,13 @@ export default function VerifyOtpContent() {
             const res = await authService.verifyOtp(email, code, type);
 
             if (type === 'verify_email') {
-                // Lưu token vào store
-                setAuth(res.data.accessToken, res.data.role);
+                const d = res.data?.data ?? res.data;
+                setAuth(d.accessToken, d.refreshToken, d.role);
             }
 
             setSuccess('Xác thực thành công!');
             setTimeout(() => {
-                router.push(role === 'EMPLOYER' ? `/employer-complete-profile?email=${email}` : '/login');
+                router.push(role === 'EMPLOYER' ? `/employer-complete-profile?email=${email}` : '/');
             }, 1500);
         } catch (err) {
             setError(err.response?.data?.message || 'OTP không hợp lệ hoặc đã hết hạn');

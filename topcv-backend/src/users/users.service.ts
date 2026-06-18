@@ -160,6 +160,7 @@ export class UsersService {
       website?: string;
       address?: string;
       logoUrl?: string;
+      coverImage?: string;
       description?: string;
       taxCode?: string;
     },

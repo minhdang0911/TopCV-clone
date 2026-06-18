@@ -4,6 +4,9 @@ import LapTrinhVien1 from './templates/LapTrinhVien1';
 import LapTrinhVien2 from './templates/LapTrinhVien2';
 import MauSac1 from './templates/MauSac1';
 import MauSac2 from './templates/MauSac2';
+import ThoiThuong1 from './templates/ThoiThuong1';
+import ChuyenNghiep1 from './templates/ChuyenNghiep1';
+import SangTao1 from './templates/SangTao1';
 
 export const CL_TEMPLATE_META = [
     {
@@ -54,6 +57,30 @@ export const CL_TEMPLATE_META = [
         defaultFont: 'Be Vietnam Pro',
         colors: ['#27ae60', '#e67e22', '#c0392b', '#2c3e7a'],
     },
+    {
+        id: 'thoi-thuong-1',
+        name: 'Thời thượng',
+        tags: ['Đơn giản', 'Hiện đại'],
+        defaultColor: '#00b14f',
+        defaultFont: 'Be Vietnam Pro',
+        colors: ['#00b14f', '#1e3a5f', '#e67e22', '#7c3aed'],
+    },
+    {
+        id: 'chuyen-nghiep-1',
+        name: 'Chuyên nghiệp',
+        tags: ['Chuyên nghiệp'],
+        defaultColor: '#1e3a5f',
+        defaultFont: 'Roboto',
+        colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'],
+    },
+    {
+        id: 'sang-tao-1',
+        name: 'Sáng tạo',
+        tags: ['Màu sắc', 'Sáng tạo'],
+        defaultColor: '#e67e22',
+        defaultFont: 'Open Sans',
+        colors: ['#e67e22', '#7c3aed', '#be123c', '#0ea5e9'],
+    },
 ];
 
 export const CL_TEMPLATE_REGISTRY = {
@@ -63,6 +90,9 @@ export const CL_TEMPLATE_REGISTRY = {
     'lap-trinh-vien-2': LapTrinhVien2,
     'mau-sac-1': MauSac1,
     'mau-sac-2': MauSac2,
+    'thoi-thuong-1': ThoiThuong1,
+    'chuyen-nghiep-1': ChuyenNghiep1,
+    'sang-tao-1': SangTao1,
 };
 
 export const FONT_OPTIONS = [

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Save, Printer, ArrowLeft, GripVertical, Check, Eye, EyeOff, ChevronRight, X } from 'lucide-react';
 import {
@@ -23,6 +23,22 @@ import HienDaiTemplate from '@/app/components/cv/templates/HienDai';
 import ChuyenNghiepTemplate from '@/app/components/cv/templates/ChuyenNghiep';
 import GocCanhTemplate from '@/app/components/cv/templates/GocCanh';
 import ThamVongTemplate from '@/app/components/cv/templates/ThamVong';
+import KinhDoanhTemplate from '@/app/components/cv/templates/KinhDoanh';
+import KinhDoanh2Template from '@/app/components/cv/templates/KinhDoanh2';
+import KinhDoanh3Template from '@/app/components/cv/templates/KinhDoanh3';
+import KinhDoanh4Template from '@/app/components/cv/templates/KinhDoanh4';
+import LapTrinhVienCVTemplate from '@/app/components/cv/templates/LapTrinhVienCV';
+import LapTrinhVienCV2Template from '@/app/components/cv/templates/LapTrinhVienCV2';
+import LapTrinhVienCV3Template from '@/app/components/cv/templates/LapTrinhVienCV3';
+import LapTrinhVienCV4Template from '@/app/components/cv/templates/LapTrinhVienCV4';
+import KeToanTemplate from '@/app/components/cv/templates/KeToan';
+import KeToan2Template from '@/app/components/cv/templates/KeToan2';
+import KeToan3Template from '@/app/components/cv/templates/KeToan3';
+import KeToan4Template from '@/app/components/cv/templates/KeToan4';
+import MarketingCVTemplate from '@/app/components/cv/templates/MarketingCV';
+import MarketingCV2Template from '@/app/components/cv/templates/MarketingCV2';
+import MarketingCV3Template from '@/app/components/cv/templates/MarketingCV3';
+import MarketingCV4Template from '@/app/components/cv/templates/MarketingCV4';
 import EditableCVDocument, { SECTION_LABELS, ALL_SECTIONS } from './EditableCVDocument';
 
 // ── Constants ────────────────────────────────────────────────────────────────
@@ -59,6 +75,22 @@ const ALL_TEMPLATES = [
     { id: 'chuyen-nghiep', name: 'Chuyên nghiệp', Component: ChuyenNghiepTemplate, colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'] },
     { id: 'goc-canh', name: 'Góc cạnh', Component: GocCanhTemplate, colors: ['#1e293b', '#1e3a5f', '#7c3aed', '#be123c'] },
     { id: 'tham-vong', name: 'Tham vọng', Component: ThamVongTemplate, colors: ['#1e293b', '#0f4c75', '#6d28d9', '#064e3b'] },
+    { id: 'kinh-doanh', name: 'Kinh doanh 1', Component: KinhDoanhTemplate, colors: ['#d35400', '#c0392b', '#e67e22', '#27ae60'] },
+    { id: 'kinh-doanh-2', name: 'Kinh doanh 2', Component: KinhDoanh2Template, colors: ['#c0392b', '#d35400', '#7c3aed', '#1e3a5f'] },
+    { id: 'kinh-doanh-3', name: 'Kinh doanh 3', Component: KinhDoanh3Template, colors: ['#27ae60', '#00b14f', '#16a085', '#2471a3'] },
+    { id: 'kinh-doanh-4', name: 'Kinh doanh 4', Component: KinhDoanh4Template, colors: ['#e67e22', '#d35400', '#c0392b', '#7c3aed'] },
+    { id: 'lap-trinh-vien-cv', name: 'Lập trình viên 1', Component: LapTrinhVienCVTemplate, colors: ['#2c3e7a', '#1e293b', '#16a085', '#6d28d9'] },
+    { id: 'lap-trinh-vien-cv-2', name: 'Lập trình viên 2', Component: LapTrinhVienCV2Template, colors: ['#16a085', '#0f4c75', '#2c3e7a', '#6d28d9'] },
+    { id: 'lap-trinh-vien-cv-3', name: 'Lập trình viên 3', Component: LapTrinhVienCV3Template, colors: ['#6d28d9', '#2c3e7a', '#16a085', '#0ea5e9'] },
+    { id: 'lap-trinh-vien-cv-4', name: 'Lập trình viên 4', Component: LapTrinhVienCV4Template, colors: ['#0ea5e9', '#2c3e7a', '#8b5cf6', '#16a085'] },
+    { id: 'ke-toan', name: 'Kế toán 1', Component: KeToanTemplate, colors: ['#1a3a6b', '#374151', '#065f46', '#7c3aed'] },
+    { id: 'ke-toan-2', name: 'Kế toán 2', Component: KeToan2Template, colors: ['#374151', '#1a3a6b', '#1e293b', '#065f46'] },
+    { id: 'ke-toan-3', name: 'Kế toán 3', Component: KeToan3Template, colors: ['#065f46', '#1a3a6b', '#374151', '#2471a3'] },
+    { id: 'ke-toan-4', name: 'Kế toán 4', Component: KeToan4Template, colors: ['#7c3aed', '#1a3a6b', '#374151', '#065f46'] },
+    { id: 'marketing-cv', name: 'Marketing 1', Component: MarketingCVTemplate, colors: ['#7c3aed', '#be123c', '#d97706', '#0ea5e9'] },
+    { id: 'marketing-cv-2', name: 'Marketing 2', Component: MarketingCV2Template, colors: ['#be123c', '#7c3aed', '#d97706', '#0ea5e9'] },
+    { id: 'marketing-cv-3', name: 'Marketing 3', Component: MarketingCV3Template, colors: ['#d97706', '#be123c', '#7c3aed', '#0ea5e9'] },
+    { id: 'marketing-cv-4', name: 'Marketing 4', Component: MarketingCV4Template, colors: ['#0ea5e9', '#7c3aed', '#be123c', '#d97706'] },
 ];
 
 const THUMB_SAMPLE = {
@@ -240,7 +272,6 @@ export default function CvEditorPage() {
     const fontSize = resume.fontSize || 'medium';
     const lineSpacing = resume.lineSpacing || 1.5;
     const background = content.cvBackground || 'white';
-    const TemplateComponent = getTemplate(resume.template);
     const tplMeta = ALL_TEMPLATES.find((t) => t.id === resume.template);
 
     const setR = (patch) => useResumeStore.setState((s) => ({ resume: { ...s.resume, ...patch }, isDirty: true }));
@@ -484,7 +515,7 @@ export default function CvEditorPage() {
                 <div style={{ flex: 1, overflowY: 'auto', background: '#525659', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '32px 24px' }}>
                     {previewMode ? (
                         <div id="cv-print-area" style={{ width: '794px', minHeight: '1123px', boxShadow: '0 4px 30px rgba(0,0,0,0.4)', flexShrink: 0 }}>
-                            <TemplateComponent content={content} color={color} fontSize={fontSize} lineSpacing={lineSpacing} background={background} />
+                            {React.createElement(getTemplate(resume.template), { content, color, fontSize, lineSpacing, background })}
                         </div>
                     ) : (
                         <div style={{ width: '794px', minHeight: '1123px', boxShadow: '0 4px 30px rgba(0,0,0,0.4)', flexShrink: 0 }}>

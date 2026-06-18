@@ -43,6 +43,13 @@ import NotificationBell from '@/app/components/NotificationBell';
 import { useRouter, usePathname } from 'next/navigation';
 import { paymentService } from '@/services/payment.service';
 
+const decodeHtml = (str) => {
+    if (!str || typeof document === 'undefined') return str;
+    const el = document.createElement('div');
+    el.innerHTML = str;
+    return el.textContent;
+};
+
 const PLAN_META = {
     FREE: { label: null, color: null, bg: null },
     PRO: { label: 'Pro', color: '#00b14f', bg: '#dcfce7' },
@@ -67,10 +74,10 @@ const TAO_CV_STYLE = [
     { label: 'Mẫu CV Harvard', href: '/tao-cv', Icon: BookOpen },
 ];
 const TAO_CV_POSITION = [
-    { label: 'Nhân viên kinh doanh', href: '/tao-cv' },
-    { label: 'Lập trình viên', href: '/tao-cv' },
-    { label: 'Nhân viên kế toán', href: '/tao-cv' },
-    { label: 'Chuyên viên marketing', href: '/tao-cv' },
+    { label: 'Nhân viên kinh doanh', href: '/tao-cv?linhvuc=kinh-doanh' },
+    { label: 'Lập trình viên', href: '/tao-cv?linhvuc=lap-trinh-vien' },
+    { label: 'Nhân viên kế toán', href: '/tao-cv?linhvuc=ke-toan' },
+    { label: 'Chuyên viên marketing', href: '/tao-cv?linhvuc=marketing' },
 ];
 const TAO_CV_MANAGE = [
     { label: 'Quản lý CV', href: '/quan-ly-cv', Icon: FileText },
@@ -309,6 +316,8 @@ export default function Header() {
     const [userMenuOpen, setUserMenuOpen] = useState(false);
     const [openSections, setOpenSections] = useState(new Set());
     const [planInfo, setPlanInfo] = useState(null);
+    const [featuredPosts, setFeaturedPosts] = useState([]);
+    const [blogCategories, setBlogCategories] = useState(CAM_NANG_ITEMS);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -328,12 +337,19 @@ export default function Header() {
     useEffect(() => {
         const fetchMenuData = async () => {
             try {
-                const [posRes, indRes] = await Promise.all([
+                const [posRes, indRes, catRes, featRes] = await Promise.all([
                     api.get('/job-positions?limit=100'),
                     api.get('/industries?limit=100'),
+                    api.get('/blog/categories'),
+                    api.get('/blog/featured?limit=2'),
                 ]);
                 setJobPositions(posRes.data.data || []);
                 setIndustries(indRes.data.data || []);
+                const cats = catRes.data || [];
+                if (cats.length > 0) {
+                    setBlogCategories(cats.map((c) => ({ label: c.name, href: `/blog/${c.slug}` })));
+                }
+                setFeaturedPosts(featRes.data || []);
             } catch (err) {
                 console.error(err);
             }
@@ -769,7 +785,7 @@ export default function Header() {
         'cam-nang': (
             <MobileSection
                 title=""
-                items={CAM_NANG_ITEMS.map((i) => ({ ...i, Icon: BarChart2 }))}
+                items={blogCategories.map((i) => ({ ...i, Icon: BarChart2 }))}
                 onClose={onMobileClose}
             />
         ),
@@ -998,14 +1014,15 @@ export default function Header() {
                     borderRadius: '10px',
                     boxShadow: '0 8px 40px rgba(0,0,0,0.13)',
                     border: '1px solid #f0f0f0',
-                    width: '480px',
+                    width: '500px',
                     padding: '24px',
                     zIndex: 200,
                 }}
             >
-                <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: '24px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: '24px' }}>
                     <div>
-                        {CAM_NANG_ITEMS.map((i) => (
+                        <p style={sectionLabel}>CHỦ ĐỀ</p>
+                        {blogCategories.map((i) => (
                             <Link
                                 key={i.label}
                                 href={i.href}
@@ -1016,23 +1033,53 @@ export default function Header() {
                                 {i.label}
                             </Link>
                         ))}
+                        <Link
+                            href="/blog"
+                            style={{ ...navLinkStyle, color: GREEN, fontWeight: '600', marginTop: '8px' }}
+                            onMouseEnter={hoverGreen}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = GREEN)}
+                        >
+                            Xem tất cả →
+                        </Link>
                     </div>
                     <div>
                         <p style={sectionLabel}>BÀI VIẾT NỔI BẬT</p>
-                        {[
-                            'Telesales là gì? Những công việc Telesales HOT nhất',
-                            'TopCV Pro - Không gian tuyển dụng chuyên biệt',
-                        ].map((t) => (
-                            <Link
-                                key={t}
-                                href="#"
-                                style={{ ...navLinkStyle, lineHeight: '1.5', marginBottom: '8px' }}
-                                onMouseEnter={hoverGreen}
-                                onMouseLeave={hoverGray}
-                            >
-                                {t}
-                            </Link>
-                        ))}
+                        {featuredPosts.length > 0 ? (
+                            featuredPosts.map((p) => (
+                                <Link
+                                    key={p.id}
+                                    href={`/blog/${p.slug}`}
+                                    style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px', textDecoration: 'none' }}
+                                    onMouseEnter={(e) => { e.currentTarget.querySelector('.feat-title').style.color = GREEN; }}
+                                    onMouseLeave={(e) => { e.currentTarget.querySelector('.feat-title').style.color = '#1e293b'; }}
+                                >
+                                    {p.thumbnail && (
+                                        <img src={p.thumbnail} alt={p.title}
+                                            style={{ width: '72px', height: '54px', objectFit: 'cover', borderRadius: '6px', flexShrink: 0 }} />
+                                    )}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p className="feat-title" style={{ fontSize: '13px', fontWeight: '600', color: '#1e293b', lineHeight: '1.4', marginBottom: '3px', transition: 'color 0.15s', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                            {p.title}
+                                        </p>
+                                        {p.description && (
+                                            <p style={{ fontSize: '11px', color: '#94a3b8', lineHeight: '1.4', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                {decodeHtml(p.description)}
+                                            </p>
+                                        )}
+                                    </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <p style={{ fontSize: '13px', color: '#9ca3af' }}>Chưa có bài viết</p>
+                        )}
+                        <Link
+                            href="/blog"
+                            style={{ ...navLinkStyle, color: GREEN, fontWeight: '600', marginTop: '8px' }}
+                            onMouseEnter={hoverGreen}
+                            onMouseLeave={(e) => (e.currentTarget.style.color = GREEN)}
+                        >
+                            Xem thêm bài viết →
+                        </Link>
                     </div>
                 </div>
             </div>

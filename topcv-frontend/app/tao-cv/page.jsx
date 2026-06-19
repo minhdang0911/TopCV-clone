@@ -272,6 +272,12 @@ const LINHVUC_MAP = {
     'marketing': 'Chuyên viên marketing',
 };
 
+const STYLE_MAP = {
+    'don-gian': 'Mẫu CV Đơn giản',
+    'an-tuong': 'Mẫu CV Ấn tượng',
+    'chuyen-nghiep': 'Mẫu CV Chuyên nghiệp',
+};
+
 function Thumbnail({ Component, color, content, scale = SCALE }) {
     const w = Math.round(A4_W * scale);
     const h = Math.round(A4_H * scale);
@@ -297,8 +303,8 @@ export default function TaoCvPage() {
     const searchParams = useSearchParams();
     const { isAuthenticated } = useAuthStore();
     const linhvuc = searchParams.get('linhvuc');
-    // Derive directly from URL — always fresh on navigation, no state sync needed
-    const urlFilter = linhvuc ? (LINHVUC_MAP[linhvuc] || null) : null;
+    const style = searchParams.get('style');
+    const urlFilter = linhvuc ? (LINHVUC_MAP[linhvuc] || null) : style ? (STYLE_MAP[style] || null) : null;
     const [localFilter, setLocalFilter] = useState('Tất cả');
     const activeFilter = urlFilter || localFilter;
 

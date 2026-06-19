@@ -68,10 +68,9 @@ const CONG_TY_ITEMS = [
     { label: 'Công ty', href: '/cong-ty/pro', Icon: Building, badge: 'Pro' },
 ];
 const TAO_CV_STYLE = [
-    { label: 'Mẫu CV Đơn giản', href: '/tao-cv', Icon: FileText },
-    { label: 'Mẫu CV Ấn tượng', href: '/tao-cv', Icon: Star },
-    { label: 'Mẫu CV Chuyên nghiệp', href: '/tao-cv', Icon: GraduationCap },
-    { label: 'Mẫu CV Harvard', href: '/tao-cv', Icon: BookOpen },
+    { label: 'Mẫu CV Đơn giản', href: '/tao-cv?style=don-gian', Icon: FileText },
+    { label: 'Mẫu CV Ấn tượng', href: '/tao-cv?style=an-tuong', Icon: Star },
+    { label: 'Mẫu CV Chuyên nghiệp', href: '/tao-cv?style=chuyen-nghiep', Icon: GraduationCap },
 ];
 const TAO_CV_POSITION = [
     { label: 'Nhân viên kinh doanh', href: '/tao-cv?linhvuc=kinh-doanh' },
@@ -95,11 +94,11 @@ const KHAM_PHA_ITEMS = [
     { label: 'Khóa học', href: '#', Icon: Compass },
 ];
 const CONG_CU_ITEMS = [
-    { label: 'Tính lương Gross - Net', href: '#', Icon: Calculator },
-    { label: 'Tính thuế thu nhập cá nhân', href: '#', Icon: DollarSign },
+    { label: 'Tính lương Gross - Net', href: '/cong-cu/tinh-luong-gross-net', Icon: Calculator },
+    { label: 'Tính thuế thu nhập cá nhân', href: '/cong-cu/tinh-thue-thu-nhap-ca-nhan', Icon: DollarSign },
     { label: 'Tra cứu lương', href: '#', Icon: TrendingUp, badge: 'Mới' },
-    { label: 'Tính lãi suất kép', href: '#', Icon: Percent },
-    { label: 'Tính bảo hiểm thất nghiệp', href: '#', Icon: Shield },
+    { label: 'Tính lãi suất kép', href: '/cong-cu/tinh-lai-kep', Icon: Percent },
+    { label: 'Tính bảo hiểm thất nghiệp', href: '/cong-cu/tinh-bao-hiem-that-nghiep', Icon: Shield },
     { label: 'Tính bảo hiểm xã hội một lần', href: '#', Icon: Shield },
     { label: 'Lập kế hoạch tiết kiệm', href: '#', Icon: PiggyBank },
     { label: 'Mobile App TopCV', href: '#', Icon: Smartphone },
@@ -137,11 +136,13 @@ const NAV_SECTION_PATHS = {
         '/xem-ho-so',
     ],
     'cong-ty': ['/cong-ty'],
+    'cong-cu': ['/cong-cu'],
+    'cam-nang': ['/cam-nang', '/blog'],
 };
 
 function checkNavActive(item, pathname) {
-    if (!pathname || item.href === '#') return false;
-    const paths = NAV_SECTION_PATHS[item.key] || [item.href];
+    if (!pathname) return false;
+    const paths = NAV_SECTION_PATHS[item.key] || (item.href !== '#' ? [item.href] : []);
     return paths.some((p) => pathname === p || pathname.startsWith(p + '/'));
 }
 
@@ -974,33 +975,39 @@ export default function Header() {
             >
                 <div>
                     <p style={sectionLabel}>KHÁM PHÁ VÀ NÂNG CẤP BẢN THÂN</p>
-                    {KHAM_PHA_ITEMS.map((i) => (
-                        <Link
-                            key={i.label}
-                            href={i.href}
-                            style={{ ...navLinkStyle, display: 'flex', alignItems: 'center', gap: '4px' }}
-                            onMouseEnter={hoverGreen}
-                            onMouseLeave={hoverGray}
-                        >
-                            {i.label}
-                            {i.badge === 'Mới' && <NewBadge />}
-                        </Link>
-                    ))}
+                    {KHAM_PHA_ITEMS.map((i) => {
+                        const active = i.href !== '#' && (pathname === i.href || pathname.startsWith(i.href + '/'));
+                        return (
+                            <Link
+                                key={i.label}
+                                href={i.href}
+                                style={{ ...navLinkStyle, display: 'flex', alignItems: 'center', gap: '4px', color: active ? GREEN : undefined, fontWeight: active ? '600' : undefined }}
+                                onMouseEnter={hoverGreen}
+                                onMouseLeave={active ? (e) => (e.currentTarget.style.color = GREEN) : hoverGray}
+                            >
+                                {i.label}
+                                {i.badge === 'Mới' && <NewBadge />}
+                            </Link>
+                        );
+                    })}
                 </div>
                 <div>
                     <p style={sectionLabel}>CÔNG CỤ</p>
-                    {CONG_CU_ITEMS.map((i) => (
-                        <Link
-                            key={i.label}
-                            href={i.href}
-                            style={{ ...navLinkStyle, display: 'flex', alignItems: 'center', gap: '4px' }}
-                            onMouseEnter={hoverGreen}
-                            onMouseLeave={hoverGray}
-                        >
-                            {i.label}
-                            {i.badge === 'Mới' && <NewBadge />}
-                        </Link>
-                    ))}
+                    {CONG_CU_ITEMS.map((i) => {
+                        const active = i.href !== '#' && (pathname === i.href || pathname.startsWith(i.href + '/'));
+                        return (
+                            <Link
+                                key={i.label}
+                                href={i.href}
+                                style={{ ...navLinkStyle, display: 'flex', alignItems: 'center', gap: '4px', color: active ? GREEN : undefined, fontWeight: active ? '600' : undefined }}
+                                onMouseEnter={hoverGreen}
+                                onMouseLeave={active ? (e) => (e.currentTarget.style.color = GREEN) : hoverGray}
+                            >
+                                {i.label}
+                                {i.badge === 'Mới' && <NewBadge />}
+                            </Link>
+                        );
+                    })}
                 </div>
             </div>
         ),

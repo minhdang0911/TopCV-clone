@@ -51,14 +51,14 @@ export const TEMPLATE_REGISTRY = {
 };
 
 export const TEMPLATE_META = [
-    { id: 'tieu-chuan', name: 'Tiêu chuẩn', colors: ['#00b14f', '#1e3a5f', '#c0392b', '#2471a3', '#6c3483'], tags: ['Phổ biến', 'Chuyên nghiệp'] },
-    { id: 'tieu-chuan-it-kn', name: 'Tiêu chuẩn (ít KN)', colors: ['#00b14f', '#1e3a5f', '#e67e22', '#16a085'], tags: ['Sinh viên', 'Fresher'] },
-    { id: 'an-tuong', name: 'Ấn tượng', colors: ['#1e3a5f', '#111827', '#7b2d8b', '#c0392b'], tags: ['Ấn tượng', 'Sáng tạo'] },
-    { id: 'thanh-lich', name: 'Thanh lịch', colors: ['#00b14f', '#1e3a5f', '#64748b', '#7c3aed'], tags: ['Đơn giản', 'Thanh lịch'] },
-    { id: 'hien-dai', name: 'Hiện đại', colors: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981'], tags: ['Hiện đại', 'Sáng tạo'] },
-    { id: 'chuyen-nghiep', name: 'Chuyên nghiệp', colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'], tags: ['Chuyên nghiệp'] },
-    { id: 'goc-canh', name: 'Góc cạnh', colors: ['#1e293b', '#1e3a5f', '#7c3aed', '#be123c'], tags: ['Ấn tượng', 'Mạnh mẽ'] },
-    { id: 'tham-vong', name: 'Tham vọng', colors: ['#1e293b', '#0f4c75', '#6d28d9', '#064e3b'], tags: ['Chuyên nghiệp', 'Ấn tượng'] },
+    { id: 'tieu-chuan', name: 'Tiêu chuẩn', colors: ['#00b14f', '#1e3a5f', '#c0392b', '#2471a3', '#6c3483'], tags: ['Mẫu CV Chuyên nghiệp'] },
+    { id: 'tieu-chuan-it-kn', name: 'Tiêu chuẩn (ít KN)', colors: ['#00b14f', '#1e3a5f', '#e67e22', '#16a085'], tags: ['Mẫu CV Đơn giản'] },
+    { id: 'an-tuong', name: 'Ấn tượng', colors: ['#1e3a5f', '#111827', '#7b2d8b', '#c0392b'], tags: ['Mẫu CV Ấn tượng'] },
+    { id: 'thanh-lich', name: 'Thanh lịch', colors: ['#00b14f', '#1e3a5f', '#64748b', '#7c3aed'], tags: ['Mẫu CV Đơn giản'] },
+    { id: 'hien-dai', name: 'Hiện đại', colors: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981'], tags: ['Mẫu CV Ấn tượng'] },
+    { id: 'chuyen-nghiep', name: 'Chuyên nghiệp', colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'], tags: ['Mẫu CV Chuyên nghiệp'] },
+    { id: 'goc-canh', name: 'Góc cạnh', colors: ['#1e293b', '#1e3a5f', '#7c3aed', '#be123c'], tags: ['Mẫu CV Ấn tượng'] },
+    { id: 'tham-vong', name: 'Tham vọng', colors: ['#1e293b', '#0f4c75', '#6d28d9', '#064e3b'], tags: ['Mẫu CV Chuyên nghiệp', 'Mẫu CV Ấn tượng'] },
     { id: 'kinh-doanh', name: 'Kinh doanh 1', colors: ['#d35400', '#c0392b', '#e67e22', '#27ae60'], tags: ['Nhân viên kinh doanh'] },
     { id: 'kinh-doanh-2', name: 'Kinh doanh 2', colors: ['#c0392b', '#d35400', '#7c3aed', '#1e3a5f'], tags: ['Nhân viên kinh doanh'] },
     { id: 'kinh-doanh-3', name: 'Kinh doanh 3', colors: ['#27ae60', '#00b14f', '#16a085', '#2471a3'], tags: ['Nhân viên kinh doanh'] },

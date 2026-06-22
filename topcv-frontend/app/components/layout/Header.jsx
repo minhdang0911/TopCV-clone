@@ -103,21 +103,13 @@ const CONG_CU_ITEMS = [
     { label: 'Lập kế hoạch tiết kiệm', href: '#', Icon: PiggyBank },
     { label: 'Mobile App TopCV', href: '#', Icon: Smartphone },
 ];
-const CAM_NANG_ITEMS = [
-    { label: 'Định hướng nghề nghiệp', href: '#' },
-    { label: 'Bí kíp tìm việc', href: '#' },
-    { label: 'Chế độ lương thưởng', href: '#' },
-    { label: 'Kiến thức chuyên ngành', href: '#' },
-    { label: 'Hành trang nghề nghiệp', href: '#' },
-    { label: 'Thị trường & xu hướng tuyển dụng', href: '#' },
-];
 
 /* ─── Nav items config — href để click navigate ─── */
 const NAV_ITEMS = [
     { key: 'viec-lam', label: 'Việc làm', href: '/viec-lam' },
     { key: 'tao-cv', label: 'Tạo CV', href: '/tao-cv' },
     { key: 'cong-cu', label: 'Công cụ', href: '#' },
-    { key: 'cam-nang', label: 'Cẩm nang nghề nghiệp', href: '#' },
+    { key: 'cam-nang', label: 'Cẩm nang nghề nghiệp', href: '/blog' },
 ];
 
 /* ─── Active nav detection ─── */
@@ -318,7 +310,7 @@ export default function Header() {
     const [openSections, setOpenSections] = useState(new Set());
     const [planInfo, setPlanInfo] = useState(null);
     const [featuredPosts, setFeaturedPosts] = useState([]);
-    const [blogCategories, setBlogCategories] = useState(CAM_NANG_ITEMS);
+    const [blogCategories, setBlogCategories] = useState([]);
 
     useEffect(() => {
         if (!isAuthenticated) return;

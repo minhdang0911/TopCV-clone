@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { MailService } from '../mail/mail.service';
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class MeetingsService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private mail: MailService,
     private config: ConfigService,
   ) {
     this.appId = this.config.getOrThrow<string>('JAAS_APP_ID');
@@ -102,29 +104,48 @@ export class MeetingsService {
       exists = !!found;
     }
 
-    const meeting = await this.prisma.meeting.create({
-      data: {
-        id: require('crypto').randomUUID(),
-        roomCode,
-        dailyRoomName: roomCode,
-        applicationId: dto.applicationId || null,
-        hostEmployerId: employer.id,
-        candidateId: dto.candidateId,
-        title: dto.title || null,
-        scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
-      },
-    });
+    const [meeting, candidate] = await Promise.all([
+      this.prisma.meeting.create({
+        data: {
+          id: require('crypto').randomUUID(),
+          roomCode,
+          dailyRoomName: roomCode,
+          applicationId: dto.applicationId || null,
+          hostEmployerId: employer.id,
+          candidateId: dto.candidateId,
+          title: dto.title || null,
+          scheduledAt: dto.scheduledAt ? new Date(dto.scheduledAt) : null,
+        },
+      }),
+      this.prisma.user.findUnique({
+        where: { id: dto.candidateId },
+        select: { email: true, candidateProfile: { select: { fullName: true } } },
+      }),
+    ]);
 
-    this.notifications
-      .create(dto.candidateId, {
-        type: 'MEETING_INVITE',
-        title: `${employer.companyName} mời bạn tham gia cuộc họp video`,
-        body: dto.title || 'Nhấn để tham gia cuộc họp',
-        url: `/meet/${roomCode}`,
-      })
-      .catch(() => {});
+    const meetingUrl = `/meet/${roomCode}`;
+    const title = dto.title || 'Cuộc họp video';
 
-    return { data: { ...meeting, meetingUrl: `/meet/${roomCode}` } };
+    this.notifications.create(dto.candidateId, {
+      type: 'MEETING_INVITE',
+      title: `${employer.companyName} mời bạn tham gia cuộc họp video`,
+      body: title,
+      url: meetingUrl,
+    }).catch(() => {});
+
+    if (candidate?.email) {
+      this.mail.sendMeetingInvite({
+        candidateEmail: candidate.email,
+        candidateName: candidate.candidateProfile?.fullName || candidate.email,
+        companyName: employer.companyName,
+        companyLogoUrl: employer.logoUrl || undefined,
+        title,
+        scheduledAt: meeting.scheduledAt,
+        meetingUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}${meetingUrl}`,
+      }).catch(() => {});
+    }
+
+    return { data: { ...meeting, meetingUrl } };
   }
 
   async findByCode(code: string, userId: string, role: string) {

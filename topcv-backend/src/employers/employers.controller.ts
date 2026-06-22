@@ -70,6 +70,24 @@ export class EmployersController {
     return this.employersService.adminApproveDoc(id, approve, rejectReason);
   }
 
+  @Get('admin/employer-reviews')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminGetEmployerReviews(@Query('status') status?: string) {
+    return this.employersService.adminGetEmployerReviews(status);
+  }
+
+  @Patch('admin/employer-reviews/:reviewId/status')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminUpdateReviewStatus(
+    @Param('reviewId') reviewId: string,
+    @Body('status') status: 'APPROVED' | 'REJECTED',
+    @Body('rejectReason') rejectReason?: string,
+  ) {
+    return this.employersService.adminUpdateReviewStatus(reviewId, status, rejectReason);
+  }
+
   @Get()
   findAll(@Query() query: any) {
     return this.employersService.findAll(query);
@@ -117,4 +135,24 @@ export class EmployersController {
   ) {
     return this.employersService.createReview(req.user.sub, id, rating);
   }
+
+  // ── Employer Reviews (detailed) ───────────────────────────────────────────
+
+  @Get(':id/employer-reviews/my-review')
+  @UseGuards(JwtAuthGuard)
+  getMyEmployerReview(@Req() req: any, @Param('id') id: string) {
+    return this.employersService.getMyEmployerReview(req.user.sub, id);
+  }
+
+  @Get(':id/employer-reviews')
+  getEmployerReviews(@Param('id') id: string) {
+    return this.employersService.getEmployerReviews(id);
+  }
+
+  @Post(':id/employer-reviews')
+  @UseGuards(JwtAuthGuard)
+  submitEmployerReview(@Req() req: any, @Param('id') id: string, @Body() body: any) {
+    return this.employersService.submitEmployerReview(req.user.sub, id, body);
+  }
+
 }

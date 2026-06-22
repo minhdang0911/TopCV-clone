@@ -281,6 +281,136 @@ export class MailService {
     });
   }
 
+  async sendMeetingInvite(params: {
+    candidateEmail: string;
+    candidateName: string;
+    companyName: string;
+    companyLogoUrl?: string;
+    title: string;
+    scheduledAt?: Date | null;
+    meetingUrl: string;
+  }) {
+    const { candidateEmail, candidateName, companyName, companyLogoUrl, title, scheduledAt, meetingUrl } = params;
+    const timeStr = scheduledAt
+      ? scheduledAt.toLocaleString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : null;
+    const logoBlock = companyLogoUrl
+      ? `<img src="${companyLogoUrl}" alt="${this.esc(companyName)}" style="height:40px;max-width:150px;object-fit:contain;border-radius:6px;background:#f3f4f6;padding:4px" />`
+      : `<div style="width:40px;height:40px;border-radius:8px;background:#00b14f;display:inline-flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;vertical-align:middle">${(companyName[0] || 'C').toUpperCase()}</div>`;
+
+    await this.mailer.sendMail({
+      to: candidateEmail,
+      subject: `[${companyName}] Lời mời tham gia cuộc họp video: ${title}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:580px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10)">
+          <div style="padding:20px 32px;background:#fafafa;border-bottom:3px solid #00b14f;display:table;width:100%;box-sizing:border-box">
+            <div style="display:table-cell;vertical-align:middle;padding-right:16px">${logoBlock}</div>
+            <div style="display:table-cell;vertical-align:middle">
+              <div style="font-size:17px;font-weight:700;color:#111827">${this.esc(companyName)}</div>
+              <div style="font-size:12px;color:#00b14f;font-weight:600;margin-top:2px">Lời mời họp video</div>
+            </div>
+          </div>
+          <div style="padding:28px 32px">
+            <p style="margin:0 0 12px;color:#374151;font-size:14px;line-height:1.75">Kính gửi <strong>${this.esc(candidateName)}</strong>,</p>
+            <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.75">
+              <strong>${this.esc(companyName)}</strong> mời bạn tham gia cuộc họp video:
+            </p>
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:16px 20px;margin:0 0 20px">
+              <p style="margin:0 0 6px;font-size:16px;font-weight:700;color:#166534">${this.esc(title)}</p>
+              ${timeStr ? `<p style="margin:0;font-size:13px;color:#374151">Thời gian: <strong>${timeStr}</strong></p>` : ''}
+            </div>
+            <a href="${meetingUrl}" style="display:inline-block;background:#00b14f;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Tham gia cuộc họp</a>
+            <p style="margin:20px 0 0;color:#374151;font-size:14px">Trân trọng,<br/><strong>${this.esc(companyName)}</strong></p>
+          </div>
+          <div style="background:#f9fafb;padding:12px 32px;border-top:1px solid #f3f4f6;text-align:center">
+            <div style="font-size:12px;color:#9ca3af">Email gửi tự động qua <strong style="color:#6b7280">TopCV Clone</strong>.</div>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  async sendMeetingReminder(params: {
+    to: string;
+    name: string;
+    title: string;
+    scheduledAt: Date;
+    meetingUrl: string;
+    companyName: string;
+    role: 'candidate' | 'employer';
+  }) {
+    const { to, name, title, scheduledAt, meetingUrl, companyName, role } = params;
+    const timeStr = scheduledAt.toLocaleString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const body = role === 'candidate'
+      ? `<strong>${companyName}</strong> đang chờ bạn trong cuộc họp video.`
+      : `Bạn có lịch họp video với ứng viên trong 1 giờ nữa.`;
+
+    await this.mailer.sendMail({
+      to,
+      subject: `[Nhắc lịch] Cuộc họp video "${title}" bắt đầu lúc ${scheduledAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10)">
+          <div style="background:#00b14f;padding:20px 32px">
+            <div style="font-size:18px;font-weight:700;color:#fff">Nhắc lịch họp video</div>
+          </div>
+          <div style="padding:28px 32px">
+            <p style="margin:0 0 12px;color:#374151;font-size:14px">Xin chào <strong>${this.esc(name)}</strong>,</p>
+            <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.75">${body}</p>
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:14px 18px;margin:0 0 20px">
+              <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#166534">${this.esc(title)}</p>
+              <p style="margin:0;font-size:13px;color:#374151">Thời gian: <strong>${timeStr}</strong></p>
+            </div>
+            <a href="${meetingUrl}" style="display:inline-block;background:#00b14f;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Vào phòng họp ngay</a>
+          </div>
+          <div style="background:#f9fafb;padding:12px 32px;border-top:1px solid #f3f4f6;text-align:center">
+            <div style="font-size:12px;color:#9ca3af">Email gửi tự động qua <strong style="color:#6b7280">TopCV Clone</strong>.</div>
+          </div>
+        </div>
+      `,
+    });
+  }
+
+  async sendInterviewReminder(params: {
+    to: string;
+    name: string;
+    jobTitle: string;
+    companyName: string;
+    interviewAt: Date;
+    role: 'candidate' | 'employer';
+    profileUrl: string;
+  }) {
+    const { to, name, jobTitle, companyName, interviewAt, role, profileUrl } = params;
+    const timeStr = interviewAt.toLocaleString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const body = role === 'candidate'
+      ? `Bạn có lịch phỏng vấn vị trí <strong>${this.esc(jobTitle)}</strong> tại <strong>${this.esc(companyName)}</strong> trong <strong>1 giờ nữa</strong>.`
+      : `Bạn có lịch phỏng vấn ứng viên cho vị trí <strong>${this.esc(jobTitle)}</strong> trong <strong>1 giờ nữa</strong>.`;
+
+    await this.mailer.sendMail({
+      to,
+      subject: `[Nhắc lịch] Phỏng vấn "${jobTitle}" lúc ${interviewAt.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`,
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.10)">
+          <div style="background:#7c3aed;padding:20px 32px">
+            <div style="font-size:18px;font-weight:700;color:#fff">Nhắc lịch phỏng vấn</div>
+          </div>
+          <div style="padding:28px 32px">
+            <p style="margin:0 0 12px;color:#374151;font-size:14px">Xin chào <strong>${this.esc(name)}</strong>,</p>
+            <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.75">${body}</p>
+            <div style="background:#f5f3ff;border:1px solid #c4b5fd;border-radius:8px;padding:14px 18px;margin:0 0 20px">
+              <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#5b21b6">${this.esc(jobTitle)}</p>
+              <p style="margin:0 0 2px;font-size:13px;color:#374151">${this.esc(companyName)}</p>
+              <p style="margin:0;font-size:13px;color:#374151">Thời gian: <strong>${timeStr}</strong></p>
+            </div>
+            <a href="${profileUrl}" style="display:inline-block;background:#7c3aed;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Xem chi tiết</a>
+          </div>
+          <div style="background:#f9fafb;padding:12px 32px;border-top:1px solid #f3f4f6;text-align:center">
+            <div style="font-size:12px;color:#9ca3af">Email gửi tự động qua <strong style="color:#6b7280">TopCV Clone</strong>.</div>
+          </div>
+        </div>
+      `,
+    });
+  }
+
   async sendResetPassword(email: string, resetUrl: string) {
     await this.mailer.sendMail({
       to: email,

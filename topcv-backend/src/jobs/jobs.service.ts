@@ -34,7 +34,8 @@ export class JobsService {
       .toLowerCase()
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\u0111/g, 'd').replace(/\u0110/g, 'd')
+      .replace(/\u0111/g, 'd')
+      .replace(/\u0110/g, 'd')
       .replace(/[^a-z0-9\s-]/g, '')
       .trim()
       .replace(/\s+/g, '-')
@@ -90,36 +91,37 @@ export class JobsService {
     const yesterdayStart = new Date(todayStart);
     yesterdayStart.setDate(yesterdayStart.getDate() - 1);
 
-    const [totalActive, newToday, newYesterday, totalCompanies] = await Promise.all([
-      // Tá»•ng job Ä‘ang active
-      this.prisma.job.count({
-        where: { isActive: true },
-      }),
+    const [totalActive, newToday, newYesterday, totalCompanies] =
+      await Promise.all([
+        // Tá»•ng job Ä‘ang active
+        this.prisma.job.count({
+          where: { isActive: true },
+        }),
 
-      // Job má»›i táº¡o hÃ´m nay
-      this.prisma.job.count({
-        where: {
-          isActive: true,
-          createdAt: { gte: todayStart },
-        },
-      }),
-
-      // Job má»›i táº¡o hÃ´m qua (Ä‘á»ƒ tÃ­nh trend)
-      this.prisma.job.count({
-        where: {
-          isActive: true,
-          createdAt: {
-            gte: yesterdayStart,
-            lt: todayStart,
+        // Job má»›i táº¡o hÃ´m nay
+        this.prisma.job.count({
+          where: {
+            isActive: true,
+            createdAt: { gte: todayStart },
           },
-        },
-      }),
+        }),
 
-      // Sá»‘ cÃ´ng ty Ä‘ang cÃ³ job tuyá»ƒn dá»¥ng
-      this.prisma.employerProfile.count({
-        where: { jobs: { some: { isActive: true } } },
-      }),
-    ]);
+        // Job má»›i táº¡o hÃ´m qua (Ä‘á»ƒ tÃ­nh trend)
+        this.prisma.job.count({
+          where: {
+            isActive: true,
+            createdAt: {
+              gte: yesterdayStart,
+              lt: todayStart,
+            },
+          },
+        }),
+
+        // Sá»‘ cÃ´ng ty Ä‘ang cÃ³ job tuyá»ƒn dá»¥ng
+        this.prisma.employerProfile.count({
+          where: { jobs: { some: { isActive: true } } },
+        }),
+      ]);
 
     // trend: 'up' | 'down' | 'stable'
     const trend =
@@ -293,8 +295,16 @@ export class JobsService {
         throw new BadRequestException('Không tìm thấy thông tin công ty');
       }
 
-      const infoComplete = !!(employer.companyName && employer.address && employer.taxCode);
-      if (!employer.phoneVerified || !infoComplete || employer.businessDocStatus !== 'APPROVED') {
+      const infoComplete = !!(
+        employer.companyName &&
+        employer.address &&
+        employer.taxCode
+      );
+      if (
+        !employer.phoneVerified ||
+        !infoComplete ||
+        employer.businessDocStatus !== 'APPROVED'
+      ) {
         throw new BadRequestException(
           'Tài khoản chưa được xác thực đầy đủ. Vui lòng hoàn thành 3 bước xác thực trước khi đăng tin.',
         );
@@ -330,7 +340,7 @@ export class JobsService {
           },
           industry: true,
           jobPosition: true,
-          // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+
           locations: true,
         },
       });
@@ -354,7 +364,9 @@ export class JobsService {
           case 'P2002':
             throw new BadRequestException('Dá»¯ liá»‡u Ä‘Ã£ tá»“n táº¡i');
           case 'P2025':
-            throw new BadRequestException('KhÃ´ng tÃ¬m tháº¥y dá»¯ liá»‡u liÃªn quan');
+            throw new BadRequestException(
+              'KhÃ´ng tÃ¬m tháº¥y dá»¯ liá»‡u liÃªn quan',
+            );
         }
       }
 
@@ -375,20 +387,24 @@ export class JobsService {
 
     await Promise.all(
       followers.map(async (f) => {
-        await this.notifications.create(f.userId, {
-          type: 'NEW_JOB_FROM_FOLLOWED_COMPANY',
-          title: `${companyName} vừa đăng việc làm mới`,
-          body: job.title,
-          url: jobUrl,
-          data: { jobId: job.id, employerProfileId },
-        }).catch(() => {});
-
-        if (f.user.fcmToken) {
-          await this.firebase.send(f.user.fcmToken, {
+        await this.notifications
+          .create(f.userId, {
+            type: 'NEW_JOB_FROM_FOLLOWED_COMPANY',
             title: `${companyName} vừa đăng việc làm mới`,
             body: job.title,
             url: jobUrl,
-          }).catch(() => {});
+            data: { jobId: job.id, employerProfileId },
+          })
+          .catch(() => {});
+
+        if (f.user.fcmToken) {
+          await this.firebase
+            .send(f.user.fcmToken, {
+              title: `${companyName} vừa đăng việc làm mới`,
+              body: job.title,
+              url: jobUrl,
+            })
+            .catch(() => {});
         }
       }),
     );
@@ -489,7 +505,7 @@ export class JobsService {
           },
           industry: true,
           jobPosition: true,
-          // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+
           locations: true,
         },
       }),
@@ -513,7 +529,10 @@ export class JobsService {
   // â”€â”€â”€ FIND ONE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async findOne(slugOrId: string) {
-    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slugOrId);
+    const isUuid =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        slugOrId,
+      );
     const cacheKey = `job:${slugOrId}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) return cached;
@@ -535,7 +554,7 @@ export class JobsService {
         },
         industry: true,
         jobPosition: true,
-        // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+
         locations: true,
       },
     });
@@ -544,8 +563,6 @@ export class JobsService {
     await this.redis.set(cacheKey, job, { ex: 300 });
     return job;
   }
-
-  // â”€â”€â”€ BACKFILL SLUGS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async backfillSlugs() {
     const jobs = await this.prisma.job.findMany({ where: { slug: null } });
@@ -559,8 +576,6 @@ export class JobsService {
     }
     return { updated: count };
   }
-
-  // â”€â”€â”€ FIND RELATED â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async findRelated(jobId: string, industryId?: number | null, limit = 6) {
     return this.prisma.job.findMany({
@@ -617,7 +632,7 @@ export class JobsService {
         include: {
           industry: true,
           jobPosition: true,
-          // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+
           locations: true,
         },
       }),
@@ -652,7 +667,9 @@ export class JobsService {
     const { locations, ...jobData } = data;
 
     if (locations !== undefined) {
-      await (this.prisma as any).jobLocation.deleteMany({ where: { jobId: id } });
+      await (this.prisma as any).jobLocation.deleteMany({
+        where: { jobId: id },
+      });
       if (Array.isArray(locations) && locations.length > 0) {
         await (this.prisma as any).jobLocation.createMany({
           data: locations.map((loc: any) => ({ ...loc, jobId: id })),
@@ -666,7 +683,7 @@ export class JobsService {
       include: {
         industry: true,
         jobPosition: true,
-        // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+
         locations: true,
       },
     });
@@ -746,25 +763,29 @@ export class JobsService {
       employer: { select: { companyName: true, logoUrl: true, slug: true } },
       industry: { select: { name: true } },
     };
-    const notDismissed = dismissedIds.length > 0 ? { id: { notIn: dismissedIds } } : {};
+    const notDismissed =
+      dismissedIds.length > 0 ? { id: { notIn: dismissedIds } } : {};
 
     if (prefs && !prefs.skipped) {
-      const hasIndustry = Array.isArray(prefs.industryIds) && prefs.industryIds.length > 0;
+      const hasIndustry =
+        Array.isArray(prefs.industryIds) && prefs.industryIds.length > 0;
       const industryIds = hasIndustry ? prefs.industryIds.map(Number) : [];
 
       // Support both old single provinceCode and new multiple provinceCodes
-      const rawCodes: string[] = Array.isArray(prefs.provinceCodes) && prefs.provinceCodes.length > 0
-        ? prefs.provinceCodes.map(String)
-        : prefs.provinceCode ? [String(prefs.provinceCode)] : [];
+      const rawCodes: string[] =
+        Array.isArray(prefs.provinceCodes) && prefs.provinceCodes.length > 0
+          ? prefs.provinceCodes.map(String)
+          : prefs.provinceCode
+            ? [String(prefs.provinceCode)]
+            : [];
       const hasProvince = rawCodes.length > 0;
 
-      // Tier 1: industry + province
       if (hasIndustry && hasProvince) {
         const jobs = await this.prisma.job.findMany({
           where: {
             isActive: true,
             industryId: { in: industryIds },
-            // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+
             locations: { some: { provinceCode: { in: rawCodes } } },
             ...notDismissed,
           },
@@ -778,7 +799,11 @@ export class JobsService {
       // Tier 2: industry only
       if (hasIndustry) {
         const jobs = await this.prisma.job.findMany({
-          where: { isActive: true, industryId: { in: industryIds }, ...notDismissed },
+          where: {
+            isActive: true,
+            industryId: { in: industryIds },
+            ...notDismissed,
+          },
           take: 9,
           orderBy: { createdAt: 'desc' },
           include,
@@ -786,12 +811,11 @@ export class JobsService {
         if (jobs.length >= 1) return { data: jobs, isPersonalized: true };
       }
 
-      // Tier 3: province only
       if (hasProvince) {
         const jobs = await this.prisma.job.findMany({
           where: {
             isActive: true,
-            // @ts-ignore -- locations added in migration; TODO: remove after prisma generate
+
             locations: { some: { provinceCode: { in: rawCodes } } },
             ...notDismissed,
           },
@@ -843,8 +867,11 @@ export class JobsService {
   // GET /jobs/my-stats â€” statistics for the logged-in employer
 
   async getMyReport(userId: string) {
-    const employer = await this.prisma.employerProfile.findUnique({ where: { userId } });
-    if (!employer) throw new BadRequestException('Không tìm thấy thông tin công ty');
+    const employer = await this.prisma.employerProfile.findUnique({
+      where: { userId },
+    });
+    if (!employer)
+      throw new BadRequestException('Không tìm thấy thông tin công ty');
 
     const now = new Date();
     const jobs = await this.prisma.job.findMany({
@@ -852,33 +879,58 @@ export class JobsService {
       orderBy: { createdAt: 'desc' },
       take: 50,
       select: {
-        id: true, title: true, isActive: true, deadline: true, createdAt: true,
+        id: true,
+        title: true,
+        isActive: true,
+        deadline: true,
+        createdAt: true,
         _count: { select: { applications: true } },
       },
     });
 
     const totalJobs = jobs.length;
-    const activeJobs = jobs.filter(j => j.isActive && (!j.deadline || new Date(j.deadline) >= now)).length;
-    const inactiveJobs = jobs.filter(j => !j.isActive).length;
-    const expiredJobs = jobs.filter(j => j.isActive && j.deadline && new Date(j.deadline) < now).length;
-    const totalApplications = jobs.reduce((s, j) => s + j._count.applications, 0);
+    const activeJobs = jobs.filter(
+      (j) => j.isActive && (!j.deadline || new Date(j.deadline) >= now),
+    ).length;
+    const inactiveJobs = jobs.filter((j) => !j.isActive).length;
+    const expiredJobs = jobs.filter(
+      (j) => j.isActive && j.deadline && new Date(j.deadline) < now,
+    ).length;
+    const totalApplications = jobs.reduce(
+      (s, j) => s + j._count.applications,
+      0,
+    );
 
     const topJobs = jobs
-      .map(j => ({
-        id: j.id, title: j.title, isActive: j.isActive,
-        deadline: j.deadline, applicationCount: j._count.applications, createdAt: j.createdAt,
+      .map((j) => ({
+        id: j.id,
+        title: j.title,
+        isActive: j.isActive,
+        deadline: j.deadline,
+        applicationCount: j._count.applications,
+        createdAt: j.createdAt,
       }))
       .sort((a, b) => b.applicationCount - a.applicationCount)
       .slice(0, 10);
 
-    return { overview: { totalJobs, activeJobs, inactiveJobs, expiredJobs, totalApplications }, topJobs };
+    return {
+      overview: {
+        totalJobs,
+        activeJobs,
+        inactiveJobs,
+        expiredJobs,
+        totalApplications,
+      },
+      topJobs,
+    };
   }
 
   async getMyStats(userId: string) {
     const employer = await this.prisma.employerProfile.findUnique({
       where: { userId },
     });
-    if (!employer) throw new BadRequestException('KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin cÃ´ng ty');
+    if (!employer)
+      throw new BadRequestException('Không tìm thấy thông tin công ty');
 
     const now = new Date();
     const sevenDaysAgo = new Date(now);
@@ -899,13 +951,24 @@ export class JobsService {
           where: { employerId: employer.id, isActive: false },
         }),
         this.prisma.job.count({
-          where: { employerId: employer.id, isActive: true, deadline: { lt: now } },
+          where: {
+            employerId: employer.id,
+            isActive: true,
+            deadline: { lt: now },
+          },
         }),
         this.prisma.job.findMany({
           where: { employerId: employer.id },
           orderBy: { createdAt: 'desc' },
           take: 5,
-          select: { id: true, title: true, slug: true, isActive: true, createdAt: true, deadline: true },
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            isActive: true,
+            createdAt: true,
+            deadline: true,
+          },
         }),
         this.prisma.job.findMany({
           where: { employerId: employer.id, createdAt: { gte: sevenDaysAgo } },
@@ -924,7 +987,10 @@ export class JobsService {
       const key = job.createdAt.toISOString().slice(0, 10);
       if (dayMap[key] !== undefined) dayMap[key]++;
     }
-    const weeklyGrowth = Object.entries(dayMap).map(([date, count]) => ({ date, count }));
+    const weeklyGrowth = Object.entries(dayMap).map(([date, count]) => ({
+      date,
+      count,
+    }));
 
     return { total, active, inactive, expired, recentJobs, weeklyGrowth };
   }

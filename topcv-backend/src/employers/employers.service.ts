@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { ModerationService } from './moderation.service';
 import { Redis } from '@upstash/redis';
 
 const SPEEDSMS_ENDPOINT = 'https://api.speedsms.vn/index.php/sms/send';
@@ -46,6 +47,7 @@ export class EmployersService {
   constructor(
     private prisma: PrismaService,
     private notifications: NotificationsService,
+    private moderation: ModerationService,
   ) {}
 
   async findAll(query: { industryId?: string; limit?: string; page?: string; keyword?: string }) {
@@ -509,5 +511,176 @@ export class EmployersService {
         {} as Record<number, number>,
       ),
     };
+  }
+
+  // ── EMPLOYER REVIEWS (detailed, itviec-style) ─────────────────────────────
+
+  async getMyEmployerReview(userId: string, idOrSlug: string) {
+    const employerProfileId = await this.resolveId(idOrSlug);
+    const review = await this.prisma.employerReview.findFirst({
+      where: { userId, employerProfileId },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, status: true, rejectReason: true },
+    });
+    return review ?? null;
+  }
+
+  async submitEmployerReview(userId: string, idOrSlug: string, dto: any) {
+    const employerProfileId = await this.resolveId(idOrSlug);
+
+    const existing = await this.prisma.employerReview.findFirst({
+      where: { userId, employerProfileId, status: 'APPROVED' },
+    });
+    if (existing) {
+      throw new ConflictException('Bạn đã có đánh giá được duyệt cho công ty này');
+    }
+
+    const review = await this.prisma.employerReview.create({
+      data: {
+        user: { connect: { id: userId } },
+        employerProfile: { connect: { id: employerProfileId } },
+        title: dto.title,
+        rating: dto.rating,
+        overtimePolicy: dto.overtimePolicy,
+        overtimeReason: dto.overtimeReason ?? null,
+        liked: dto.liked,
+        improvement: dto.improvement,
+        salaryRating: dto.salaryRating,
+        trainingRating: dto.trainingRating,
+        careRating: dto.careRating,
+        cultureRating: dto.cultureRating,
+        officeRating: dto.officeRating,
+        recommend: dto.recommend,
+        status: 'PENDING',
+      },
+    });
+
+    // Fire-and-forget: AI moderation runs async, candidate gets socket notification when done
+    this.runModerationAsync(review.id, userId, employerProfileId, dto).catch(() => {});
+
+    return { id: review.id, status: review.status };
+  }
+
+  private async runModerationAsync(
+    reviewId: string,
+    userId: string,
+    employerProfileId: string,
+    dto: any,
+  ) {
+    const result = await this.moderation.moderateReview({
+      title: dto.title,
+      liked: dto.liked,
+      improvement: dto.improvement,
+      overtimeReason: dto.overtimeReason,
+    });
+
+    const newStatus = result.approved ? 'APPROVED' : 'REJECTED';
+
+    const [updated] = await Promise.all([
+      this.prisma.employerReview.update({
+        where: { id: reviewId },
+        data: { status: newStatus, rejectReason: result.rejectReason ?? null },
+        select: { employerProfile: { select: { id: true, slug: true } } },
+      }),
+    ]);
+
+    const companySlug = updated.employerProfile?.slug ?? employerProfileId;
+
+    await this.notifications.create(userId, {
+      type: newStatus === 'APPROVED' ? 'review_approved' : 'review_rejected',
+      title: newStatus === 'APPROVED' ? 'Đánh giá được duyệt' : 'Đánh giá bị từ chối',
+      body:
+        newStatus === 'APPROVED'
+          ? 'Đánh giá của bạn đã được duyệt và hiển thị công khai.'
+          : `Đánh giá bị từ chối: ${result.rejectReason}`,
+      url: `/cong-ty/${companySlug}?tab=reviews`,
+    });
+  }
+
+  async getEmployerReviews(idOrSlug: string) {
+    const employerProfileId = await this.resolveId(idOrSlug);
+
+    const [reviews, stats, distrib, recCount] = await Promise.all([
+      this.prisma.employerReview.findMany({
+        where: { employerProfileId, status: 'APPROVED' },
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          rating: true,
+          overtimePolicy: true,
+          overtimeReason: true,
+          liked: true,
+          improvement: true,
+          salaryRating: true,
+          trainingRating: true,
+          careRating: true,
+          cultureRating: true,
+          officeRating: true,
+          recommend: true,
+          createdAt: true,
+          // userId NOT included — anonymous
+        },
+      }),
+      this.prisma.employerReview.aggregate({
+        where: { employerProfileId, status: 'APPROVED' },
+        _avg: {
+          rating: true,
+          salaryRating: true,
+          trainingRating: true,
+          careRating: true,
+          cultureRating: true,
+          officeRating: true,
+        },
+        _count: { id: true },
+      }),
+      this.prisma.employerReview.groupBy({
+        by: ['rating'],
+        where: { employerProfileId, status: 'APPROVED' },
+        _count: { rating: true },
+      }),
+      this.prisma.employerReview.count({
+        where: { employerProfileId, status: 'APPROVED', recommend: true },
+      }),
+    ]);
+
+    const total = stats._count.id;
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    distrib.forEach((d) => { distribution[d.rating] = d._count.rating; });
+
+    return {
+      stats: {
+        avgRating: stats._avg.rating ? Math.round(stats._avg.rating * 10) / 10 : null,
+        totalReviews: total,
+        recommendPercent: total > 0 ? Math.round((recCount / total) * 100) : 0,
+        distribution,
+        avgSalary: stats._avg.salaryRating ? Math.round(stats._avg.salaryRating * 10) / 10 : null,
+        avgTraining: stats._avg.trainingRating ? Math.round(stats._avg.trainingRating * 10) / 10 : null,
+        avgCare: stats._avg.careRating ? Math.round(stats._avg.careRating * 10) / 10 : null,
+        avgCulture: stats._avg.cultureRating ? Math.round(stats._avg.cultureRating * 10) / 10 : null,
+        avgOffice: stats._avg.officeRating ? Math.round(stats._avg.officeRating * 10) / 10 : null,
+      },
+      reviews,
+    };
+  }
+
+  // ── ADMIN: manage employer reviews ────────────────────────────────────────
+
+  async adminGetEmployerReviews(status?: string) {
+    return this.prisma.employerReview.findMany({
+      where: status ? { status: status as any } : undefined,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        employerProfile: { select: { companyName: true, logoUrl: true, slug: true, id: true } },
+        user: { select: { email: true, candidateProfile: { select: { fullName: true, avatarUrl: true } } } },
+      },
+    });
+  }
+
+  async adminUpdateReviewStatus(reviewId: string, status: 'APPROVED' | 'REJECTED', rejectReason?: string) {
+    return this.prisma.employerReview.update({
+      where: { id: reviewId },
+      data: { status, rejectReason: rejectReason ?? null },
+    });
   }
 }

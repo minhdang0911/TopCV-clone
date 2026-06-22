@@ -99,7 +99,7 @@ export default function MeetingRoomPage() {
                     <p className="text-slate-400 text-sm">Vui lòng kiểm tra lại đường link hoặc mã phòng</p>
                 </div>
                 <button
-                    onClick={() => router.push('/cuoc-hop')}
+                    onClick={() => router.push('/meet')}
                     className="px-6 py-2.5 rounded-xl text-sm font-bold text-white border-none cursor-pointer"
                     style={{ background: GREEN }}
                 >

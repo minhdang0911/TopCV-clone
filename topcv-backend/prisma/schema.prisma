@@ -84,6 +84,7 @@ model User {
   payments         Payment[]
   companyFollows   CompanyFollow[]
   companyReviews   CompanyReview[]
+  employerReviews  EmployerReview[]
   applications     Application[]
   savedJobs        SavedJob[]
   fcmToken         String?   @map("fcm_token")
@@ -152,6 +153,7 @@ model EmployerProfile {
   jobs           Job[]
   followers      CompanyFollow[]
   reviews        CompanyReview[]
+  employerReviews EmployerReview[]
   emailTemplates EmailTemplate[]
   conversations  Conversation[]
   connects       EmployerCandidateConnect[]
@@ -185,6 +187,40 @@ model CompanyReview {
 
   @@unique([userId, employerProfileId])
   @@map("company_reviews")
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model EmployerReview {
+  id                String       @id @default(uuid())
+  userId            String       @map("user_id")
+  employerProfileId String       @map("employer_profile_id")
+
+  title             String
+  rating            Int
+  overtimePolicy    String       @map("overtime_policy")  // satisfied | unsatisfied
+  overtimeReason    String?      @map("overtime_reason")
+  liked             String       @db.Text
+  improvement       String       @db.Text
+  salaryRating      Int          @map("salary_rating")
+  trainingRating    Int          @map("training_rating")
+  careRating        Int          @map("care_rating")
+  cultureRating     Int          @map("culture_rating")
+  officeRating      Int          @map("office_rating")
+  recommend         Boolean
+  status            ReviewStatus @default(PENDING)
+  rejectReason      String?      @map("reject_reason")
+
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employerProfile   EmployerProfile @relation(fields: [employerProfileId], references: [id], onDelete: Cascade)
+
+  @@map("employer_reviews")
 }
 
 model Industry {

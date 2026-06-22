@@ -5,7 +5,7 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import Lottie from 'lottie-react';
-import { Building2, Users, Hash, MapPin, Globe, Heart, Search, Copy, Check, Briefcase } from 'lucide-react';
+import { Building2, Users, Hash, MapPin, Globe, Heart, Search, Copy, Check, Briefcase, Star, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, PenLine } from 'lucide-react';
 import api from '@/lib/axios';
 
 import veryBadAnim from '../../../public/verry_bad.json';
@@ -86,8 +86,265 @@ function Breadcrumb({ name }) {
     );
 }
 
+/* ── Reviews Tab ── */
+const DETAIL_CATS = [
+    { key: 'avgSalary', label: 'Lương & phúc lợi' },
+    { key: 'avgTraining', label: 'Đào tạo & học hỏi' },
+    { key: 'avgCare', label: 'Quan tâm nhân viên' },
+    { key: 'avgCulture', label: 'Văn hoá công ty' },
+    { key: 'avgOffice', label: 'Văn phòng' },
+];
+
+function StarRow({ value }) {
+    const v = Math.round(value || 0);
+    return (
+        <span style={{ display: 'inline-flex', gap: 2 }}>
+            {[1, 2, 3, 4, 5].map((s) => (
+                <Star key={s} size={13} fill={v >= s ? '#f59e0b' : '#e5e7eb'} stroke={v >= s ? '#f59e0b' : '#e5e7eb'} />
+            ))}
+        </span>
+    );
+}
+
+const REVIEW_CATS = [
+    { key: 'salaryRating',   label: 'Lương & phúc lợi' },
+    { key: 'trainingRating', label: 'Đào tạo & học hỏi' },
+    { key: 'careRating',     label: 'Quan tâm nhân viên' },
+    { key: 'cultureRating',  label: 'Văn hoá công ty' },
+    { key: 'officeRating',   label: 'Văn phòng làm việc' },
+];
+
+function ReviewCard({ review }) {
+    const [expanded, setExpanded] = useState(false);
+    const [showDrop, setShowDrop] = useState(false);
+    const liked = review.liked || '';
+    const improvement = review.improvement || '';
+    const LIMIT = 200;
+
+    return (
+        <div style={{ background: '#fff', borderRadius: 10, padding: '20px 24px', border: '1px solid #f0f0f0' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 12 }}>
+                <div>
+                    {/* Rating + dropdown trigger */}
+                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: 4 }}>
+                        <button
+                            onClick={() => setShowDrop((d) => !d)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}
+                        >
+                            <StarRow value={review.rating} />
+                            <span style={{ fontSize: 13, fontWeight: 700, color: '#f59e0b' }}>{(review.rating || 0).toFixed(1)}</span>
+                            <ChevronDown size={14} color="#999" style={{ transform: showDrop ? 'rotate(180deg)' : 'none', transition: '0.2s' }} />
+                        </button>
+                        {showDrop && (
+                            <div
+                                style={{ position: 'absolute', top: '100%', left: 0, zIndex: 10, background: '#fff', border: '1px solid #e8e8e8', borderRadius: 10, padding: '12px 16px', boxShadow: '0 4px 16px rgba(0,0,0,0.1)', minWidth: 220, marginTop: 4 }}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {REVIEW_CATS.map(({ key, label }) => (
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 8, lastChild: { marginBottom: 0 } }}>
+                                        <span style={{ fontSize: 12, color: '#555', flex: 1 }}>{label}</span>
+                                        <StarRow value={review[key]} />
+                                        <span style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', width: 22, textAlign: 'right' }}>{(review[key] || 0).toFixed(1)}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <h4 style={{ fontSize: 15, fontWeight: 700, color: '#111', margin: 0 }}>{review.title}</h4>
+                </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <p style={{ fontSize: 12, color: '#bbb', margin: 0 }}>{timeAgo(review.createdAt)}</p>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+                <div style={{ background: '#f0fdf4', borderRadius: 8, padding: '12px 14px' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: '#166534', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <ThumbsUp size={13} /> Điểm tốt
+                    </p>
+                    <p style={{ fontSize: 13, color: '#333', lineHeight: 1.6, margin: 0 }}>
+                        {expanded || liked.length <= LIMIT ? liked : liked.slice(0, LIMIT) + '…'}
+                    </p>
+                </div>
+                <div style={{ background: '#fef2f2', borderRadius: 8, padding: '12px 14px' }}>
+                    <p style={{ fontSize: 12, fontWeight: 600, color: '#991b1b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <ThumbsDown size={13} /> Cần cải thiện
+                    </p>
+                    <p style={{ fontSize: 13, color: '#333', lineHeight: 1.6, margin: 0 }}>
+                        {expanded || improvement.length <= LIMIT ? improvement : improvement.slice(0, LIMIT) + '…'}
+                    </p>
+                </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {review.recommend ? (
+                        <span style={{ fontSize: 12, color: '#00b14f', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <ThumbsUp size={12} fill="#00b14f" /> Giới thiệu bạn bè
+                        </span>
+                    ) : (
+                        <span style={{ fontSize: 12, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <ThumbsDown size={12} fill="#ef4444" /> Không giới thiệu
+                        </span>
+                    )}
+                </div>
+                {(liked.length > LIMIT || improvement.length > LIMIT) && (
+                    <button
+                        onClick={() => setExpanded((e) => !e)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: '#00b14f', display: 'flex', alignItems: 'center', gap: 4, padding: 0 }}
+                    >
+                        {expanded ? <><ChevronUp size={13} /> Thu gọn</> : <><ChevronDown size={13} /> Xem thêm</>}
+                    </button>
+                )}
+            </div>
+        </div>
+    );
+}
+
+function EmptyReviewState({ companyId }) {
+    const router = useRouter();
+    const [hover, setHover] = useState(0);
+    return (
+        <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <p style={{ fontSize: 14, color: '#777', marginBottom: 16 }}>Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
+            <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginBottom: 8 }}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                    <button
+                        key={s}
+                        type="button"
+                        onClick={() => router.push(`/cong-ty/${companyId}/viet-danh-gia?rating=${s}`)}
+                        onMouseEnter={() => setHover(s)}
+                        onMouseLeave={() => setHover(0)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
+                    >
+                        <Star
+                            size={36}
+                            fill={(hover || 0) >= s ? '#f59e0b' : '#e5e7eb'}
+                            stroke={(hover || 0) >= s ? '#f59e0b' : '#d1d5db'}
+                            strokeWidth={1.5}
+                        />
+                    </button>
+                ))}
+            </div>
+            <p style={{ fontSize: 12, color: '#bbb' }}>Nhấn vào số sao để bắt đầu đánh giá</p>
+        </div>
+    );
+}
+
+function ReviewsTab({ companyId, onCountLoad }) {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!companyId) return;
+        api.get(`/employers/${companyId}/employer-reviews`)
+            .then((r) => {
+                setData(r.data);
+                onCountLoad?.(r.data?.stats?.totalReviews ?? 0);
+            })
+            .catch(() => setData({ stats: null, reviews: [] }))
+            .finally(() => setLoading(false));
+    }, [companyId, onCountLoad]);
+
+    if (loading) {
+        return (
+            <div style={{ background: '#fff', borderRadius: 8, padding: 32, textAlign: 'center', color: '#999' }}>
+                Đang tải đánh giá...
+            </div>
+        );
+    }
+
+    const stats = data?.stats;
+    const reviews = data?.reviews || [];
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Stats card */}
+            <div style={{ background: '#fff', borderRadius: 10, padding: '24px 28px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+                    <h2 style={{ fontSize: 17, fontWeight: 700, color: '#111', margin: 0 }}>
+                        Đánh giá của nhân viên
+                        {stats?.totalReviews ? <span style={{ fontSize: 14, fontWeight: 400, color: '#777', marginLeft: 8 }}>({stats.totalReviews} đánh giá)</span> : null}
+                    </h2>
+                    <Link
+                        href={`/cong-ty/${companyId}/viet-danh-gia`}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: GREEN, color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: 'none' }}
+                    >
+                        <PenLine size={14} /> Viết đánh giá
+                    </Link>
+                </div>
+
+                {!stats || stats.totalReviews === 0 ? (
+                    <EmptyReviewState companyId={companyId} />
+                ) : (
+                    <div className="reviews-stats-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                        {/* Left: overall */}
+                        <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16 }}>
+                                <div style={{ textAlign: 'center' }}>
+                                    <p style={{ fontSize: 48, fontWeight: 800, color: '#f59e0b', lineHeight: 1, margin: 0 }}>{(stats.avgRating || 0).toFixed(1)}</p>
+                                    <StarRow value={stats.avgRating} />
+                                    <p style={{ fontSize: 12, color: '#777', marginTop: 4 }}>{stats.totalReviews} đánh giá</p>
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    {[5, 4, 3, 2, 1].map((s) => {
+                                        const count = stats.distribution?.[s] || 0;
+                                        const pct = stats.totalReviews > 0 ? (count / stats.totalReviews) * 100 : 0;
+                                        return (
+                                            <div key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
+                                                <span style={{ fontSize: 12, color: '#555', width: 8 }}>{s}</span>
+                                                <Star size={11} fill="#f59e0b" stroke="#f59e0b" />
+                                                <div style={{ flex: 1, height: 6, background: '#f0f0f0', borderRadius: 4, overflow: 'hidden' }}>
+                                                    <div style={{ height: '100%', width: `${pct}%`, background: '#f59e0b', borderRadius: 4, transition: 'width 0.4s' }} />
+                                                </div>
+                                                <span style={{ fontSize: 11, color: '#999', width: 20, textAlign: 'right' }}>{count}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            {stats.recommendPercent !== undefined && (
+                                <div style={{ background: '#f0fdf4', borderRadius: 8, padding: '12px 16px', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                                    <ThumbsUp size={16} fill="#00b14f" stroke="#00b14f" />
+                                    <span style={{ fontSize: 13, fontWeight: 600, color: '#166534' }}>
+                                        {Math.round(stats.recommendPercent)}% giới thiệu cho bạn bè
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Right: per-category */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            {DETAIL_CATS.map(({ key, label }) => {
+                                const val = stats[key] || 0;
+                                return (
+                                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                        <span style={{ fontSize: 13, color: '#555', flex: 1 }}>{label}</span>
+                                        <StarRow value={val} />
+                                        <span style={{ fontSize: 12, fontWeight: 600, color: '#f59e0b', width: 28, textAlign: 'right' }}>{val.toFixed(1)}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Review list */}
+            {reviews.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {reviews.map((r) => (
+                        <ReviewCard key={r.id} review={r} />
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
 /* ── Company header ── */
-function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLoading, followerCount }) {
+function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLoading, followerCount, reviewCount }) {
     return (
         <div style={{ background: '#fff', borderRadius: 8, padding: '20px 24px', marginBottom: 16 }}>
             <div
@@ -187,6 +444,7 @@ function CompanyHeader({ company, tab, onTabChange, followed, onFollow, followLo
                 {[
                     { key: 'home', label: 'Trang chủ' },
                     { key: 'jobs', label: `Tin tuyển dụng${company.jobCount ? ` (${company.jobCount})` : ''}` },
+                    { key: 'reviews', label: `Đánh giá (${reviewCount ?? 0})` },
                 ].map((t) => (
                     <button
                         key={t.key}
@@ -903,6 +1161,7 @@ export default function CompanyDetailPage() {
     const [followed, setFollowed] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
     const [followerCount, setFollowerCount] = useState(0);
+    const [reviewCount, setReviewCount] = useState(0);
 
     useEffect(() => {
         if (!id) return;
@@ -1009,6 +1268,7 @@ export default function CompanyDetailPage() {
                     onFollow={handleFollow}
                     followLoading={followLoading}
                     followerCount={followerCount}
+                    reviewCount={reviewCount}
                 />
 
                 <div
@@ -1019,6 +1279,8 @@ export default function CompanyDetailPage() {
                     <div>
                         {tab === 'home' ? (
                             <HomeTab company={company} jobs={jobs} loadingJobs={loadingJobs} reviews={reviews} />
+                        ) : tab === 'reviews' ? (
+                            <ReviewsTab companyId={id} onCountLoad={setReviewCount} />
                         ) : (
                             <JobsTab companyId={id} company={company} />
                         )}
@@ -1041,6 +1303,7 @@ export default function CompanyDetailPage() {
                     .similar-companies-grid{grid-template-columns:1fr!important;}
                     .company-header-actions{flex-direction:column!important;align-items:flex-start!important;gap:12px!important;}
                     .company-follow-btn{width:100%!important;justify-content:center!important;}
+                    .reviews-stats-grid{grid-template-columns:1fr!important;}
                 }
                 @media(max-width:480px){
                     .company-header-inner{flex-wrap:wrap!important;}

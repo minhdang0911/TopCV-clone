@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { X } from 'lucide-react';
+import Image from 'next/image';
+import { Eye, X } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import { resumeService } from '@/services/resume.service';
 import TieuChuanTemplate from '@/app/components/cv/templates/TieuChuan';
@@ -33,100 +34,31 @@ import robo from '@/app/assests/img/toppy-list-mau-cv.png';
 
 const A4_W = 794;
 const A4_H = 1123;
-// Scale so the CV thumbnail fills the card width (~300px grid column)
-const SCALE = 0.36;
+const SCALE = 0.35;
 const THUMB_W = Math.round(A4_W * SCALE);
 const THUMB_H = Math.round(A4_H * SCALE);
-
-const MODAL_SCALE = 0.58;
+const MODAL_SCALE = 0.72;
 const MODAL_W = Math.round(A4_W * MODAL_SCALE);
 const MODAL_H = Math.round(A4_H * MODAL_SCALE);
 
 const SAMPLE_CONTENT = {
-    personalInfo: {
-        fullName: 'Nguyễn Văn Minh',
-        title: 'Senior Frontend Developer',
-        email: 'minhkv@gmail.com',
-        phone: '0901 234 567',
-        address: 'Hồ Chí Minh',
-        linkedin: 'linkedin.com/in/minhkv',
-        github: 'github.com/minhkv',
-    },
-    objective:
-        'Kỹ sư Frontend với 3+ năm kinh nghiệm React và Next.js, chuyên xây dựng các ứng dụng web hiệu năng cao và trải nghiệm người dùng tốt. Mong muốn đóng góp vào sản phẩm có tác động lớn trong môi trường Agile năng động, học hỏi liên tục.',
+    personalInfo: { fullName: 'Nguyễn Văn Minh', title: 'Senior Frontend Developer', email: 'minhkv@gmail.com', phone: '0901 234 567', address: 'Hồ Chí Minh', linkedin: 'linkedin.com/in/minhkv', github: 'github.com/minhkv' },
+    objective: 'Kỹ sư Frontend với 3+ năm kinh nghiệm React và Next.js, chuyên xây dựng các ứng dụng web hiệu năng cao và trải nghiệm người dùng tốt. Mong muốn đóng góp vào sản phẩm có tác động lớn trong môi trường Agile năng động, học hỏi liên tục.',
     experiences: [
-        {
-            id: '1',
-            position: 'Senior Frontend Developer',
-            company: 'VNG Corporation',
-            startDate: '06/2022',
-            endDate: '',
-            isCurrent: true,
-            description:
-                '- Phát triển tính năng mới cho Zalo Web với 20M+ người dùng\n- Tối ưu performance, giảm 40% load time bằng code splitting và lazy loading\n- Mentor 2 junior developers, tổ chức knowledge sharing sessions\n- Thiết kế hệ thống component library dùng chung cho 3 sản phẩm',
-        },
-        {
-            id: '2',
-            position: 'Frontend Developer',
-            company: 'FPT Software',
-            startDate: '09/2020',
-            endDate: '05/2022',
-            isCurrent: false,
-            description:
-                '- Xây dựng giao diện hệ thống quản lý nội bộ cho 500+ nhân viên\n- Tích hợp REST API với React/Redux, giảm 30% thời gian tải trang\n- Implement CI/CD pipeline với GitHub Actions\n- Cải thiện UX dựa trên user research, tăng 25% user retention',
-        },
-        {
-            id: '3',
-            position: 'Frontend Intern',
-            company: 'Tiki Corporation',
-            startDate: '06/2020',
-            endDate: '08/2020',
-            isCurrent: false,
-            description:
-                '- Hỗ trợ phát triển tính năng frontend cho trang thương mại điện tử\n- Fix bugs và viết unit tests cho module thanh toán',
-        },
+        { id: '1', position: 'Senior Frontend Developer', company: 'VNG Corporation', startDate: '06/2022', endDate: '', isCurrent: true, description: '- Phát triển tính năng mới cho Zalo Web với 20M+ người dùng\n- Tối ưu performance, giảm 40% load time bằng code splitting và lazy loading\n- Mentor 2 junior developers, tổ chức knowledge sharing sessions\n- Thiết kế hệ thống component library dùng chung cho 3 sản phẩm' },
+        { id: '2', position: 'Frontend Developer', company: 'FPT Software', startDate: '09/2020', endDate: '05/2022', isCurrent: false, description: '- Xây dựng giao diện hệ thống quản lý nội bộ cho 500+ nhân viên\n- Tích hợp REST API với React/Redux, giảm 30% thời gian tải trang\n- Implement CI/CD pipeline với GitHub Actions\n- Cải thiện UX dựa trên user research, tăng 25% user retention' },
+        { id: '3', position: 'Frontend Intern', company: 'Tiki Corporation', startDate: '06/2020', endDate: '08/2020', isCurrent: false, description: '- Hỗ trợ phát triển tính năng frontend cho trang thương mại điện tử\n- Fix bugs và viết unit tests cho module thanh toán' },
     ],
-    education: [
-        {
-            id: '1',
-            school: 'Đại học Bách Khoa TP.HCM',
-            degree: 'Kỹ sư Công nghệ Thông tin',
-            gpa: '3.6/4.0',
-            startDate: '2016',
-            endDate: '2020',
-            description: 'Thủ khoa kỳ 3 năm 2018. Giải nhì cuộc thi lập trình ACM-ICPC cấp trường.',
-        },
-    ],
-    skills: [
-        { id: '1', name: 'React / Next.js', level: 5 },
-        { id: '2', name: 'TypeScript', level: 4 },
-        { id: '3', name: 'Node.js / Express', level: 3 },
-        { id: '4', name: 'Tailwind CSS', level: 4 },
-        { id: '5', name: 'Git / CI-CD', level: 4 },
-        { id: '6', name: 'Docker / AWS', level: 3 },
-    ],
-    languages: [
-        { id: '1', name: 'Tiếng Anh', level: 'B2 (IELTS 6.5)' },
-        { id: '2', name: 'Tiếng Nhật', level: 'N4' },
-    ],
-    certifications: [
-        { id: '1', name: 'AWS Certified Developer', issuer: 'Amazon Web Services', date: '2023' },
-        { id: '2', name: 'Meta Frontend Developer', issuer: 'Meta / Coursera', date: '2022' },
-    ],
-    activities: [
-        {
-            id: '1',
-            role: 'Trưởng ban kỹ thuật',
-            organization: 'CLB IT Bách Khoa',
-            description:
-                'Tổ chức workshop hàng tháng về web development cho 200+ thành viên. Xây dựng hệ thống quản lý sự kiện nội bộ.',
-        },
-    ],
+    education: [{ id: '1', school: 'Đại học Bách Khoa TP.HCM', degree: 'Kỹ sư Công nghệ Thông tin', gpa: '3.6/4.0', startDate: '2016', endDate: '2020', description: 'Thủ khoa kỳ 3 năm 2018. Giải nhì cuộc thi lập trình ACM-ICPC cấp trường.' }],
+    skills: [{ id: '1', name: 'React / Next.js', level: 5 }, { id: '2', name: 'TypeScript', level: 4 }, { id: '3', name: 'Node.js / Express', level: 3 }, { id: '4', name: 'Tailwind CSS', level: 4 }, { id: '5', name: 'Git / CI-CD', level: 4 }, { id: '6', name: 'Docker / AWS', level: 3 }],
+    languages: [{ id: '1', name: 'Tiếng Anh', level: 'B2 (IELTS 6.5)' }, { id: '2', name: 'Tiếng Nhật', level: 'N4' }],
+    certifications: [{ id: '1', name: 'AWS Certified Developer', issuer: 'Amazon Web Services', date: '2023' }, { id: '2', name: 'Meta Frontend Developer', issuer: 'Meta / Coursera', date: '2022' }],
+    activities: [{ id: '1', role: 'Trưởng ban kỹ thuật', organization: 'CLB IT Bách Khoa', description: 'Tổ chức workshop hàng tháng về web development cho 200+ thành viên. Xây dựng hệ thống quản lý sự kiện nội bộ.' }],
 };
 
 const KINH_DOANH_CONTENT = {
     personalInfo: { fullName: 'Trần Thị Thanh Tâm', title: 'Nhân Viên Kinh Doanh', email: 'tamttt@gmail.com', phone: '0912 345 678', address: 'TP. Hồ Chí Minh', linkedin: 'linkedin.com/in/tamttt' },
-    objective: 'Nhân viên Kinh doanh với 4 năm kinh nghiệm trong lĩnh vực B2B và FMCG. Đã đạt vượt 135% KPI doanh số năm 2023. Mong muốn phát triển trong môi trường bán hàng chuyên nghiệp, đóng góp tăng trưởng doanh thu bền vững.',
+    objective: 'Nhân viên Kinh doanh với 4 năm kinh nghiệm trong lĩnh vực B2B và FMCG. Đã đạt vượt 135% KPI doanh số năm 2023.',
     experiences: [
         { id: '1', position: 'Senior Sales Executive', company: 'Unilever Việt Nam', startDate: '01/2022', endDate: '', isCurrent: true, description: '- Quản lý 120+ khách hàng doanh nghiệp khu vực TP.HCM\n- Đạt 135% KPI doanh số Q3/2023, doanh thu 2.4 tỷ đồng/tháng\n- Phát triển 30 khách hàng mới, tỷ lệ giữ chân khách hàng 92%\n- Dẫn dắt team 5 nhân viên sales junior' },
         { id: '2', position: 'Sales Executive', company: 'P&G Việt Nam', startDate: '06/2020', endDate: '12/2021', isCurrent: false, description: '- Phụ trách kênh MT/GT khu vực Quận 1, 3, 5\n- Tăng trưởng doanh số 28% so với cùng kỳ năm trước\n- Đạt giải "Nhân viên xuất sắc" Q2/2021' },
@@ -140,7 +72,7 @@ const KINH_DOANH_CONTENT = {
 
 const LAP_TRINH_VIEN_CONTENT = {
     personalInfo: { fullName: 'Nguyễn Văn Minh', title: 'Backend Developer', email: 'minhkv@gmail.com', phone: '0901 234 567', address: 'TP. Hồ Chí Minh', linkedin: 'linkedin.com/in/minhkv', github: 'github.com/minhkv' },
-    objective: 'Backend Developer với 3 năm kinh nghiệm Node.js và Python. Đam mê xây dựng hệ thống phân tán hiệu suất cao, thiết kế RESTful API và tối ưu cơ sở dữ liệu. Mong muốn đóng góp vào sản phẩm công nghệ có quy mô lớn.',
+    objective: 'Backend Developer với 3 năm kinh nghiệm Node.js và Python. Đam mê xây dựng hệ thống phân tán hiệu suất cao, thiết kế RESTful API và tối ưu cơ sở dữ liệu.',
     experiences: [
         { id: '1', position: 'Backend Developer', company: 'VNG Corporation', startDate: '06/2022', endDate: '', isCurrent: true, description: '- Phát triển microservices cho Zalo Pay phục vụ 5M+ giao dịch/ngày\n- Tối ưu query PostgreSQL, giảm 60% thời gian phản hồi API\n- Thiết kế hệ thống cache Redis, tăng throughput lên 10,000 RPS\n- Code review và mentor 3 developers junior' },
         { id: '2', position: 'Junior Developer', company: 'FPT Software', startDate: '07/2021', endDate: '05/2022', isCurrent: false, description: '- Xây dựng REST API Node.js/Express cho 3 dự án outsource Nhật\n- Viết unit test Jest, đạt coverage 85%\n- Implement CI/CD pipeline GitHub Actions' },
@@ -154,7 +86,7 @@ const LAP_TRINH_VIEN_CONTENT = {
 
 const KE_TOAN_CONTENT = {
     personalInfo: { fullName: 'Lê Thị Hương Giang', title: 'Kế Toán Tổng Hợp', email: 'giangketo@gmail.com', phone: '0976 543 210', address: 'Hà Nội', linkedin: 'linkedin.com/in/giangketo' },
-    objective: 'Kế toán tổng hợp với 5 năm kinh nghiệm tại doanh nghiệp FDI và sản xuất. Thành thạo chuẩn mực kế toán Việt Nam (VAS) và IFRS. Chuyên sâu lập báo cáo tài chính, kiểm soát nội bộ và quyết toán thuế.',
+    objective: 'Kế toán tổng hợp với 5 năm kinh nghiệm tại doanh nghiệp FDI và sản xuất. Thành thạo chuẩn mực kế toán Việt Nam (VAS) và IFRS.',
     experiences: [
         { id: '1', position: 'Kế Toán Tổng Hợp', company: 'Samsung Electronics Việt Nam', startDate: '03/2021', endDate: '', isCurrent: true, description: '- Lập báo cáo tài chính hợp nhất theo chuẩn IFRS cho 3 công ty thành viên\n- Quản lý dòng tiền hàng tháng 50+ tỷ đồng, đảm bảo tuân thủ quy định tài chính\n- Phối hợp kiểm toán PwC, không phát sinh sai sót trọng yếu 3 năm liên tiếp\n- Xây dựng quy trình kế toán nội bộ, tiết kiệm 15% chi phí vận hành' },
         { id: '2', position: 'Kế Toán', company: 'Công ty TNHH Sản xuất ABC', startDate: '01/2019', endDate: '02/2021', isCurrent: false, description: '- Hạch toán toàn bộ nghiệp vụ kế toán phát sinh\n- Lập quyết toán thuế TNDN, GTGT, TNCN hàng năm\n- Làm việc với phần mềm FAST Accounting, MISA SME' },
@@ -180,71 +112,16 @@ const MARKETING_CONTENT = {
     activities: [{ id: '1', role: 'Speaker', organization: 'Vietnam Marketing Summit', description: 'Trình bày chủ đề "Performance Marketing trong thời đại AI" — 500+ người tham dự' }],
 };
 
+
 const TEMPLATES = [
-    {
-        id: 'tieu-chuan',
-        name: 'Tiêu chuẩn',
-        Component: TieuChuanTemplate,
-        description: 'Gọn gàng, rõ ràng, phù hợp mọi ngành nghề',
-        colors: ['#00b14f', '#1e3a5f', '#c0392b', '#2471a3', '#6c3483'],
-        tags: ['Mẫu CV Chuyên nghiệp'],
-    },
-    {
-        id: 'tieu-chuan-it-kn',
-        name: 'Tiêu chuẩn (ít kinh nghiệm)',
-        Component: TieuChuanItKNTemplate,
-        description: 'Tối ưu cho sinh viên, fresher',
-        colors: ['#00b14f', '#1e3a5f', '#e67e22', '#16a085'],
-        tags: ['Mẫu CV Đơn giản'],
-    },
-    {
-        id: 'an-tuong',
-        name: 'Ấn tượng',
-        Component: AnTuongTemplate,
-        description: 'Nổi bật với header đậm, phù hợp senior',
-        colors: ['#1e3a5f', '#111827', '#7b2d8b', '#c0392b'],
-        tags: ['Mẫu CV Ấn tượng'],
-    },
-    {
-        id: 'thanh-lich',
-        name: 'Thanh lịch',
-        Component: ThanhLichTemplate,
-        description: 'Tối giản, thanh lịch, bố cục một cột',
-        colors: ['#00b14f', '#1e3a5f', '#64748b', '#7c3aed'],
-        tags: ['Mẫu CV Đơn giản'],
-    },
-    {
-        id: 'hien-dai',
-        name: 'Hiện đại',
-        Component: HienDaiTemplate,
-        description: 'Hai cột hiện đại, sidebar xám nhẹ',
-        colors: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981'],
-        tags: ['Mẫu CV Ấn tượng'],
-    },
-    {
-        id: 'chuyen-nghiep',
-        name: 'Chuyên nghiệp',
-        Component: ChuyenNghiepTemplate,
-        description: 'Header màu nổi bật, phong cách doanh nghiệp',
-        colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'],
-        tags: ['Mẫu CV Chuyên nghiệp'],
-    },
-    {
-        id: 'goc-canh',
-        name: 'Góc cạnh',
-        Component: GocCanhTemplate,
-        description: 'Sidebar tối, phong cách mạnh mẽ',
-        colors: ['#1e293b', '#1e3a5f', '#7c3aed', '#be123c'],
-        tags: ['Mẫu CV Ấn tượng'],
-    },
-    {
-        id: 'tham-vong',
-        name: 'Tham vọng',
-        Component: ThamVongTemplate,
-        description: 'Header tối, timeline thanh lịch',
-        colors: ['#1e293b', '#0f4c75', '#6d28d9', '#064e3b'],
-        tags: ['Mẫu CV Chuyên nghiệp'],
-    },
+    { id: 'tieu-chuan', name: 'Tiêu chuẩn', Component: TieuChuanTemplate, description: 'Gọn gàng, rõ ràng, phù hợp mọi ngành nghề', colors: ['#00b14f', '#1e3a5f', '#c0392b', '#2471a3', '#6c3483'], tags: ['Mẫu CV Chuyên nghiệp'] },
+    { id: 'tieu-chuan-it-kn', name: 'Tiêu chuẩn (ít kinh nghiệm)', Component: TieuChuanItKNTemplate, description: 'Tối ưu cho sinh viên, fresher', colors: ['#00b14f', '#1e3a5f', '#e67e22', '#16a085'], tags: ['Mẫu CV Đơn giản'] },
+    { id: 'an-tuong', name: 'Ấn tượng', Component: AnTuongTemplate, description: 'Nổi bật với header đậm, phù hợp senior', colors: ['#1e3a5f', '#111827', '#7b2d8b', '#c0392b'], tags: ['Mẫu CV Ấn tượng'] },
+    { id: 'thanh-lich', name: 'Thanh lịch', Component: ThanhLichTemplate, description: 'Tối giản, thanh lịch, bố cục một cột', colors: ['#00b14f', '#1e3a5f', '#64748b', '#7c3aed'], tags: ['Mẫu CV Đơn giản'] },
+    { id: 'hien-dai', name: 'Hiện đại', Component: HienDaiTemplate, description: 'Hai cột hiện đại, sidebar xám nhẹ', colors: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981'], tags: ['Mẫu CV Ấn tượng'] },
+    { id: 'chuyen-nghiep', name: 'Chuyên nghiệp', Component: ChuyenNghiepTemplate, description: 'Header màu nổi bật, phong cách doanh nghiệp', colors: ['#1e3a5f', '#374151', '#b91c1c', '#065f46'], tags: ['Mẫu CV Chuyên nghiệp'] },
+    { id: 'goc-canh', name: 'Góc cạnh', Component: GocCanhTemplate, description: 'Sidebar tối, phong cách mạnh mẽ', colors: ['#1e293b', '#1e3a5f', '#7c3aed', '#be123c'], tags: ['Mẫu CV Ấn tượng'] },
+    { id: 'tham-vong', name: 'Tham vọng', Component: ThamVongTemplate, description: 'Header tối, timeline thanh lịch', colors: ['#1e293b', '#0f4c75', '#6d28d9', '#064e3b'], tags: ['Mẫu CV Chuyên nghiệp'] },
     { id: 'kinh-doanh', name: 'Kinh doanh 1', Component: KinhDoanhTemplate, description: 'Header năng động, nhấn mạnh thành tích kinh doanh', colors: ['#d35400', '#c0392b', '#e67e22', '#27ae60'], tags: ['Nhân viên kinh doanh'], sampleContent: KINH_DOANH_CONTENT },
     { id: 'kinh-doanh-2', name: 'Kinh doanh 2', Component: KinhDoanh2Template, description: 'Sidebar tối sang trọng, bảng kỹ năng nổi bật', colors: ['#c0392b', '#d35400', '#7c3aed', '#1e3a5f'], tags: ['Nhân viên kinh doanh'], sampleContent: KINH_DOANH_CONTENT },
     { id: 'kinh-doanh-3', name: 'Kinh doanh 3', Component: KinhDoanh3Template, description: 'Tối giản hiện đại, viền màu tinh tế', colors: ['#27ae60', '#00b14f', '#16a085', '#2471a3'], tags: ['Nhân viên kinh doanh'], sampleContent: KINH_DOANH_CONTENT },
@@ -264,35 +141,292 @@ const TEMPLATES = [
 ];
 
 const FILTER_TAGS = ['Tất cả', 'Mẫu CV Đơn giản', 'Mẫu CV Ấn tượng', 'Mẫu CV Chuyên nghiệp', 'Nhân viên kinh doanh', 'Lập trình viên', 'Nhân viên kế toán', 'Chuyên viên marketing'];
+const LINHVUC_MAP = { 'kinh-doanh': 'Nhân viên kinh doanh', 'lap-trinh-vien': 'Lập trình viên', 'ke-toan': 'Nhân viên kế toán', 'marketing': 'Chuyên viên marketing' };
+const STYLE_MAP = { 'don-gian': 'Mẫu CV Đơn giản', 'an-tuong': 'Mẫu CV Ấn tượng', 'chuyen-nghiep': 'Mẫu CV Chuyên nghiệp' };
 
-const LINHVUC_MAP = {
-    'kinh-doanh': 'Nhân viên kinh doanh',
-    'lap-trinh-vien': 'Lập trình viên',
-    'ke-toan': 'Nhân viên kế toán',
-    'marketing': 'Chuyên viên marketing',
-};
+const SOURCE_OPTIONS = [
+    { key: 'existing', label: 'Nội dung CV đã tạo trước đó', desc: null },
+    { key: 'template', label: 'Nội dung CV mẫu gợi ý', desc: null },
+    { key: 'blank', label: 'Tạo CV từ đầu', desc: 'Bắt đầu từ một khung CV trắng không có nội dung gợi ý' },
+];
 
-const STYLE_MAP = {
-    'don-gian': 'Mẫu CV Đơn giản',
-    'an-tuong': 'Mẫu CV Ấn tượng',
-    'chuyen-nghiep': 'Mẫu CV Chuyên nghiệp',
-};
-
-function Thumbnail({ Component, color, content, scale = SCALE }) {
-    const w = Math.round(A4_W * scale);
-    const h = Math.round(A4_H * scale);
+function Thumbnail({ Component, color, content }) {
     return (
-        <div style={{ width: `${w}px`, height: `${h}px`, overflow: 'hidden', background: 'white', margin: '0 auto' }}>
-            <div
-                style={{
-                    width: `${A4_W}px`,
-                    transform: `scale(${scale})`,
-                    transformOrigin: 'top left',
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                }}
-            >
+        <div style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px`, overflow: 'hidden', margin: '0 auto', background: 'white' }}>
+            <div style={{ width: `${A4_W}px`, transform: `scale(${SCALE})`, transformOrigin: 'top left', pointerEvents: 'none', userSelect: 'none' }}>
                 <Component content={content || SAMPLE_CONTENT} color={color} />
+            </div>
+        </div>
+    );
+}
+
+function TemplateCard({ tpl, color, onColorChange, onPreview, onUse, creating }) {
+    const [hovered, setHovered] = useState(false);
+    return (
+        <div
+            style={{
+                background: 'white', borderRadius: '14px', overflow: 'hidden',
+                border: '1px solid #e5e7eb',
+                boxShadow: hovered ? '0 12px 36px rgba(0,0,0,0.13)' : '0 2px 6px rgba(0,0,0,0.06)',
+                transform: hovered ? 'translateY(-4px)' : 'none',
+                transition: 'box-shadow 0.2s, transform 0.2s',
+            }}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+        >
+            <div
+                style={{ position: 'relative', cursor: 'pointer', overflow: 'hidden' }}
+                onClick={() => onPreview(tpl, color)}
+            >
+                <Thumbnail Component={tpl.Component} color={color} content={tpl.sampleContent} />
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    background: 'rgba(0,0,0,0.38)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    opacity: hovered ? 1 : 0,
+                    transition: 'opacity 0.2s',
+                }}>
+                    <div style={{ background: 'white', borderRadius: '8px', padding: '9px 20px', fontSize: '13px', fontWeight: '600', color: '#111827', display: 'flex', alignItems: 'center', gap: '7px', boxShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+                        <Eye size={14} /> Xem trước
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ padding: '14px 16px 10px' }}>
+                <div style={{ fontSize: '15px', fontWeight: '700', color: '#111827', marginBottom: '3px' }}>{tpl.name}</div>
+                <div style={{ fontSize: '12px', color: '#9ca3af', lineHeight: '1.5', minHeight: '36px' }}>{tpl.description}</div>
+            </div>
+
+            <div style={{ padding: '0 16px 12px', display: 'flex', gap: '7px' }}>
+                {tpl.colors.map((c) => (
+                    <button key={c} onClick={() => onColorChange(tpl.id, c)}
+                        style={{ width: '20px', height: '20px', borderRadius: '50%', background: c, border: color === c ? '2.5px solid #111827' : '2px solid transparent', outline: color === c ? '2px solid white' : 'none', outlineOffset: '-4px', cursor: 'pointer', transition: 'transform 0.15s' }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    />
+                ))}
+            </div>
+
+            <div style={{ padding: '0 12px 14px', display: 'flex', gap: '8px' }}>
+                <button onClick={() => onPreview(tpl, color)}
+                    style={{ flex: 1, padding: '9px 0', border: '1px solid #d1d5db', background: 'white', borderRadius: '8px', fontSize: '13px', color: '#374151', cursor: 'pointer', fontWeight: '500', transition: 'border-color 0.15s, color 0.15s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#00b14f'; e.currentTarget.style.color = '#00b14f'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#374151'; }}
+                >
+                    Xem trước
+                </button>
+                <button onClick={() => onUse(tpl.id, color, 'template', tpl.sampleContent || SAMPLE_CONTENT)} disabled={creating}
+                    style={{ flex: 1, padding: '9px 0', border: 'none', background: creating ? '#86efac' : '#00b14f', borderRadius: '8px', fontSize: '13px', color: 'white', cursor: creating ? 'not-allowed' : 'pointer', fontWeight: '600', transition: 'background 0.15s' }}
+                    onMouseEnter={(e) => { if (!creating) e.currentTarget.style.background = '#009a43'; }}
+                    onMouseLeave={(e) => { if (!creating) e.currentTarget.style.background = '#00b14f'; }}
+                >
+                    Dùng mẫu này
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function PreviewModal({ tpl, initialColor, creating, onClose, onUse }) {
+    const [color, setColor] = useState(initialColor);
+    const [source, setSource] = useState('template');
+    const [existingList, setExistingList] = useState(null);
+    const [existingIndex, setExistingIndex] = useState(0);
+    const [loadingExisting, setLoadingExisting] = useState(false);
+
+    const currentExistingContent = useMemo(() => {
+        if (!existingList || existingList.length === 0) return null;
+        const cv = existingList[existingIndex] || existingList[0];
+        if (!cv) return null;
+        const personalInfo = cv.personalInfo || {};
+        const experiences = cv.experiences || [];
+        const education = cv.education || [];
+        const skills = cv.skills || [];
+        // CV has no meaningful content → return null so preview falls back to sample
+        if (!personalInfo.fullName && experiences.length === 0 && education.length === 0 && skills.length === 0) return null;
+        return { personalInfo, objective: cv.objective || '', experiences, education, skills, languages: cv.languages || [], certifications: cv.certifications || [], activities: cv.activities || [] };
+    }, [existingList, existingIndex]);
+
+    const previewContent = useMemo(() => {
+        if (source === 'existing') return currentExistingContent || tpl.sampleContent || SAMPLE_CONTENT;
+        return tpl.sampleContent || SAMPLE_CONTENT;
+    }, [source, currentExistingContent, tpl]);
+
+    const handleSource = async (key) => {
+        setSource(key);
+        if (key === 'existing' && existingList === null) {
+            setLoadingExisting(true);
+            try {
+                const res = await resumeService.list();
+                const list = Array.isArray(res.data) ? res.data : (res.data?.data || []);
+                setExistingList(list);
+                setExistingIndex(0);
+            } catch {
+                setExistingList([]);
+            } finally {
+                setLoadingExisting(false);
+            }
+        }
+    };
+
+    const handleCreate = () => {
+        const contentMap = {
+            template: tpl.sampleContent || SAMPLE_CONTENT,
+            blank: null,
+            existing: currentExistingContent,
+        };
+        onUse(tpl.id, color, source, contentMap[source]);
+    };
+
+    const canCreate = !(source === 'existing' && loadingExisting) && !creating;
+
+    return (
+        <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(3px)' }}
+            onClick={onClose}
+        >
+            <div
+                style={{ background: 'white', borderRadius: '16px', overflow: 'hidden', width: '100%', maxWidth: '1020px', maxHeight: '93vh', display: 'flex', flexDirection: 'column', boxShadow: '0 30px 70px rgba(0,0,0,0.35)' }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a' }}>Mẫu CV {tpl.name}</div>
+                        <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '1px' }}>{tpl.description}</div>
+                    </div>
+                    <button onClick={onClose}
+                        style={{ width: '32px', height: '32px', border: '1px solid #e5e7eb', borderRadius: '8px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b', flexShrink: 0 }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; }}
+                    >
+                        <X size={15} />
+                    </button>
+                </div>
+
+                {/* Body */}
+                <div style={{ display: 'flex', flex: 1, overflow: 'hidden', minHeight: 0 }}>
+                    {/* CV Preview */}
+                    <div style={{ flex: 1, overflowY: 'auto', background: '#f8fafc', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '28px 24px' }}>
+                        <div style={{ borderRadius: '4px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', flexShrink: 0, width: `${MODAL_W}px` }}>
+                            <div style={{ width: `${MODAL_W}px`, height: `${MODAL_H}px`, overflow: 'hidden', background: 'white' }}>
+                                <div style={{ width: `${A4_W}px`, minHeight: `${A4_H}px`, background: 'white', transform: `scale(${MODAL_SCALE})`, transformOrigin: 'top left', pointerEvents: 'none', userSelect: 'none' }}>
+                                    <tpl.Component content={previewContent} color={color} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right panel */}
+                    <div style={{ width: '272px', flexShrink: 0, borderLeft: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+                        <div style={{ padding: '24px 20px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ fontSize: '13px', fontWeight: '800', color: '#0f172a', marginBottom: '14px', letterSpacing: '-0.1px' }}>
+                                Bạn muốn tạo CV từ?
+                            </div>
+
+                            {/* Source options */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {SOURCE_OPTIONS.map(({ key, label, desc }) => {
+                                    const active = source === key;
+                                    return (
+                                        <div
+                                            key={key}
+                                            onClick={() => handleSource(key)}
+                                            style={{
+                                                padding: '12px 14px',
+                                                borderRadius: '10px',
+                                                border: `1.5px solid ${active ? '#0f172a' : '#e2e8f0'}`,
+                                                cursor: 'pointer',
+                                                background: active ? '#f8fafc' : 'white',
+                                                transition: 'border-color 0.15s, background 0.15s',
+                                            }}
+                                            onMouseEnter={(e) => { if (!active) { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.background = '#fafafa'; } }}
+                                            onMouseLeave={(e) => { if (!active) { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = 'white'; } }}
+                                        >
+                                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                                                {/* Custom radio */}
+                                                <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: `2px solid ${active ? '#0f172a' : '#cbd5e1'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: '1px', transition: 'border-color 0.15s' }}>
+                                                    {active && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#0f172a' }} />}
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: '13px', fontWeight: active ? '600' : '500', color: '#0f172a', lineHeight: '1.4' }}>
+                                                        {label}
+                                                    </div>
+                                                    {desc && (
+                                                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '3px', lineHeight: '1.5' }}>{desc}</div>
+                                                    )}
+                                                    {key === 'existing' && active && (
+                                                        <div style={{ marginTop: '8px' }}>
+                                                            {loadingExisting ? (
+                                                                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Đang tải CV...</div>
+                                                            ) : existingList?.length === 0 ? (
+                                                                <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '500' }}>Bạn chưa có CV nào. Hãy chọn tuỳ chọn khác.</div>
+                                                            ) : existingList?.length === 1 ? (
+                                                                <div style={{ fontSize: '11px', color: currentExistingContent ? '#22c55e' : '#94a3b8', fontWeight: '500' }}>
+                                                                    {currentExistingContent ? 'Đang xem CV của bạn' : 'CV chưa có nội dung — hiển thị mẫu gợi ý'}
+                                                                </div>
+                                                            ) : existingList ? (
+                                                                <div>
+                                                                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '6px' }}>Chọn CV để xem trước:</div>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); setExistingIndex(i => Math.max(0, i - 1)); }}
+                                                                            disabled={existingIndex === 0}
+                                                                            style={{ width: '28px', height: '28px', border: '1px solid #e2e8f0', borderRadius: '6px', background: existingIndex === 0 ? '#f8fafc' : 'white', cursor: existingIndex === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: existingIndex === 0 ? '#cbd5e1' : '#374151', fontSize: '18px', fontWeight: '500', flexShrink: 0, lineHeight: '1' }}
+                                                                        >‹</button>
+                                                                        <div style={{ flex: 1, textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#0f172a' }}>
+                                                                            {existingIndex + 1} / {existingList.length}
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={(e) => { e.stopPropagation(); setExistingIndex(i => Math.min(existingList.length - 1, i + 1)); }}
+                                                                            disabled={existingIndex === existingList.length - 1}
+                                                                            style={{ width: '28px', height: '28px', border: '1px solid #e2e8f0', borderRadius: '6px', background: existingIndex === existingList.length - 1 ? '#f8fafc' : 'white', cursor: existingIndex === existingList.length - 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: existingIndex === existingList.length - 1 ? '#cbd5e1' : '#374151', fontSize: '18px', fontWeight: '500', flexShrink: 0, lineHeight: '1' }}
+                                                                        >›</button>
+                                                                    </div>
+                                                                    {!currentExistingContent && (
+                                                                        <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px' }}>CV này chưa có nội dung — hiển thị mẫu gợi ý</div>
+                                                                    )}
+                                                                </div>
+                                                            ) : null}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Spacer */}
+                            <div style={{ flex: 1 }} />
+
+                            {/* Colors */}
+                            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '16px', marginTop: '20px' }}>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.7px', marginBottom: '10px' }}>Màu sắc</div>
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {tpl.colors.map((c) => (
+                                        <button key={c} onClick={() => setColor(c)}
+                                            style={{ width: '28px', height: '28px', borderRadius: '50%', background: c, border: color === c ? '3px solid #111827' : '2.5px solid transparent', outline: color === c ? '2px solid white' : 'none', outlineOffset: '-5px', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.15)', transition: 'transform 0.15s' }}
+                                            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)'; }}
+                                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Create button */}
+                            <button
+                                onClick={handleCreate}
+                                disabled={!canCreate}
+                                style={{ marginTop: '14px', padding: '13px', background: canCreate ? '#00b14f' : '#86efac', border: 'none', borderRadius: '10px', color: 'white', fontSize: '14px', fontWeight: '700', cursor: canCreate ? 'pointer' : 'not-allowed', transition: 'background 0.15s', width: '100%' }}
+                                onMouseEnter={(e) => { if (canCreate) e.currentTarget.style.background = '#009a43'; }}
+                                onMouseLeave={(e) => { if (canCreate) e.currentTarget.style.background = '#00b14f'; }}
+                            >
+                                {creating ? 'Đang tạo...' : 'Tạo CV'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -312,343 +446,105 @@ export default function TaoCvPage() {
     const [creating, setCreating] = useState(false);
     const [preview, setPreview] = useState(null);
 
-    const handleUseTemplate = async (templateId, color) => {
-        if (!isAuthenticated) {
-            router.push('/login');
-            return;
-        }
+    const handleColorChange = (id, color) => setSelectedColors((prev) => ({ ...prev, [id]: color }));
+
+    const handleUseTemplate = async (templateId, color, source, contentData) => {
+        if (!isAuthenticated) { router.push('/login'); return; }
         setCreating(true);
         try {
             const res = await resumeService.create({ type: 'resume', template: templateId, color });
-            router.push(`/tao-cv/${res.data.id}`);
+            const resumeId = res.data.id;
+            if (contentData && (source === 'template' || source === 'existing')) {
+                try {
+                    await resumeService.update(resumeId, {
+                        personalInfo: contentData.personalInfo,
+                        objective: contentData.objective,
+                        experiences: contentData.experiences,
+                        education: contentData.education,
+                        skills: contentData.skills,
+                        languages: contentData.languages,
+                        certifications: contentData.certifications,
+                        activities: contentData.activities,
+                    });
+                } catch { /* non-critical: navigate anyway */ }
+            }
+            router.push(`/tao-cv/${resumeId}`);
         } catch {
             setCreating(false);
         }
     };
 
+    const filtered = TEMPLATES.filter((tpl) => activeFilter === 'Tất cả' || tpl.tags.includes(activeFilter));
+
     return (
-        <div style={{ background: '#f3f4f6', minHeight: '100vh', padding: '40px 16px' }}>
-            <div style={{ maxWidth: '1140px', margin: '0 auto' }}>
-                <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                    <h1 style={{ fontSize: '30px', fontWeight: '800', color: '#111827', marginBottom: '10px' }}>
-                        Mẫu CV xin việc tiếng Việt chuẩn 2026
-                    </h1>
-                    <p style={{ fontSize: '15px', color: '#6b7280' }}>
-                        Tuyển chọn mẫu CV đa dạng phong cách, giúp bạn tạo dấu ấn cá nhân
-                    </p>
-                </div>
-
-                <div
-                    style={{
-                        display: 'flex',
-                        gap: '8px',
-                        flexWrap: 'wrap',
-                        marginBottom: '32px',
-                        justifyContent: 'center',
-                    }}
-                >
-                    {FILTER_TAGS.map((tag) => {
-                        const active = activeFilter === tag;
-                        return (
-                            <button
-                                key={tag}
-                                onClick={() => {
-                                        setLocalFilter(tag);
-                                        if (urlFilter && tag !== urlFilter) router.replace('/tao-cv', { scroll: false });
-                                    }}
-                                style={{
-                                    padding: '8px 20px',
-                                    borderRadius: '20px',
-                                    border: active ? 'none' : '1px solid #d1d5db',
-                                    background: active ? '#00b14f' : 'white',
-                                    color: active ? 'white' : '#374151',
-                                    fontSize: '13px',
-                                    fontWeight: '500',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                {tag}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                <div
-                    style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-                        gap: '24px',
-                    }}
-                >
-                    {TEMPLATES.filter((tpl) => activeFilter === 'Tất cả' || tpl.tags.includes(activeFilter)).map((tpl) => {
-                        const color = selectedColors[tpl.id];
-                        return (
-                            <div
-                                key={tpl.id}
-                                style={{
-                                    background: 'white',
-                                    borderRadius: '12px',
-                                    overflow: 'hidden',
-                                    border: '1px solid #e5e7eb',
-                                    boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                                    transition: 'box-shadow 0.2s, transform 0.2s',
-                                }}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.14)';
-                                    e.currentTarget.style.transform = 'translateY(-2px)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
-                                }}
-                            >
-                                <div
-                                    style={{ background: '#f0f0f0', overflow: 'hidden', cursor: 'pointer' }}
-                                    onClick={() => setPreview({ tpl, color })}
-                                >
-                                    <Thumbnail Component={tpl.Component} color={color} content={tpl.sampleContent} />
-                                </div>
-
-                                <div style={{ padding: '14px 16px 0' }}>
-                                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
-                                        {tpl.tags.map((tag) => (
-                                            <span
-                                                key={tag}
-                                                style={{
-                                                    padding: '3px 9px',
-                                                    background: '#f0fdf4',
-                                                    color: '#15803d',
-                                                    borderRadius: '4px',
-                                                    fontSize: '11px',
-                                                    fontWeight: '600',
-                                                }}
-                                            >
-                                                {tag}
-                                            </span>
-                                        ))}
-                                    </div>
-                                    <div
-                                        style={{
-                                            fontSize: '15px',
-                                            fontWeight: '700',
-                                            color: '#111827',
-                                            marginBottom: '4px',
-                                        }}
-                                    >
-                                        {tpl.name}
-                                    </div>
-                                    <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '12px' }}>
-                                        {tpl.description}
-                                    </div>
-                                </div>
-
-                                <div
-                                    style={{
-                                        padding: '0 16px 12px',
-                                        display: 'flex',
-                                        gap: '6px',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    {tpl.colors.map((c) => (
-                                        <button
-                                            key={c}
-                                            onClick={() => setSelectedColors((prev) => ({ ...prev, [tpl.id]: c }))}
-                                            style={{
-                                                width: '22px',
-                                                height: '22px',
-                                                borderRadius: '50%',
-                                                background: c,
-                                                border: color === c ? '2.5px solid #111827' : '2px solid transparent',
-                                                cursor: 'pointer',
-                                                outline: color === c ? '2px solid white' : 'none',
-                                                outlineOffset: '-4px',
-                                                flexShrink: 0,
-                                            }}
-                                        />
-                                    ))}
-                                </div>
-
-                                <div style={{ padding: '0 12px 14px', display: 'flex', gap: '8px' }}>
-                                    <button
-                                        onClick={() => setPreview({ tpl, color })}
-                                        style={{
-                                            flex: 1,
-                                            padding: '9px',
-                                            border: '1px solid #d1d5db',
-                                            background: 'white',
-                                            borderRadius: '8px',
-                                            fontSize: '13px',
-                                            color: '#374151',
-                                            cursor: 'pointer',
-                                            fontWeight: '500',
-                                        }}
-                                    >
-                                        Xem trước
-                                    </button>
-                                    <button
-                                        onClick={() => handleUseTemplate(tpl.id, color)}
-                                        disabled={creating}
-                                        style={{
-                                            flex: 1,
-                                            padding: '9px',
-                                            border: 'none',
-                                            background: '#00b14f',
-                                            borderRadius: '8px',
-                                            fontSize: '13px',
-                                            color: 'white',
-                                            cursor: creating ? 'not-allowed' : 'pointer',
-                                            fontWeight: '600',
-                                        }}
-                                    >
-                                        Dùng mẫu này
-                                    </button>
-                                </div>
-                            </div>
-                        );
-                    })}
+        <div style={{ background: '#f1f5f9', minHeight: '100vh' }}>
+            {/* Hero */}
+            <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb' }}>
+                <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '40px 20px 36px', display: 'flex', alignItems: 'center', gap: '32px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#15803d', fontSize: '12px', fontWeight: '700', padding: '4px 12px', borderRadius: '20px', marginBottom: '14px' }}>
+                            {TEMPLATES.length} mẫu CV chuyên nghiệp
+                        </span>
+                        <h1 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: '#0f172a', lineHeight: '1.2', marginBottom: '12px' }}>
+                            Mẫu CV xin việc tiếng Việt chuẩn 2026
+                        </h1>
+                        <p style={{ fontSize: '15px', color: '#64748b', lineHeight: '1.7', maxWidth: '480px' }}>
+                            Tuyển chọn mẫu CV đa dạng phong cách, thiết kế đẹp và chuyên nghiệp — giúp bạn gây ấn tượng với nhà tuyển dụng ngay từ cái nhìn đầu tiên.
+                        </p>
+                    </div>
+                    <div className="hidden sm:block" style={{ flexShrink: 0 }}>
+                        <Image src={robo} alt="" width={190} height={190} style={{ objectFit: 'contain' }} />
+                    </div>
                 </div>
             </div>
 
-            {/* Preview modal */}
-            {preview && (
-                <div
-                    style={{
-                        position: 'fixed',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.7)',
-                        zIndex: 1000,
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        justifyContent: 'center',
-                        padding: '32px 16px',
-                        overflowY: 'auto',
-                    }}
-                    onClick={() => setPreview(null)}
-                >
-                    <div
-                        style={{
-                            display: 'flex',
-                            gap: '24px',
-                            alignItems: 'flex-start',
-                            maxWidth: '1000px',
-                            width: '100%',
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* CV preview */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                            <div
-                                style={{
-                                    borderRadius: '8px',
-                                    overflow: 'hidden',
-                                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-                                    width: `${MODAL_W}px`,
-                                }}
-                            >
-                                <div style={{ width: `${MODAL_W}px`, height: `${MODAL_H}px`, overflow: 'hidden' }}>
-                                    <div
-                                        style={{
-                                            width: `${A4_W}px`,
-                                            transform: `scale(${MODAL_SCALE})`,
-                                            transformOrigin: 'top left',
-                                            pointerEvents: 'none',
-                                            userSelect: 'none',
-                                        }}
-                                    >
-                                        <preview.tpl.Component content={preview.tpl.sampleContent || SAMPLE_CONTENT} color={preview.color} />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Side panel */}
-                        <div
-                            style={{
-                                width: '260px',
-                                flexShrink: 0,
-                                background: 'white',
-                                borderRadius: '12px',
-                                padding: '24px',
-                                boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
-                            }}
-                        >
-                            <div style={{ fontSize: '16px', fontWeight: '700', color: '#111827', marginBottom: '4px' }}>
-                                {preview.tpl.name}
-                            </div>
-                            <div style={{ fontSize: '12px', color: '#9ca3af', marginBottom: '20px' }}>
-                                {preview.tpl.description}
-                            </div>
-
-                            <div
-                                style={{
-                                    fontSize: '11px',
-                                    fontWeight: '700',
-                                    color: '#6b7280',
-                                    marginBottom: '10px',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: '0.5px',
-                                }}
-                            >
-                                Màu sắc
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px', flexWrap: 'wrap' }}>
-                                {preview.tpl.colors.map((c) => (
-                                    <button
-                                        key={c}
-                                        onClick={() => setPreview((p) => ({ ...p, color: c }))}
-                                        style={{
-                                            width: '28px',
-                                            height: '28px',
-                                            borderRadius: '50%',
-                                            background: c,
-                                            border: preview.color === c ? '3px solid #111827' : '2px solid transparent',
-                                            cursor: 'pointer',
-                                            outline: preview.color === c ? '2px solid white' : 'none',
-                                            outlineOffset: '-4px',
-                                        }}
-                                    />
-                                ))}
-                            </div>
-
-                            <button
-                                onClick={() => {
-                                    handleUseTemplate(preview.tpl.id, preview.color);
-                                    setPreview(null);
-                                }}
-                                style={{
-                                    width: '100%',
-                                    padding: '12px',
-                                    background: '#00b14f',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    color: 'white',
-                                    fontSize: '14px',
-                                    fontWeight: '700',
-                                    cursor: 'pointer',
-                                    marginBottom: '10px',
-                                }}
-                            >
-                                Dùng mẫu này
-                            </button>
-                            <button
-                                onClick={() => setPreview(null)}
-                                style={{
-                                    width: '100%',
-                                    padding: '10px',
-                                    background: 'white',
-                                    border: '1px solid #d1d5db',
-                                    borderRadius: '8px',
-                                    color: '#374151',
-                                    fontSize: '14px',
-                                    cursor: 'pointer',
-                                }}
-                            >
-                                Quay lại
-                            </button>
-                        </div>
+            {/* Sticky filter tabs */}
+            <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb', position: 'sticky', top: 0, zIndex: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '0 20px', overflowX: 'auto' }}>
+                    <div style={{ display: 'flex', whiteSpace: 'nowrap' }}>
+                        {FILTER_TAGS.map((tag) => {
+                            const active = activeFilter === tag;
+                            return (
+                                <button key={tag}
+                                    onClick={() => { setLocalFilter(tag); if (urlFilter && tag !== urlFilter) router.replace('/tao-cv', { scroll: false }); }}
+                                    style={{ padding: '14px 18px', border: 'none', borderBottom: active ? '3px solid #00b14f' : '3px solid transparent', background: 'transparent', color: active ? '#00b14f' : '#6b7280', fontSize: '13px', fontWeight: active ? '700' : '500', cursor: 'pointer', flexShrink: 0, transition: 'color 0.15s, border-color 0.15s' }}
+                                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = '#374151'; }}
+                                    onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = '#6b7280'; }}
+                                >
+                                    {tag}
+                                </button>
+                            );
+                        })}
                     </div>
                 </div>
+            </div>
+
+            {/* Grid */}
+            <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '32px 20px 64px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '24px' }}>
+                    {filtered.map((tpl) => (
+                        <TemplateCard
+                            key={tpl.id}
+                            tpl={tpl}
+                            color={selectedColors[tpl.id]}
+                            onColorChange={handleColorChange}
+                            onPreview={(t, c) => setPreview({ tpl: t, color: c })}
+                            onUse={handleUseTemplate}
+                            creating={creating}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* Modal */}
+            {preview && (
+                <PreviewModal
+                    tpl={preview.tpl}
+                    initialColor={preview.color}
+                    creating={creating}
+                    onClose={() => setPreview(null)}
+                    onUse={handleUseTemplate}
+                />
             )}
         </div>
     );

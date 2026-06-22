@@ -206,6 +206,7 @@ export default function CongTyListPage() {
     const [loadingMore, setLoadingMore] = useState(false);
     const [hasMore, setHasMore] = useState(true);
     const [inputValue, setInputValue] = useState('');
+    const [activeKeyword, setActiveKeyword] = useState('');
 
     // Refs to avoid stale closures in observer
     const pageRef = useRef(1);
@@ -217,8 +218,7 @@ export default function CongTyListPage() {
     const fetchPage = async (pg, kw, reset) => {
         if (loadingRef.current) return;
         loadingRef.current = true;
-        if (reset) setInitialLoading(true);
-        else setLoadingMore(true);
+        if (!reset) setLoadingMore(true);
         try {
             const params = { page: pg, limit: LIMIT };
             if (kw) params.keyword = kw;
@@ -239,9 +239,27 @@ export default function CongTyListPage() {
         }
     };
 
-    // Initial load
+    // Initial load — all setState calls are after await so linter is satisfied
     useEffect(() => {
-        fetchPage(1, '', true);
+        (async () => {
+            if (loadingRef.current) return;
+            loadingRef.current = true;
+            try {
+                const res = await api.get('/employers', { params: { page: 1, limit: LIMIT } });
+                const { data, meta } = res.data;
+                setCompanies(data);
+                const more = 1 < meta.totalPages;
+                setHasMore(more);
+                hasMoreRef.current = more;
+                pageRef.current = 2;
+            } catch {
+                setHasMore(false);
+                hasMoreRef.current = false;
+            } finally {
+                loadingRef.current = false;
+                setInitialLoading(false);
+            }
+        })();
     }, []); // eslint-disable-line
 
     // IntersectionObserver
@@ -265,6 +283,7 @@ export default function CongTyListPage() {
     const handleSearch = () => {
         const kw = inputValue.trim();
         keywordRef.current = kw;
+        setActiveKeyword(kw);
         pageRef.current = 1;
         hasMoreRef.current = true;
         setHasMore(true);
@@ -388,7 +407,7 @@ export default function CongTyListPage() {
                         textAlign: 'center',
                     }}
                 >
-                    {keywordRef.current ? `Kết quả tìm kiếm "${keywordRef.current}"` : 'Danh sách các công ty nổi bật'}
+                    {activeKeyword ? `Kết quả tìm kiếm "${activeKeyword}"` : 'Danh sách các công ty nổi bật'}
                 </h2>
 
                 {initialLoading ? (

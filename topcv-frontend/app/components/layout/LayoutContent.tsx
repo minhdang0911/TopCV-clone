@@ -33,7 +33,18 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
     const isViewer = /^\/(xem-cv|xem-cover-letter|sua-cover-letter)\//.test(pathname);
     const isMeetingRoom = /^\/meet\//.test(pathname);
     const isQuizPage = /^\/thi\//.test(pathname);
-    const hideHeader = HIDDEN_ROUTES.includes(pathname) || isCvEditor || isEmployerDashboard || isViewer || isMeetingRoom || isQuizPage;
+
+    // ✅ FIX: ẩn footer cho trang chat để tránh scroll cả trang
+    const isChatPage = /^\/(tin-nhan|nha-tuyen-dung\/tin-nhan)/.test(pathname);
+
+    const hideHeader =
+        HIDDEN_ROUTES.includes(pathname) ||
+        isCvEditor ||
+        isEmployerDashboard ||
+        isViewer ||
+        isMeetingRoom ||
+        isQuizPage;
+    const hideFooter = hideHeader || isChatPage;
 
     useEffect(() => {
         if (
@@ -54,8 +65,9 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
             {!hideHeader && <Header />}
             <div style={!hideHeader ? { paddingTop: '72px' } : undefined}>
                 {children}
-                {!HIDDEN_SEO.includes(pathname) && !hideHeader && <SeoKeywords />}
-                {!hideHeader && <Footer />}
+                {!HIDDEN_SEO.includes(pathname) && !hideHeader && !isChatPage && <SeoKeywords />}
+                {/* ✅ FIX: dùng hideFooter thay vì hideHeader */}
+                {!hideFooter && <Footer />}
             </div>
             {showOnboarding && <JobPreferencesModal onClose={() => setShowOnboarding(false)} />}
             {!isEmployerDashboard && !isCvEditor && !isViewer && !isMeetingRoom && !isQuizPage && <FloatingActions />}

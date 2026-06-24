@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Patch,
   Query,
   Req,
@@ -104,5 +105,35 @@ export class UsersController {
   @Roles('EMPLOYER')
   searchCandidates(@Query() query: any) {
     return this.usersService.searchCandidates(query);
+  }
+
+  // ─── ADMIN ────────────────────────────────────────────────────────────────
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminFindAll(@Query() query: any) {
+    return this.usersService.adminFindAll(query);
+  }
+
+  @Get('admin/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminFindOne(@Param('id') id: string) {
+    return this.usersService.adminFindOne(id);
+  }
+
+  @Patch('admin/:id/ban')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminToggleBan(@Req() req: any, @Param('id') id: string) {
+    return this.usersService.adminToggleBan(id, req.user.sub);
+  }
+
+  @Patch('admin/:id/role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminChangeRole(@Req() req: any, @Param('id') id: string, @Body('role') role: string) {
+    return this.usersService.adminChangeRole(id, role, req.user.sub);
   }
 }

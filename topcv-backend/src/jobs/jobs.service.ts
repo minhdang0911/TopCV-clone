@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   BadRequestException,
   ForbiddenException,
@@ -993,5 +993,85 @@ export class JobsService {
     }));
 
     return { total, active, inactive, expired, recentJobs, weeklyGrowth };
+  }
+
+  // ─── ADMIN ──────────────────────────────────────────────────────────────────
+
+  async adminFindAll(query: {
+    keyword?: string;
+    isActive?: string;
+    employerId?: string;
+    industryId?: string;
+    page?: string;
+    limit?: string;
+  }) {
+    const page = Math.max(1, parseInt(query.page || '1'));
+    const limit = Math.min(100, parseInt(query.limit || '20'));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.isActive !== undefined) where.isActive = query.isActive === 'true';
+    if (query.employerId) where.employerId = query.employerId;
+    if (query.industryId) where.industryId = parseInt(query.industryId);
+    if (query.keyword) {
+      where.OR = [
+        { title: { contains: query.keyword, mode: 'insensitive' } },
+        { employer: { companyName: { contains: query.keyword, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [total, jobs] = await Promise.all([
+      this.prisma.job.count({ where }),
+      this.prisma.job.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          isActive: true,
+          salaryMin: true,
+          salaryMax: true,
+          salaryType: true,
+          workingType: true,
+          deadline: true,
+          createdAt: true,
+          updatedAt: true,
+          employer: {
+            select: { id: true, companyName: true, logoUrl: true, slug: true },
+          },
+          industry: { select: { id: true, name: true } },
+          _count: { select: { applications: true } },
+        },
+      }),
+    ]);
+
+    return { data: jobs, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async adminToggleActive(jobId: string, adminId: string) {
+    const job = await this.prisma.job.findUnique({ where: { id: jobId } });
+    if (!job) throw new BadRequestException('Tin tuyển dụng không tồn tại');
+
+    const updated = await this.prisma.job.update({
+      where: { id: jobId },
+      data: { isActive: !job.isActive },
+      select: { id: true, title: true, isActive: true },
+    });
+
+    await this.logAudit(
+      adminId,
+      updated.isActive ? 'ADMIN_ACTIVATE_JOB' : 'ADMIN_DEACTIVATE_JOB',
+      jobId,
+      { isActive: job.isActive },
+      { isActive: updated.isActive },
+    );
+
+    return {
+      message: updated.isActive ? 'Đã kích hoạt tin tuyển dụng' : 'Đã vô hiệu hóa tin tuyển dụng',
+      data: updated,
+    };
   }
 }

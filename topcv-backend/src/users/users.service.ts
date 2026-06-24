@@ -255,6 +255,150 @@ export class UsersService {
     return user?.fcmToken ?? null;
   }
 
+  // ─── ADMIN ────────────────────────────────────────
+  async adminFindAll(query: {
+    role?: string;
+    isActive?: string;
+    keyword?: string;
+    page?: string;
+    limit?: string;
+  }) {
+    const page = Math.max(1, parseInt(query.page || '1'));
+    const limit = Math.min(100, parseInt(query.limit || '20'));
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+    if (query.role) {
+      const roleValue = query.role.trim().toUpperCase();
+      const validRoles = Object.values(Role) as string[];
+      if (validRoles.includes(roleValue)) {
+        where.role = roleValue as Role;
+      }
+    }
+    if (query.isActive !== undefined && query.isActive !== '') {
+      where.isActive = query.isActive === 'true';
+    }
+    if (query.keyword) {
+      where.OR = [
+        { email: { contains: query.keyword, mode: 'insensitive' } },
+        { candidateProfile: { fullName: { contains: query.keyword, mode: 'insensitive' } } },
+        { employerProfile: { companyName: { contains: query.keyword, mode: 'insensitive' } } },
+      ];
+    }
+
+
+    const [total, users] = await Promise.all([
+      this.prisma.user.count({ where }),
+      this.prisma.user.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          email: true,
+          phone: true,
+          role: true,
+          isVerified: true,
+          isActive: true,
+          provider: true,
+          plan: true,
+          planExpiresAt: true,
+          createdAt: true,
+          candidateProfile: { select: { fullName: true, avatarUrl: true } },
+          employerProfile: { select: { companyName: true, logoUrl: true, slug: true } },
+        },
+      }),
+    ]);
+
+    return { data: users, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+
+  async adminFindOne(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        phone: true,
+        role: true,
+        isVerified: true,
+        isActive: true,
+        twoFactorEnabled: true,
+        provider: true,
+        plan: true,
+        planExpiresAt: true,
+        createdAt: true,
+        updatedAt: true,
+        candidateProfile: true,
+        employerProfile: true,
+        _count: {
+          select: {
+            resumes: true,
+            coverLetters: true,
+            applications: true,
+            savedJobs: true,
+            payments: true,
+          },
+        },
+      },
+    });
+    if (!user) throw new BadRequestException('Người dùng không tồn tại');
+    return user;
+  }
+
+  async adminToggleBan(id: string, adminId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new BadRequestException('Người dùng không tồn tại');
+    if (user.role === 'ADMIN') throw new BadRequestException('Không thể ban tài khoản admin');
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { isActive: !user.isActive },
+      select: { id: true, email: true, isActive: true },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: adminId,
+        action: updated.isActive ? 'ADMIN_UNBAN_USER' : 'ADMIN_BAN_USER',
+        entity: 'User',
+        entityId: id,
+        oldData: { isActive: user.isActive },
+        newData: { isActive: updated.isActive },
+      },
+    });
+
+    return { message: updated.isActive ? 'Đã mở khóa tài khoản' : 'Đã khóa tài khoản', data: updated };
+  }
+
+  async adminChangeRole(id: string, role: string, adminId: string) {
+    const validRoles = ['CANDIDATE', 'EMPLOYER', 'ADMIN'];
+    if (!validRoles.includes(role)) throw new BadRequestException('Role không hợp lệ');
+
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new BadRequestException('Người dùng không tồn tại');
+
+    const updated = await this.prisma.user.update({
+      where: { id },
+      data: { role: role as any },
+      select: { id: true, email: true, role: true },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: adminId,
+        action: 'ADMIN_CHANGE_ROLE',
+        entity: 'User',
+        entityId: id,
+        oldData: { role: user.role },
+        newData: { role: updated.role },
+      },
+    });
+
+    return { message: 'Đã thay đổi role thành công', data: updated };
+  }
+
   async searchCandidates(query: { keyword?: string; page?: string; limit?: string; lookingForJob?: string }) {
     const page = Math.max(1, parseInt(query.page || '1'));
     const limit = Math.min(50, parseInt(query.limit || '20'));

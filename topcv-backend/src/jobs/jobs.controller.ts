@@ -128,4 +128,20 @@ export class JobsController {
   remove(@Req() req: any, @Param('id') id: string) {
     return this.jobsService.remove(req.user.sub, id, req.ip);
   }
+
+  // ─── ADMIN ──────────────────────────────────────────────────────────────────
+
+  @Get('admin/all')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminFindAll(@Query() query: any) {
+    return this.jobsService.adminFindAll(query);
+  }
+
+  @Patch('admin/:id/toggle-active')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  adminToggleActive(@Req() req: any, @Param('id') id: string) {
+    return this.jobsService.adminToggleActive(id, req.user.sub);
+  }
 }

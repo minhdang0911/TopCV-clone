@@ -28,6 +28,7 @@ import { RemindersModule } from './reminders/reminders.module';
 import { RatingsModule } from './ratings/ratings.module';
 import { QuizModule } from './quiz/quiz.module';
 import { BlogModule } from './blog/blog.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -60,6 +61,7 @@ import { BlogModule } from './blog/blog.module';
     RatingsModule,
     QuizModule,
     BlogModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

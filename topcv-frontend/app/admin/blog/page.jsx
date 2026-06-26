@@ -307,7 +307,7 @@ function CategoryManager({ categories, onRefresh }) {
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-2 items-end">
+            <form onSubmit={e => { e.preventDefault(); handleCreate(); }} className="flex gap-2 items-end">
                 <div className="flex-1">
                     <Label className="text-[12px] text-slate-500 mb-1 block">Tên chủ đề</Label>
                     <Input
@@ -327,13 +327,13 @@ function CategoryManager({ categories, onRefresh }) {
                     />
                 </div>
                 <Button
-                    onClick={handleCreate}
+                    type="submit"
                     disabled={saving}
                     className="bg-green-600 hover:bg-green-700 text-[13px] shrink-0"
                 >
                     <Plus size={14} className="mr-1" /> Thêm
                 </Button>
-            </div>
+            </form>
             <div className="space-y-2">
                 {categories.map((cat) => (
                     <div

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { Eye, X } from 'lucide-react';
+import { Eye, X, Crown, Zap, Sparkles, AlertTriangle } from 'lucide-react';
 import useAuthStore from '@/stores/auth.store';
 import { resumeService } from '@/services/resume.service';
 import TieuChuanTemplate from '@/app/components/cv/templates/TieuChuan';
@@ -143,6 +143,76 @@ const TEMPLATES = [
 const FILTER_TAGS = ['Tất cả', 'Mẫu CV Đơn giản', 'Mẫu CV Ấn tượng', 'Mẫu CV Chuyên nghiệp', 'Nhân viên kinh doanh', 'Lập trình viên', 'Nhân viên kế toán', 'Chuyên viên marketing'];
 const LINHVUC_MAP = { 'kinh-doanh': 'Nhân viên kinh doanh', 'lap-trinh-vien': 'Lập trình viên', 'ke-toan': 'Nhân viên kế toán', 'marketing': 'Chuyên viên marketing' };
 const STYLE_MAP = { 'don-gian': 'Mẫu CV Đơn giản', 'an-tuong': 'Mẫu CV Ấn tượng', 'chuyen-nghiep': 'Mẫu CV Chuyên nghiệp' };
+
+const PLAN_LIMITS_CV = { FREE: 6, PRO: 12, PREMIUM: 20 };
+
+// ─── Limit Modal ──────────────────────────────────────────────────────────────
+function LimitModal({ plan, limit, onClose }) {
+    const isUpgradable = plan === 'FREE' || plan === 'PRO';
+    return (
+        <div
+            style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.65)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', backdropFilter: 'blur(4px)' }}
+            onClick={onClose}
+        >
+            <div
+                style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '420px', overflow: 'hidden', boxShadow: '0 30px 70px rgba(0,0,0,0.3)' }}
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Top gradient */}
+                <div style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)', padding: '28px 28px 24px', textAlign: 'center' }}>
+                    <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
+                        <Crown size={26} color="white" />
+                    </div>
+                    <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'white', margin: '0 0 6px' }}>Đã đạt giới hạn CV</h2>
+                    <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', margin: 0 }}>
+                        Gói <strong style={{ color: 'white' }}>{plan}</strong> chỉ cho phép tạo tối đa <strong style={{ color: '#c4b5fd' }}>{limit} CV</strong>
+                    </p>
+                </div>
+
+                <div style={{ padding: '24px 28px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+                        {[{ plan: 'PRO', cv: 12, price: '50.000đ/tháng', color: '#7c3aed', icon: Zap },
+                          { plan: 'PREMIUM', cv: 20, price: '500.000đ/năm', color: '#d97706', icon: Crown }].map(({ plan: p, cv, price, color, icon: Icon }) => (
+                            <div key={p} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', borderRadius: '10px', background: '#fafafa', border: '1px solid #f0f0f0' }}>
+                                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Icon size={17} color={color} />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>Gói {p}</div>
+                                    <div style={{ fontSize: '11px', color: '#6b7280' }}>Tạo tối đa {cv} CV · {price}</div>
+                                </div>
+                                <Sparkles size={14} color={color} />
+                            </div>
+                        ))}
+                    </div>
+
+                    <a
+                        href="/nang-cap"
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                            padding: '13px', width: '100%',
+                            background: 'linear-gradient(135deg, #7c3aed, #6d28d9)',
+                            color: 'white', borderRadius: '12px',
+                            fontSize: '14px', fontWeight: '700',
+                            textDecoration: 'none',
+                            boxShadow: '0 4px 14px rgba(124,58,237,0.35)',
+                            marginBottom: '10px',
+                        }}
+                    >
+                        <Crown size={16} />
+                        Nâng cấp ngay
+                    </a>
+                    <button
+                        onClick={onClose}
+                        style={{ width: '100%', padding: '10px', background: 'transparent', border: '1px solid #e5e7eb', borderRadius: '10px', fontSize: '13px', color: '#6b7280', cursor: 'pointer' }}
+                    >
+                        Để sau
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 const SOURCE_OPTIONS = [
     { key: 'existing', label: 'Nội dung CV đã tạo trước đó', desc: null },
@@ -435,7 +505,7 @@ function PreviewModal({ tpl, initialColor, creating, onClose, onUse }) {
 export default function TaoCvPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, user } = useAuthStore();
     const linhvuc = searchParams.get('linhvuc');
     const style = searchParams.get('style');
     const urlFilter = linhvuc ? (LINHVUC_MAP[linhvuc] || null) : style ? (STYLE_MAP[style] || null) : null;
@@ -445,11 +515,36 @@ export default function TaoCvPage() {
     const [selectedColors, setSelectedColors] = useState(Object.fromEntries(TEMPLATES.map((t) => [t.id, t.colors[0]])));
     const [creating, setCreating] = useState(false);
     const [preview, setPreview] = useState(null);
+    const [showLimitModal, setShowLimitModal] = useState(false);
+    const [cvCount, setCvCount] = useState(null); // null = loading
+
+    // Plan limit
+    const plan = user?.plan || 'FREE';
+    const cvLimit = PLAN_LIMITS_CV[plan] ?? 6;
+    const isFull = cvCount !== null && cvCount >= cvLimit;
+
+    useEffect(() => {
+        if (!isAuthenticated) return;
+        resumeService.list('resume')
+            .then((res) => {
+                const list = res.data?.data || res.data || [];
+                setCvCount(Array.isArray(list) ? list.length : 0);
+            })
+            .catch(() => setCvCount(0));
+    }, [isAuthenticated]);
 
     const handleColorChange = (id, color) => setSelectedColors((prev) => ({ ...prev, [id]: color }));
 
     const handleUseTemplate = async (templateId, color, source, contentData) => {
         if (!isAuthenticated) { router.push('/login'); return; }
+
+        // ── Check limit trước khi tạo ──
+        if (isFull) {
+            setPreview(null);
+            setShowLimitModal(true);
+            return;
+        }
+
         setCreating(true);
         try {
             const res = await resumeService.create({ type: 'resume', template: templateId, color });
@@ -468,6 +563,7 @@ export default function TaoCvPage() {
                     });
                 } catch { /* non-critical: navigate anyway */ }
             }
+            setCvCount((c) => (c ?? 0) + 1);
             router.push(`/tao-cv/${resumeId}`);
         } catch {
             setCreating(false);
@@ -478,13 +574,37 @@ export default function TaoCvPage() {
 
     return (
         <div style={{ background: '#f1f5f9', minHeight: '100vh' }}>
+            {/* Limit modal */}
+            {showLimitModal && (
+                <LimitModal plan={plan} limit={cvLimit} onClose={() => setShowLimitModal(false)} />
+            )}
+
             {/* Hero */}
             <div style={{ background: 'white', borderBottom: '1px solid #e5e7eb' }}>
                 <div style={{ maxWidth: '1120px', margin: '0 auto', padding: '40px 20px 36px', display: 'flex', alignItems: 'center', gap: '32px' }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ display: 'inline-block', background: '#f0fdf4', color: '#15803d', fontSize: '12px', fontWeight: '700', padding: '4px 12px', borderRadius: '20px', marginBottom: '14px' }}>
-                            {TEMPLATES.length} mẫu CV chuyên nghiệp
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px', flexWrap: 'wrap' }}>
+                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', background: '#f0fdf4', color: '#15803d', fontSize: '12px', fontWeight: '700', padding: '4px 12px', borderRadius: '20px' }}>
+                                {TEMPLATES.length} mẫu CV chuyên nghiệp
+                            </span>
+                            {cvCount !== null && (
+                                <span style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                                    background: isFull ? '#fef2f2' : '#f0f9ff',
+                                    color: isFull ? '#dc2626' : '#0284c7',
+                                    fontSize: '12px', fontWeight: '700',
+                                    padding: '4px 12px', borderRadius: '20px',
+                                    border: `1px solid ${isFull ? '#fecaca' : '#bae6fd'}`,
+                                }}>
+                                    {isFull
+                                        ? `⚠ Đã dùng ${cvCount}/${cvLimit} CV — `
+                                        : `📄 ${cvCount}/${cvLimit} CV đã tạo · `}
+                                    <a href="/nang-cap" style={{ color: isFull ? '#dc2626' : '#0284c7', textDecoration: 'underline' }}>
+                                        {isFull ? 'Nâng cấp' : 'Nâng cấp'}
+                                    </a>
+                                </span>
+                            )}
+                        </div>
                         <h1 style={{ fontSize: 'clamp(22px, 4vw, 34px)', fontWeight: '800', color: '#0f172a', lineHeight: '1.2', marginBottom: '12px' }}>
                             Mẫu CV xin việc tiếng Việt chuẩn 2026
                         </h1>

@@ -304,6 +304,7 @@ model Resume {
   background  String   @default("white")
   content     Json
   fileUrl     String?  @map("file_url")
+  thumbnailUrl String? @map("thumbnail_url")
   isPublic    Boolean  @default(false) @map("is_public")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")

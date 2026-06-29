@@ -2,7 +2,11 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { Save, Printer, ArrowLeft, GripVertical, Check, Eye, EyeOff, ChevronRight, X } from 'lucide-react';
+import {
+    Save, Printer, ArrowLeft, GripVertical, Check, Eye, EyeOff,
+    X, Palette, LayoutGrid, Layers, RefreshCw, ChevronRight,
+    Type, Sliders, Download, Pencil, PlusCircle,
+} from 'lucide-react';
 import {
     DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
 } from '@dnd-kit/core';
@@ -100,25 +104,23 @@ const THUMB_SAMPLE = {
         { id: '1', position: 'Senior Frontend Developer', company: 'VNG Corporation', startDate: '06/2022', endDate: '', isCurrent: true, description: '- Phát triển tính năng mới cho Zalo Web với 20M+ người dùng\n- Tối ưu performance, giảm 40% load time\n- Mentor 2 junior developers trong nhóm' },
         { id: '2', position: 'Frontend Developer', company: 'FPT Software', startDate: '09/2020', endDate: '05/2022', isCurrent: false, description: '- Xây dựng hệ thống quản lý nội bộ cho 500+ nhân viên\n- Tích hợp REST API với React/Redux\n- Cải thiện UX, tăng 25% user retention' },
     ],
-    education: [{ id: '1', school: 'ĐH Bách Khoa TP.HCM', degree: 'Kỹ sư Công nghệ Thông tin', gpa: '3.6/4.0', startDate: '2016', endDate: '2020', description: 'Thủ khoa kỳ 3 năm 2018. Giải nhì cuộc thi lập trình ACM-ICPC cấp trường.' }],
+    education: [{ id: '1', school: 'ĐH Bách Khoa TP.HCM', degree: 'Kỹ sư Công nghệ Thông tin', gpa: '3.6/4.0', startDate: '2016', endDate: '2020', description: 'Thủ khoa kỳ 3 năm 2018.' }],
     skills: [
         { id: '1', name: 'React / Next.js', level: 5 }, { id: '2', name: 'TypeScript', level: 4 },
         { id: '3', name: 'Node.js / Express', level: 3 }, { id: '4', name: 'Tailwind CSS', level: 4 },
-        { id: '5', name: 'Git / CI-CD', level: 4 }, { id: '6', name: 'Docker / AWS', level: 3 },
     ],
-    languages: [{ id: '1', name: 'Tiếng Anh', level: 'B2 (IELTS 6.5)' }, { id: '2', name: 'Tiếng Nhật', level: 'N4' }],
+    languages: [{ id: '1', name: 'Tiếng Anh', level: 'B2 (IELTS 6.5)' }],
     certifications: [{ id: '1', name: 'AWS Certified Developer', issuer: 'Amazon Web Services', date: '2023' }],
-    activities: [{ id: '1', role: 'Trưởng ban kỹ thuật', organization: 'CLB IT Bách Khoa', description: 'Tổ chức workshop hàng tháng về web development cho 200+ thành viên' }],
+    activities: [{ id: '1', role: 'Trưởng ban kỹ thuật', organization: 'CLB IT Bách Khoa', description: 'Tổ chức workshop hàng tháng' }],
     sectionOrder: ['objective', 'experiences', 'education', 'skills', 'languages', 'certifications', 'activities'],
     hiddenSections: [],
 };
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_SECTION_ORDER = ['objective', 'experiences', 'education', 'skills', 'languages', 'certifications', 'activities'];
 const DEFAULT_HIDDEN = ['certifications', 'activities'];
 
-// Pre-fill content so new CVs look full, not empty
 const SAMPLE_PREFILL = {
     personalInfo: {
         fullName: 'Họ và tên đầy đủ',
@@ -144,40 +146,57 @@ const SAMPLE_PREFILL = {
         { id: 's3', name: 'Kỹ năng chuyên môn 3', level: 4 },
         { id: 's4', name: 'Kỹ năng mềm', level: 4 },
     ],
-    languages: [
-        { id: 'l1', name: 'Tiếng Anh', level: 'B2 - Giao tiếp tốt' },
-    ],
-    certifications: [
-        { id: 'c1', name: 'Tên chứng chỉ', issuer: 'Đơn vị cấp', date: '2023' },
-    ],
-    activities: [
-        { id: 'a1', role: 'Vai trò của bạn', organization: 'Tên tổ chức / CLB', description: 'Mô tả hoạt động và đóng góp...' },
-    ],
+    languages: [{ id: 'l1', name: 'Tiếng Anh', level: 'B2 - Giao tiếp tốt' }],
+    certifications: [{ id: 'c1', name: 'Tên chứng chỉ', issuer: 'Đơn vị cấp', date: '2023' }],
+    activities: [{ id: 'a1', role: 'Vai trò của bạn', organization: 'Tên tổ chức / CLB', description: 'Mô tả hoạt động và đóng góp...' }],
 };
 
-// ── Sortable section row (Bố cục tab) ────────────────────────────────────────
+// ── Sub-components ────────────────────────────────────────────────────────────
 
-function SortableRow({ id, label, hidden }) {
-    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+function PanelLabel({ children }) {
     return (
-        <div ref={setNodeRef}
-            style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.45 : 1, display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px', background: isDragging ? '#f0fdf4' : 'white', border: `1px solid ${hidden ? '#f3f4f6' : '#e5e7eb'}`, borderRadius: '7px', marginBottom: '5px', boxShadow: isDragging ? '0 2px 10px rgba(0,0,0,0.12)' : 'none', opacity: hidden ? 0.45 : undefined }}>
-            <div {...attributes} {...listeners} style={{ cursor: 'grab', color: '#9ca3af', touchAction: 'none', display: 'flex' }}>
-                <GripVertical size={15} />
-            </div>
-            <span style={{ fontSize: '12px', color: hidden ? '#9ca3af' : '#374151', flex: 1 }}>{label}</span>
-            {hidden && <span style={{ fontSize: '10px', color: '#9ca3af', background: '#f3f4f6', padding: '1px 6px', borderRadius: '10px' }}>Ẩn</span>}
+        <div style={{
+            fontSize: '10px', fontWeight: '800', color: '#9ca3af',
+            textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '10px',
+        }}>
+            {children}
         </div>
     );
 }
 
-// ── Left panel tabs ───────────────────────────────────────────────────────────
+// ── SortableTile (visual drag-and-drop block, like TopCV real) ────────────────
+function SortableTile({ id, label, hidden, color }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    return (
+        <div ref={setNodeRef} style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.35 : 1 }}>
+            <div
+                {...attributes} {...listeners}
+                style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px',
+                    padding: '10px 6px', minHeight: '44px',
+                    background: hidden ? '#f9fafb' : 'white',
+                    border: `1.5px solid ${isDragging ? (color || '#00b14f') : hidden ? '#e5e7eb' : '#d1d5db'}`,
+                    borderRadius: '10px',
+                    cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none', userSelect: 'none',
+                    boxShadow: isDragging ? '0 6px 18px rgba(0,0,0,0.18)' : '0 1px 3px rgba(0,0,0,0.04)',
+                    opacity: hidden ? 0.5 : 1,
+                }}
+            >
+                <GripVertical size={12} color="#d1d5db" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: '11px', fontWeight: '600', color: hidden ? '#9ca3af' : '#374151', textAlign: 'center', lineHeight: '1.3' }}>
+                    {label}
+                </span>
+            </div>
+        </div>
+    );
+}
 
+// Sidebar tab definitions
 const TABS = [
-    { id: 'design', label: 'Thiết kế\n& Font' },
-    { id: 'sections', label: 'Thêm\nmục' },
-    { id: 'layout', label: 'Bố\ncục' },
-    { id: 'template', label: 'Đổi\nmẫu' },
+    { id: 'design', label: 'Thiết kế\n& Font', Icon: Palette },
+    { id: 'sections', label: 'Thêm\nmục', Icon: PlusCircle },
+    { id: 'layout', label: 'Bố\ncục', Icon: Layers },
+    { id: 'template', label: 'Đổi\nmẫu', Icon: LayoutGrid },
 ];
 
 // ── Main page ────────────────────────────────────────────────────────────────
@@ -188,7 +207,7 @@ export default function CvEditorPage() {
     const { hydrated, isAuthenticated, user } = useAuthStore();
     const { resume, setResume, isDirty, setSaving, saving } = useResumeStore();
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState(null); // null = panel closed
+    const [activeTab, setActiveTab] = useState(null);
     const [saveMsg, setSaveMsg] = useState('');
     const [previewMode, setPreviewMode] = useState(false);
     const autoSaveRef = useRef(null);
@@ -207,23 +226,17 @@ export default function CvEditorPage() {
         resumeService.get(id).then((res) => {
             let data = res.data;
             const c = data.content || {};
-
-            // Pre-fill with sample content when CV is brand new / empty
             const isEmpty = !c.personalInfo?.fullName && !c.experiences?.length && !c.education?.length;
             if (isEmpty) {
                 data = { ...data, content: { ...SAMPLE_PREFILL, sectionOrder: DEFAULT_SECTION_ORDER, hiddenSections: DEFAULT_HIDDEN } };
             } else {
-                // Ensure structural defaults
                 if (!c.sectionOrder) data = { ...data, content: { ...c, sectionOrder: DEFAULT_SECTION_ORDER } };
                 if (!c.hiddenSections) data = { ...data, content: { ...data.content, hiddenSections: DEFAULT_HIDDEN } };
             }
-
-            // Carry over profile avatar if no custom avatar set
             const content = data.content;
             if (!content?.personalInfo?.avatarUrl && user?.candidateProfile?.avatarUrl) {
                 data = { ...data, content: { ...content, personalInfo: { ...content.personalInfo, avatarUrl: user.candidateProfile.avatarUrl } } };
             }
-
             setResume(data);
         }).catch(() => router.replace('/tao-cv')).finally(() => setLoading(false));
         return () => useResumeStore.getState().reset();
@@ -236,7 +249,7 @@ export default function CvEditorPage() {
         try {
             await resumeService.update(r.id, { title: r.title, template: r.template, color: r.color, fontSize: r.fontSize, lineSpacing: r.lineSpacing, content: r.content });
             setSaveMsg('Đã lưu');
-            setTimeout(() => setSaveMsg(''), 2000);
+            setTimeout(() => setSaveMsg(''), 2200);
         } catch {}
         setSaving(false);
     }, []);
@@ -248,20 +261,20 @@ export default function CvEditorPage() {
         return () => clearTimeout(autoSaveRef.current);
     }, [isDirty, save]);
 
-    // Leave-page warning
     useEffect(() => {
-        const handler = (e) => {
-            if (isDirty) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        };
+        const handler = (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; } };
         window.addEventListener('beforeunload', handler);
         return () => window.removeEventListener('beforeunload', handler);
     }, [isDirty]);
 
     if (!hydrated || loading || !resume) {
-        return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', color: '#6b7280', fontFamily: 'Arial, sans-serif' }}>Đang tải...</div>;
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '14px', background: '#f8fafc' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', border: '3px solid #e5e7eb', borderTopColor: '#00b14f', animation: 'spin 0.8s linear infinite' }} />
+                <span style={{ fontSize: '13px', color: '#9ca3af', fontFamily: 'sans-serif' }}>Đang tải CV...</span>
+                <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </div>
+        );
     }
 
     const content = resume.content || {};
@@ -288,7 +301,6 @@ export default function CvEditorPage() {
         }
     };
 
-    // DnD
     const handleDragEnd = (event) => {
         const { active, over } = event;
         if (active.id !== over?.id) {
@@ -301,55 +313,96 @@ export default function CvEditorPage() {
     // ── Panels ────────────────────────────────────────────────────────────────
 
     const DesignPanel = (
-        <div style={{ overflowY: 'auto', flex: 1, padding: '16px' }}>
-            <SectionLabel>Phông chữ</SectionLabel>
-            <select value={font} onChange={(e) => updateContent('font', e.target.value)}
-                style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: '7px', fontSize: '13px', marginBottom: '16px', outline: 'none', background: 'white' }}>
+        <div style={{ overflowY: 'auto', flex: 1, padding: '20px 18px' }}>
+
+            {/* Font */}
+            <PanelLabel>Phông chữ</PanelLabel>
+            <select
+                value={font}
+                onChange={(e) => updateContent('font', e.target.value)}
+                style={{
+                    width: '100%', padding: '10px 12px', marginBottom: '22px',
+                    border: '1.5px solid #e5e7eb', borderRadius: '10px',
+                    fontSize: '13px', outline: 'none', background: 'white',
+                    color: '#374151', cursor: 'pointer',
+                    transition: 'border-color 0.15s',
+                }}
+                onFocus={(e) => { e.target.style.borderColor = '#00b14f'; }}
+                onBlur={(e) => { e.target.style.borderColor = '#e5e7eb'; }}
+            >
                 {FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
             </select>
 
-            <SectionLabel>Cỡ chữ</SectionLabel>
-            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
-                {[['small', 'Nhỏ'], ['medium', 'Trung bình'], ['large', 'Siêu lớn']].map(([v, l]) => (
+            {/* Font size */}
+            <PanelLabel>Cỡ chữ</PanelLabel>
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '22px' }}>
+                {[['small', 'Nhỏ'], ['medium', 'Vừa'], ['large', 'Lớn']].map(([v, l]) => (
                     <button key={v} onClick={() => setR({ fontSize: v })}
-                        style={{ flex: 1, padding: '7px 4px', border: fontSize === v ? '2px solid #00b14f' : '1px solid #e5e7eb', borderRadius: '7px', background: fontSize === v ? '#f0fdf4' : 'white', color: fontSize === v ? '#00b14f' : '#374151', fontSize: '11px', fontWeight: fontSize === v ? '700' : '400', cursor: 'pointer' }}>
+                        style={{
+                            flex: 1, padding: '8px 4px',
+                            border: `1.5px solid ${fontSize === v ? '#00b14f' : '#e5e7eb'}`,
+                            borderRadius: '9px',
+                            background: fontSize === v ? '#f0fdf4' : 'white',
+                            color: fontSize === v ? '#15803d' : '#6b7280',
+                            fontSize: '12px', fontWeight: fontSize === v ? '700' : '500',
+                            cursor: 'pointer', transition: 'all 0.15s',
+                        }}>
                         {l}
                     </button>
                 ))}
             </div>
 
-            <SectionLabel>Khoảng cách dòng: {(lineSpacing).toFixed(1)}</SectionLabel>
-            <input type="range" min="1.0" max="2.0" step="0.1" value={lineSpacing}
+            {/* Line spacing */}
+            <PanelLabel>Khoảng cách dòng — {lineSpacing.toFixed(1)}</PanelLabel>
+            <input
+                type="range" min="1.0" max="2.0" step="0.1" value={lineSpacing}
                 onChange={(e) => setR({ lineSpacing: Number(e.target.value) })}
-                style={{ width: '100%', accentColor: '#00b14f', marginBottom: '4px' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#9ca3af', marginBottom: '16px' }}>
+                style={{ width: '100%', accentColor: '#00b14f', marginBottom: '4px', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#9ca3af', marginBottom: '22px' }}>
                 <span>1.0</span><span>2.0</span>
             </div>
 
-            <SectionLabel>Màu chủ đề</SectionLabel>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            {/* Color */}
+            <PanelLabel>Màu chủ đề</PanelLabel>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '12px' }}>
                 {(tplMeta?.colors || ['#00b14f', '#1e3a5f', '#c0392b']).map((c) => (
                     <button key={c} onClick={() => setR({ color: c })}
-                        style={{ width: '28px', height: '28px', borderRadius: '50%', background: c, border: color === c ? '3px solid #111827' : '2px solid transparent', cursor: 'pointer', outline: color === c ? '2px solid white' : 'none', outlineOffset: '-4px', flexShrink: 0 }} />
+                        style={{
+                            width: '30px', height: '30px', borderRadius: '50%', background: c,
+                            border: color === c ? '3px solid #0f172a' : '2.5px solid transparent',
+                            cursor: 'pointer',
+                            outline: color === c ? '2px solid white' : 'none', outlineOffset: '-5px',
+                            flexShrink: 0, transition: 'transform 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.15)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                    />
                 ))}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '22px' }}>
                 <input type="color" value={color} onChange={(e) => setR({ color: e.target.value })}
-                    style={{ width: '36px', height: '36px', border: '1px solid #e5e7eb', borderRadius: '6px', cursor: 'pointer', padding: '2px' }} />
+                    style={{ width: '38px', height: '38px', border: '1.5px solid #e5e7eb', borderRadius: '8px', cursor: 'pointer', padding: '3px' }} />
                 <input type="text" value={color} onChange={(e) => setR({ color: e.target.value })}
-                    style={{ flex: 1, padding: '7px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '12px', fontFamily: 'monospace', outline: 'none' }} />
+                    style={{ flex: 1, padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '12px', fontFamily: 'monospace', outline: 'none', color: '#374151' }} />
             </div>
 
-            <SectionLabel>Hình nền CV</SectionLabel>
+            {/* Background */}
+            <PanelLabel>Hình nền CV</PanelLabel>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
                 {CV_BACKGROUNDS.map((bg) => {
                     const active = background === bg.bg;
                     return (
                         <button key={bg.id} onClick={() => updateContent('cvBackground', bg.bg)} title={bg.label}
-                            style={{ aspectRatio: '1', borderRadius: '8px', background: bg.bg, border: active ? '3px solid #111827' : '2px solid #e5e7eb', cursor: 'pointer', position: 'relative', overflow: 'hidden' }}>
+                            style={{
+                                aspectRatio: '1', borderRadius: '10px', background: bg.bg,
+                                border: active ? '2.5px solid #0f172a' : '1.5px solid #e5e7eb',
+                                cursor: 'pointer', position: 'relative', overflow: 'hidden',
+                                transition: 'border-color 0.15s',
+                            }}>
                             {active && (
-                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Check size={13} color="#111827" strokeWidth={3} />
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.35)' }}>
+                                    <Check size={13} color="#0f172a" strokeWidth={3} />
                                 </div>
                             )}
                         </button>
@@ -360,16 +413,30 @@ export default function CvEditorPage() {
     );
 
     const SectionsPanel = (
-        <div style={{ overflowY: 'auto', flex: 1, padding: '14px' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '14px', lineHeight: '1.5' }}>
-                Bật / tắt từng mục để hiện hoặc ẩn trên CV.
+        <div style={{ overflowY: 'auto', flex: 1, padding: '20px 18px' }}>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '18px', lineHeight: '1.6', background: '#f8fafc', borderRadius: '10px', padding: '10px 12px', border: '1px solid #f0f0f0' }}>
+                Bật / tắt từng mục để hiện hoặc ẩn trên CV của bạn.
             </div>
-            <div style={{ fontSize: '10px', fontWeight: '700', color: '#9ca3af', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Đang hiển thị</div>
+
+            <PanelLabel>Đang hiển thị</PanelLabel>
             {ALL_SECTIONS.filter((s) => !hiddenSections.includes(s)).map((s) => (
-                <div key={s} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 10px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '12px', color: '#15803d', fontWeight: '500' }}>{SECTION_LABELS[s]}</span>
+                <div key={s} style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    padding: '10px 12px', background: '#f0fdf4',
+                    border: '1px solid #bbf7d0', borderRadius: '10px', marginBottom: '6px',
+                }}>
+                    <span style={{ fontSize: '13px', color: '#15803d', fontWeight: '600' }}>{SECTION_LABELS[s]}</span>
                     <button onClick={() => toggleSection(s)} title="Ẩn mục này"
-                        style={{ background: 'none', border: '1px solid #bbf7d0', borderRadius: '5px', cursor: 'pointer', padding: '3px 8px', color: '#6b7280', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        style={{
+                            background: 'white', border: '1px solid #d1fae5',
+                            borderRadius: '7px', cursor: 'pointer',
+                            padding: '4px 10px', color: '#6b7280', fontSize: '11px',
+                            display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '600',
+                            transition: 'background 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f0fdf4'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; }}
+                    >
                         <EyeOff size={11} /> Ẩn
                     </button>
                 </div>
@@ -377,12 +444,26 @@ export default function CvEditorPage() {
 
             {hiddenSections.length > 0 && (
                 <>
-                    <div style={{ fontSize: '10px', fontWeight: '700', color: '#9ca3af', marginTop: '14px', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Chưa sử dụng</div>
+                    <div style={{ marginTop: '20px', marginBottom: '8px' }}>
+                        <PanelLabel>Chưa sử dụng</PanelLabel>
+                    </div>
                     {hiddenSections.map((s) => (
-                        <div key={s} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 10px', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '5px', opacity: 0.7 }}>
-                            <span style={{ fontSize: '12px', color: '#9ca3af' }}>{SECTION_LABELS[s]}</span>
+                        <div key={s} style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            padding: '10px 12px', background: '#fafafa',
+                            border: '1px solid #e5e7eb', borderRadius: '10px', marginBottom: '6px',
+                        }}>
+                            <span style={{ fontSize: '13px', color: '#9ca3af', fontWeight: '500' }}>{SECTION_LABELS[s]}</span>
                             <button onClick={() => toggleSection(s)} title="Hiện mục này"
-                                style={{ background: '#00b14f', border: 'none', borderRadius: '5px', cursor: 'pointer', padding: '3px 10px', color: 'white', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '600' }}>
+                                style={{
+                                    background: '#00b14f', border: 'none',
+                                    borderRadius: '7px', cursor: 'pointer',
+                                    padding: '5px 12px', color: 'white', fontSize: '11px',
+                                    display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#009a43'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#00b14f'; }}
+                            >
                                 + Thêm
                             </button>
                         </div>
@@ -393,118 +474,390 @@ export default function CvEditorPage() {
     );
 
     const LayoutPanel = (
-        <div style={{ overflowY: 'auto', flex: 1, padding: '14px' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px', lineHeight: '1.5' }}>Kéo để thay đổi thứ tự các mục trong CV.</div>
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
-                    {sectionOrder.map((key) => (
-                        <SortableRow key={key} id={key} label={SECTION_LABELS[key] || key} hidden={hiddenSections.includes(key)} />
-                    ))}
-                </SortableContext>
-            </DndContext>
-            <button onClick={() => setSectionOrder(DEFAULT_SECTION_ORDER)}
-                style={{ width: '100%', marginTop: '10px', padding: '8px', border: '1px solid #e5e7eb', background: 'white', borderRadius: '7px', fontSize: '12px', color: '#6b7280', cursor: 'pointer' }}>
-                Đặt lại mặc định
+        <div style={{ overflowY: 'auto', flex: 1, padding: '16px 14px' }}>
+            {/* Guide link */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '14px' }}>
+                <ChevronRight size={12} color="#00b14f" />
+                <span style={{ fontSize: '11px', color: '#00b14f', fontWeight: '600', cursor: 'pointer', textDecoration: 'underline' }}>
+                    Xem hướng dẫn Tùy chỉnh bố cục »
+                </span>
+            </div>
+
+            {/* Fixed header blocks */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '6px' }}>
+                {[{ key: 'avatar', label: 'Ảnh đại diện' }, { key: 'banner', label: 'Danh thiếp' }].map(({ key, label }) => (
+                    <div key={key} style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '10px 6px', background: `${color}15`,
+                        border: `1.5px solid ${color}40`, borderRadius: '10px',
+                        fontSize: '11px', fontWeight: '700', color,
+                        textAlign: 'center', lineHeight: 1.3, gap: '5px',
+                        minHeight: '44px',
+                    }}>
+                        {label}
+                    </div>
+                ))}
+            </div>
+
+            {/* Full-width objective */}
+            <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '10px 6px', marginBottom: '6px',
+                background: hiddenSections.includes('objective') ? '#f9fafb' : `${color}08`,
+                border: `1.5px solid ${hiddenSections.includes('objective') ? '#e5e7eb' : `${color}30`}`,
+                borderRadius: '10px', fontSize: '11px', fontWeight: '600',
+                color: hiddenSections.includes('objective') ? '#9ca3af' : '#374151',
+                gap: '5px', minHeight: '38px',
+                cursor: 'default', opacity: hiddenSections.includes('objective') ? 0.5 : 1,
+            }}>
+                Mục tiêu nghề nghiệp
+            </div>
+
+            {/* Draggable section tiles */}
+            <div style={{ marginBottom: '4px' }}>
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <SortableContext items={sectionOrder} strategy={verticalListSortingStrategy}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                            {sectionOrder
+                                .filter((key) => key !== 'objective')
+                                .map((key) => (
+                                    <SortableTile
+                                        key={key}
+                                        id={key}
+                                        label={SECTION_LABELS[key] || key}
+                                        hidden={hiddenSections.includes(key)}
+                                        color={color}
+                                    />
+                                ))}
+                        </div>
+                    </SortableContext>
+                </DndContext>
+            </div>
+
+            {/* Unused sections */}
+            {hiddenSections.filter(s => s !== 'objective').length > 0 && (
+                <div style={{ marginTop: '14px' }}>
+                    <div style={{ fontSize: '10px', fontWeight: '800', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '8px' }}>Mục chưa sử dụng</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                        {hiddenSections.filter(s => s !== 'objective').map((key) => (
+                            <div
+                                key={key}
+                                onClick={() => toggleSection(key)}
+                                title="Nhấn để thêm vào CV"
+                                style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    padding: '10px 6px', gap: '4px',
+                                    background: '#f9fafb',
+                                    border: '1.5px dashed #d1d5db',
+                                    borderRadius: '10px', cursor: 'pointer',
+                                    fontSize: '11px', fontWeight: '600', color: '#9ca3af',
+                                    textAlign: 'center', lineHeight: 1.3,
+                                    minHeight: '44px', transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.borderColor = '#86efac'; e.currentTarget.style.color = '#15803d'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#f9fafb'; e.currentTarget.style.borderColor = '#d1d5db'; e.currentTarget.style.color = '#9ca3af'; }}
+                            >
+                                + {SECTION_LABELS[key] || key}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <button
+                onClick={() => setSectionOrder(DEFAULT_SECTION_ORDER)}
+                style={{
+                    width: '100%', marginTop: '14px', padding: '10px',
+                    border: '1.5px solid #e5e7eb', background: 'white',
+                    borderRadius: '10px', fontSize: '12px', color: '#6b7280',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                    justifyContent: 'center', gap: '6px', fontWeight: '600',
+                    transition: 'background 0.15s',
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'white'; }}
+            >
+                <RefreshCw size={12} /> Đặt lại mặc định
             </button>
         </div>
     );
 
     const TemplatePanel = (
-        <div style={{ overflowY: 'auto', flex: 1, padding: '12px' }}>
-            <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '12px' }}>Chọn mẫu khác — nội dung giữ nguyên.</div>
-            {ALL_TEMPLATES.map((tpl) => {
-                const active = resume.template === tpl.id;
-                const c = active ? color : tpl.colors[0];
-                return (
-                    <div key={tpl.id} style={{ marginBottom: '18px' }}>
-                        <div onClick={() => { setR({ template: tpl.id, color: tpl.colors.includes(color) ? color : tpl.colors[0] }); }}
-                            style={{ borderRadius: '8px', overflow: 'hidden', border: active ? `2.5px solid ${color}` : '2px solid #e5e7eb', cursor: 'pointer', position: 'relative', background: '#f9fafb' }}>
+        <div style={{ overflowY: 'auto', flex: 1, padding: '16px 14px' }}>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '14px', background: '#f8fafc', borderRadius: '10px', padding: '10px 12px', border: '1px solid #f0f0f0', lineHeight: '1.6' }}>
+                Chọn mẫu khác — nội dung của bạn sẽ giữ nguyên.
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                {ALL_TEMPLATES.map((tpl) => {
+                    const active = resume.template === tpl.id;
+                    const c = active ? color : tpl.colors[0];
+                    return (
+                        <div key={tpl.id}
+                            onClick={() => { setR({ template: tpl.id, color: tpl.colors.includes(color) ? color : tpl.colors[0] }); }}
+                            style={{
+                                borderRadius: '10px', overflow: 'hidden',
+                                border: active ? `2.5px solid ${color}` : '1.5px solid #e5e7eb',
+                                cursor: 'pointer', position: 'relative', background: '#f9fafb',
+                                boxShadow: active ? `0 0 0 3px ${color}22` : 'none',
+                                transition: 'box-shadow 0.15s, border-color 0.15s',
+                            }}
+                            onMouseEnter={(e) => { if (!active) e.currentTarget.style.borderColor = '#d1d5db'; }}
+                            onMouseLeave={(e) => { if (!active) e.currentTarget.style.borderColor = '#e5e7eb'; }}
+                        >
                             <div style={{ width: `${THUMB_W}px`, height: `${THUMB_H}px`, overflow: 'hidden' }}>
                                 <div style={{ width: `${A4_W}px`, transform: `scale(${THUMB_SCALE})`, transformOrigin: 'top left', pointerEvents: 'none', userSelect: 'none' }}>
                                     <tpl.Component content={THUMB_SAMPLE} color={c} />
                                 </div>
                             </div>
                             {active && (
-                                <div style={{ position: 'absolute', top: '6px', right: '6px', background: color, borderRadius: '50%', width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <div style={{
+                                    position: 'absolute', top: '6px', right: '6px',
+                                    background: color, borderRadius: '50%',
+                                    width: '20px', height: '20px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 2px 6px rgba(0,0,0,0.25)',
+                                }}>
                                     <Check size={11} color="white" strokeWidth={3} />
                                 </div>
                             )}
-                        </div>
-                        <div style={{ fontSize: '11px', fontWeight: '600', color: active ? color : '#374151', marginTop: '5px', textAlign: 'center' }}>{tpl.name}</div>
-                        {active && (
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', marginTop: '6px', flexWrap: 'wrap' }}>
-                                {tpl.colors.map((c) => (
-                                    <button key={c} onClick={() => setR({ color: c })}
-                                        style={{ width: '20px', height: '20px', borderRadius: '50%', background: c, border: color === c ? '2.5px solid #111827' : '2px solid transparent', cursor: 'pointer', outline: color === c ? '2px solid white' : 'none', outlineOffset: '-3px', flexShrink: 0 }} />
-                                ))}
+                            <div style={{ padding: '6px 8px', background: active ? `${color}0d` : 'white', borderTop: `1px solid ${active ? `${color}22` : '#f0f0f0'}` }}>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: active ? color : '#374151', textAlign: 'center', lineHeight: 1.3 }}>
+                                    {tpl.name}
+                                </div>
+                                {active && (
+                                    <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', marginTop: '6px', flexWrap: 'wrap' }}>
+                                        {tpl.colors.map((c2) => (
+                                            <button key={c2} onClick={(e) => { e.stopPropagation(); setR({ color: c2 }); }}
+                                                style={{
+                                                    width: '16px', height: '16px', borderRadius: '50%', background: c2,
+                                                    border: color === c2 ? '2px solid #0f172a' : '1.5px solid transparent',
+                                                    cursor: 'pointer', flexShrink: 0,
+                                                }} />
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                );
-            })}
+                        </div>
+                    );
+                })}
+            </div>
         </div>
     );
 
     const panelContent = { design: DesignPanel, sections: SectionsPanel, layout: LayoutPanel, template: TemplatePanel };
+    const panelTitle = { design: 'Thiết kế & Font', sections: 'Thêm mục', layout: 'Bố cục', template: 'Đổi mẫu CV' };
 
     // ── Render ──────────────────────────────────────────────────────────────
 
     return (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: 'white', fontFamily: 'Arial, sans-serif' }}>
-            {/* Toolbar */}
-            <div style={{ height: '52px', flexShrink: 0, background: 'white', borderBottom: '1px solid #e5e7eb', display: 'flex', alignItems: 'center', gap: '0', padding: '0 12px 0 0', zIndex: 10 }}>
-                <button onClick={() => {
+        <div style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', flexDirection: 'column', background: '#f1f5f9', fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+            <style>{`
+                @media print {
+                    body > * { display: none !important; }
+                    #cv-print-area { display: block !important; position: fixed; inset: 0; width: 100%; box-shadow: none; }
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes fadeIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+                @keyframes savePop { 0%,100%{opacity:0;transform:translateY(4px)} 20%,80%{opacity:1;transform:translateY(0)} }
+            `}</style>
+
+            {/* ── Topbar ── */}
+            <div style={{
+                height: '56px', flexShrink: 0,
+                background: 'white', borderBottom: '1px solid #e5e7eb',
+                display: 'flex', alignItems: 'center', gap: '0',
+                padding: '0 16px 0 0', zIndex: 20,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+            }}>
+                {/* Back */}
+                <button
+                    onClick={() => {
                         if (isDirty && !confirm('Bạn có thay đổi chưa lưu. Rời khỏi trang này?')) return;
                         router.push('/quan-ly-cv');
                     }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '5px', background: 'none', border: 'none', cursor: 'pointer', fontSize: '13px', color: '#6b7280', padding: '0 12px', height: '100%' }}>
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '6px',
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        fontSize: '13px', color: '#6b7280', padding: '0 16px', height: '100%',
+                        fontWeight: '500', transition: 'color 0.15s',
+                    }}
+                    onMouseEnter={(e) => { e.currentTarget.style.color = '#111827'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.color = '#6b7280'; }}
+                >
                     <ArrowLeft size={15} /> Quản lý CV
                 </button>
-                <div style={{ width: '1px', height: '24px', background: '#e5e7eb', margin: '0 4px' }} />
-                <input value={resume.title || ''} onChange={(e) => setR({ title: e.target.value })}
-                    style={{ border: 'none', outline: 'none', fontSize: '14px', fontWeight: '600', color: '#111827', background: 'transparent', flex: 1, padding: '0 12px', minWidth: '0' }} />
+
+                <div style={{ width: '1px', height: '22px', background: '#e5e7eb', flexShrink: 0 }} />
+
+                {/* CV Title */}
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 14px', gap: '8px', minWidth: 0 }}>
+                    <input
+                        value={resume.title || ''}
+                        onChange={(e) => setR({ title: e.target.value })}
+                        style={{
+                            border: 'none', outline: 'none',
+                            fontSize: '14px', fontWeight: '700', color: '#111827',
+                            background: 'transparent', minWidth: '0', flex: 1,
+                        }}
+                    />
+                    <Pencil size={13} color="#9ca3af" strokeWidth={2} />
+                </div>
+
+                {/* Right actions */}
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
-                    {saveMsg && <span style={{ fontSize: '12px', color: '#00b14f', fontWeight: '500' }}>{saveMsg}</span>}
-                    <button onClick={() => setPreviewMode(!previewMode)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 12px', background: previewMode ? '#f0fdf4' : '#f3f4f6', border: previewMode ? '1px solid #bbf7d0' : 'none', borderRadius: '7px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: previewMode ? '#00b14f' : '#374151' }}>
+                    {/* Save status */}
+                    {saveMsg && (
+                        <span style={{
+                            fontSize: '12px', color: '#00b14f', fontWeight: '600',
+                            display: 'flex', alignItems: 'center', gap: '5px',
+                            animation: 'savePop 2.2s ease forwards',
+                        }}>
+                            <Check size={13} strokeWidth={2.5} /> {saveMsg}
+                        </span>
+                    )}
+                    {isDirty && !saving && !saveMsg && (
+                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>Chưa lưu</span>
+                    )}
+                    {saving && (
+                        <span style={{ fontSize: '11px', color: '#9ca3af' }}>Đang lưu...</span>
+                    )}
+
+                    {/* Preview toggle */}
+                    <button
+                        onClick={() => setPreviewMode(!previewMode)}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '7px 14px',
+                            background: previewMode ? '#f0fdf4' : '#f8fafc',
+                            border: `1px solid ${previewMode ? '#bbf7d0' : '#e5e7eb'}`,
+                            borderRadius: '9px', fontSize: '13px', fontWeight: '600',
+                            cursor: 'pointer', color: previewMode ? '#15803d' : '#374151',
+                            transition: 'all 0.15s',
+                        }}
+                    >
                         {previewMode ? <><EyeOff size={13} /> Chỉnh sửa</> : <><Eye size={13} /> Xem trước</>}
                     </button>
-                    <button onClick={save} disabled={saving}
-                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: '#f3f4f6', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: '#374151' }}>
-                        <Save size={14} />{saving ? 'Đang lưu...' : 'Lưu'}
+
+                    {/* Save */}
+                    <button
+                        onClick={save} disabled={saving}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '7px 16px', background: '#f8fafc',
+                            border: '1px solid #e5e7eb', borderRadius: '9px',
+                            fontSize: '13px', fontWeight: '600', cursor: 'pointer',
+                            color: '#374151', transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#d1d5db'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+                    >
+                        <Save size={14} /> {saving ? 'Đang lưu...' : 'Lưu'}
                     </button>
-                    <button onClick={() => window.print()}
-                        style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '7px 14px', background: '#00b14f', border: 'none', borderRadius: '7px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', color: 'white' }}>
-                        <Printer size={14} />Tải PDF
+
+                    {/* Export PDF */}
+                    <button
+                        onClick={() => window.print()}
+                        style={{
+                            display: 'flex', alignItems: 'center', gap: '6px',
+                            padding: '7px 16px',
+                            background: 'linear-gradient(135deg, #00b14f, #009a43)',
+                            border: 'none', borderRadius: '9px',
+                            fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+                            color: 'white',
+                            boxShadow: '0 2px 8px rgba(0,177,79,0.35)',
+                            transition: 'opacity 0.15s',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                    >
+                        <Download size={14} /> Tải PDF
                     </button>
                 </div>
             </div>
 
-            {/* Body */}
+            {/* ── Body ── */}
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
                 {/* Icon sidebar */}
-                <div style={{ width: '56px', flexShrink: 0, background: 'white', borderRight: '1px solid #e5e7eb', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: '8px', gap: '2px', zIndex: 10 }}>
+                <div style={{
+                    width: '62px', flexShrink: 0,
+                    background: 'white', borderRight: '1px solid #e5e7eb',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', paddingTop: '10px', paddingBottom: '10px',
+                    gap: '4px', zIndex: 10,
+                }}>
                     {TABS.map((tab) => {
                         const active = activeTab === tab.id;
                         return (
-                            <button key={tab.id} onClick={() => setActiveTab(active ? null : tab.id)} title={tab.label.replace('\n', ' ')}
-                                style={{ width: '48px', padding: '8px 4px', borderRadius: '8px', border: 'none', background: active ? '#f0fdf4' : 'transparent', color: active ? '#00b14f' : '#9ca3af', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
-                                <TabIcon id={tab.id} />
-                                <span style={{ fontSize: '9px', fontWeight: '500', lineHeight: 1.1, whiteSpace: 'pre', textAlign: 'center' }}>{tab.label}</span>
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(active ? null : tab.id)}
+                                title={tab.label.replace('\n', ' ')}
+                                style={{
+                                    width: '50px', padding: '10px 6px',
+                                    borderRadius: '12px', border: 'none',
+                                    background: active ? '#f0fdf4' : 'transparent',
+                                    color: active ? '#00b14f' : '#9ca3af',
+                                    cursor: 'pointer',
+                                    display: 'flex', flexDirection: 'column',
+                                    alignItems: 'center', gap: '5px',
+                                    transition: 'background 0.15s, color 0.15s',
+                                    position: 'relative',
+                                }}
+                                onMouseEnter={(e) => { if (!active) { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#374151'; } }}
+                                onMouseLeave={(e) => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9ca3af'; } }}
+                            >
+                                {/* Active indicator */}
+                                {active && (
+                                    <div style={{
+                                        position: 'absolute', left: 0, top: '50%',
+                                        transform: 'translateY(-50%)',
+                                        width: '3px', height: '28px',
+                                        background: '#00b14f', borderRadius: '0 3px 3px 0',
+                                    }} />
+                                )}
+                                <tab.Icon size={18} strokeWidth={active ? 2.5 : 1.8} />
+                                <span style={{
+                                    fontSize: '9px', fontWeight: active ? '700' : '500',
+                                    lineHeight: 1.2, whiteSpace: 'pre', textAlign: 'center',
+                                }}>{tab.label}</span>
                             </button>
                         );
                     })}
                 </div>
 
-                {/* Side panel (slides in) */}
+                {/* Side panel */}
                 {activeTab && (
-                    <div style={{ width: '280px', flexShrink: 0, borderRight: '1px solid #e5e7eb', background: 'white', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 9 }}>
-                        <div style={{ padding: '12px 14px', borderBottom: '1px solid #f3f4f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>
-                                {TABS.find((t) => t.id === activeTab)?.label.replace('\n', ' & ')}
+                    <div style={{
+                        width: '288px', flexShrink: 0,
+                        borderRight: '1px solid #e5e7eb',
+                        background: 'white',
+                        display: 'flex', flexDirection: 'column',
+                        overflow: 'hidden', zIndex: 9,
+                        animation: 'fadeIn 0.18s ease',
+                    }}>
+                        {/* Panel header */}
+                        <div style={{
+                            padding: '14px 18px', borderBottom: '1px solid #f3f4f6',
+                            display: 'flex', justifyContent: 'space-between',
+                            alignItems: 'center', flexShrink: 0,
+                            background: 'white',
+                        }}>
+                            <span style={{ fontSize: '14px', fontWeight: '800', color: '#0f172a' }}>
+                                {panelTitle[activeTab]}
                             </span>
-                            <button onClick={() => setActiveTab(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', display: 'flex', padding: '2px' }}>
-                                <X size={16} />
+                            <button
+                                onClick={() => setActiveTab(null)}
+                                style={{
+                                    background: '#f8fafc', border: '1px solid #e5e7eb',
+                                    borderRadius: '7px', cursor: 'pointer', color: '#9ca3af',
+                                    display: 'flex', padding: '5px',
+                                    transition: 'background 0.15s',
+                                }}
+                                onMouseEnter={(e) => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.color = '#374151'; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.color = '#9ca3af'; }}
+                            >
+                                <X size={14} />
                             </button>
                         </div>
                         {panelContent[activeTab]}
@@ -512,13 +865,28 @@ export default function CvEditorPage() {
                 )}
 
                 {/* CV Canvas */}
-                <div style={{ flex: 1, overflowY: 'auto', background: '#525659', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '32px 24px' }}>
+                <div style={{
+                    flex: 1, overflowY: 'auto',
+                    background: '#444a52',
+                    display: 'flex', justifyContent: 'center',
+                    alignItems: 'flex-start', padding: '36px 24px',
+                    backgroundImage: 'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.05) 1px, transparent 0)',
+                    backgroundSize: '24px 24px',
+                }}>
                     {previewMode ? (
-                        <div id="cv-print-area" style={{ width: '794px', minHeight: '1123px', boxShadow: '0 4px 30px rgba(0,0,0,0.4)', flexShrink: 0 }}>
+                        <div id="cv-print-area" style={{
+                            width: '794px', minHeight: '1123px', flexShrink: 0,
+                            boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                            borderRadius: '2px',
+                        }}>
                             {React.createElement(getTemplate(resume.template), { content, color, fontSize, lineSpacing, background })}
                         </div>
                     ) : (
-                        <div style={{ width: '794px', minHeight: '1123px', boxShadow: '0 4px 30px rgba(0,0,0,0.4)', flexShrink: 0 }}>
+                        <div style={{
+                            width: '794px', minHeight: '1123px', flexShrink: 0,
+                            boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
+                            borderRadius: '2px',
+                        }}>
                             <EditableCVDocument
                                 content={content}
                                 onContentChange={setContent}
@@ -536,42 +904,6 @@ export default function CvEditorPage() {
                     )}
                 </div>
             </div>
-
-            <style>{`
-                @media print {
-                    body > * { display: none !important; }
-                    #cv-print-area { display: block !important; position: fixed; inset: 0; width: 100%; box-shadow: none; }
-                }
-            `}</style>
         </div>
     );
-}
-
-function SectionLabel({ children }) {
-    return <div style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{children}</div>;
-}
-
-function TabIcon({ id }) {
-    const s = { width: 20, height: 20 };
-    if (id === 'design') return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
-            <circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83" />
-        </svg>
-    );
-    if (id === 'sections') return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-        </svg>
-    );
-    if (id === 'layout') return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
-            <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
-        </svg>
-    );
-    if (id === 'template') return (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={s}>
-            <rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18M9 21V9" />
-        </svg>
-    );
-    return null;
 }

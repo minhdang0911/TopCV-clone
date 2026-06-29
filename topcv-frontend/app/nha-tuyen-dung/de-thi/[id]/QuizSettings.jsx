@@ -39,6 +39,7 @@ export default function QuizSettings({ quiz, onUpdate }) {
 
     return (
         <Card>
+            <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
             <CardContent className="p-4 space-y-4">
                 <div className="flex items-center gap-2 mb-1">
                     <Settings2 size={15} className="text-slate-500" />
@@ -76,6 +77,7 @@ export default function QuizSettings({ quiz, onUpdate }) {
                     <div className="flex gap-2">
                         {['AUTO', 'MANUAL'].map(mode => (
                             <button
+                                type="button"
                                 key={mode}
                                 onClick={() => set('scoringMode', mode)}
                                 className={`flex-1 py-2 rounded-lg border text-[12px] font-medium transition-colors ${form.scoringMode === mode
@@ -105,11 +107,13 @@ export default function QuizSettings({ quiz, onUpdate }) {
                     <Textarea value={form.rules} onChange={e => set('rules', e.target.value)} rows={2} className="text-[13px] resize-none" placeholder="VD: Không được tra cứu tài liệu, thời gian tính từ lúc bắt đầu..." />
                 </div>
 
-                <Button size="sm" onClick={handleSave} disabled={saving} className="w-full bg-green-600 hover:bg-green-700 text-[13px] gap-1.5">
+                <Button type="submit" size="sm" disabled={saving} className="w-full bg-green-600 hover:bg-green-700 text-[13px] gap-1.5">
                     <Save size={13} />
                     {saving ? 'Đang lưu...' : saved ? 'Đã lưu!' : 'Lưu cài đặt'}
                 </Button>
             </CardContent>
+            </form>
         </Card>
     );
 }
+

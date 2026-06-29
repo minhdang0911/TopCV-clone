@@ -69,8 +69,9 @@ export class UsersService {
     }
   }
 
+  // Returns user including plan/planExpiresAt — required for frontend plan badge
   async getMe(userId: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -81,11 +82,29 @@ export class UsersService {
         isActive: true,
         twoFactorEnabled: true,
         provider: true,
+        plan: true,
+        planExpiresAt: true,
         createdAt: true,
         candidateProfile: true,
         employerProfile: true,
       },
     });
+    if (!user) return null;
+
+    // Auto-downgrade expired plans (same logic as getUserPlan in plan-limits)
+    if (
+      user.plan !== 'FREE' &&
+      user.planExpiresAt &&
+      new Date(user.planExpiresAt) < new Date()
+    ) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { plan: 'FREE', planExpiresAt: null },
+      });
+      return { ...user, plan: 'FREE', planExpiresAt: null };
+    }
+
+    return user;
   }
 
   // ─── PERSONAL INFO ───────────────────────────────────

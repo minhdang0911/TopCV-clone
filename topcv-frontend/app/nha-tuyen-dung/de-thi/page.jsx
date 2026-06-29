@@ -35,44 +35,47 @@ function CreateQuizDialog({ open, onClose, onCreate }) {
     return (
         <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
             <DialogContent className="max-w-md">
-                <DialogHeader>
-                    <DialogTitle className="text-[15px]">Tạo đề thi mới</DialogTitle>
-                    <DialogDescription className="sr-only">Điền thông tin để tạo đề thi mới</DialogDescription>
-                </DialogHeader>
-                <div className="space-y-3 py-1">
-                    <div>
-                        <Label className="text-[12px] mb-1 block">Tên đề thi *</Label>
-                        <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="VD: Bài kiểm tra Java Senior" className="text-[13px]" />
-                    </div>
-                    <div>
-                        <Label className="text-[12px] mb-1 block">Mô tả</Label>
-                        <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} className="text-[13px] resize-none" placeholder="Mô tả ngắn về đề thi..." />
-                    </div>
-                    <div className="grid grid-cols-3 gap-3">
+                <form onSubmit={e => { e.preventDefault(); handleSubmit(); }}>
+                    <DialogHeader>
+                        <DialogTitle className="text-[15px]">Tạo đề thi mới</DialogTitle>
+                        <DialogDescription className="sr-only">Điền thông tin để tạo đề thi mới</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 py-1">
                         <div>
-                            <Label className="text-[12px] mb-1 block">Tổng điểm</Label>
-                            <Input type="number" value={form.totalPoints} onChange={e => set('totalPoints', +e.target.value)} className="text-[13px]" />
+                            <Label className="text-[12px] mb-1 block">Tên đề thi *</Label>
+                            <Input value={form.title} onChange={e => set('title', e.target.value)} placeholder="VD: Bài kiểm tra Java Senior" className="text-[13px]" />
                         </div>
                         <div>
-                            <Label className="text-[12px] mb-1 block">Điểm đậu (%)</Label>
-                            <Input type="number" value={form.passRate} onChange={e => set('passRate', +e.target.value)} className="text-[13px]" />
+                            <Label className="text-[12px] mb-1 block">Mô tả</Label>
+                            <Textarea value={form.description} onChange={e => set('description', e.target.value)} rows={2} className="text-[13px] resize-none" placeholder="Mô tả ngắn về đề thi..." />
                         </div>
-                        <div>
-                            <Label className="text-[12px] mb-1 block">Thời gian (phút)</Label>
-                            <Input type="number" value={form.durationMinutes} onChange={e => set('durationMinutes', +e.target.value)} className="text-[13px]" />
+                        <div className="grid grid-cols-3 gap-3">
+                            <div>
+                                <Label className="text-[12px] mb-1 block">Tổng điểm</Label>
+                                <Input type="number" value={form.totalPoints} onChange={e => set('totalPoints', +e.target.value)} className="text-[13px]" />
+                            </div>
+                            <div>
+                                <Label className="text-[12px] mb-1 block">Điểm đậu (%)</Label>
+                                <Input type="number" value={form.passRate} onChange={e => set('passRate', +e.target.value)} className="text-[13px]" />
+                            </div>
+                            <div>
+                                <Label className="text-[12px] mb-1 block">Thời gian (phút)</Label>
+                                <Input type="number" value={form.durationMinutes} onChange={e => set('durationMinutes', +e.target.value)} className="text-[13px]" />
+                            </div>
                         </div>
                     </div>
-                </div>
-                <DialogFooter className="gap-2">
-                    <Button variant="ghost" size="sm" onClick={onClose} className="text-[13px]">Huỷ</Button>
-                    <Button size="sm" onClick={handleSubmit} disabled={!form.title.trim() || loading} className="bg-green-600 hover:bg-green-700 text-[13px]">
-                        {loading ? 'Đang tạo...' : 'Tạo đề thi'}
-                    </Button>
-                </DialogFooter>
+                    <DialogFooter className="gap-2 mt-4">
+                        <Button type="button" variant="ghost" size="sm" onClick={onClose} className="text-[13px]">Huỷ</Button>
+                        <Button type="submit" size="sm" disabled={!form.title.trim() || loading} className="bg-green-600 hover:bg-green-700 text-[13px]">
+                            {loading ? 'Đang tạo...' : 'Tạo đề thi'}
+                        </Button>
+                    </DialogFooter>
+                </form>
             </DialogContent>
         </Dialog>
     );
 }
+
 
 export default function DeThiPage() {
     const router = useRouter();

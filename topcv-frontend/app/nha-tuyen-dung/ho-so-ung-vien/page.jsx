@@ -714,7 +714,7 @@ function CreateMeetingModal({ application, onClose }) {
                         </div>
                     ) : (
                         /* Create form */
-                        <div className="flex flex-col gap-4">
+                        <form onSubmit={e => { e.preventDefault(); handleCreate(); }} className="flex flex-col gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 mb-1.5">
                                     Tiêu đề cuộc họp <span className="font-normal text-slate-400">(tùy chọn)</span>
@@ -744,17 +744,17 @@ function CreateMeetingModal({ application, onClose }) {
                                 Thông báo sẽ tự động gửi đến <strong>{candidateName}</strong> khi tạo phòng.
                             </div>
                             <div className="flex gap-2 pt-1">
-                                <button onClick={onClose}
+                                <button type="button" onClick={onClose}
                                     className="flex-1 py-2.5 border border-slate-200 rounded-lg bg-white text-[13px] cursor-pointer text-slate-700 font-medium">
                                     Hủy
                                 </button>
-                                <button onClick={handleCreate} disabled={creating}
+                                <button type="submit" disabled={creating}
                                     className="flex-[2] py-2.5 border-none rounded-lg text-white text-[13px] font-bold cursor-pointer disabled:opacity-60"
                                     style={{ background: GREEN }}>
                                     {creating ? 'Đang tạo...' : 'Tạo phòng họp'}
                                 </button>
                             </div>
-                        </div>
+                        </form>
                     )}
                 </div>
             </div>
@@ -763,6 +763,7 @@ function CreateMeetingModal({ application, onClose }) {
 }
 
 // ─── Kanban Components ───────────────────────────────────────────────────────
+
 
 function KanbanCard({ item, onViewDetail, onCreateMeeting, openChat }) {
     const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: item.id });

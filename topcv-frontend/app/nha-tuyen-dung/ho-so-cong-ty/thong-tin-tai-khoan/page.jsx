@@ -103,29 +103,31 @@ export default function ThongTinTaiKhoanPage() {
             <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
                 <h3 className="text-sm font-bold text-slate-900 m-0 mb-5 pb-3.5 border-b border-slate-100">Cập nhật thông tin tài khoản</h3>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
-                        <input value={user?.email || ''} disabled className={cn(fieldCls, 'text-slate-400 cursor-not-allowed')} />
+                <form onSubmit={e => { e.preventDefault(); handleSave(); }}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email</label>
+                            <input value={user?.email || ''} disabled className={cn(fieldCls, 'text-slate-400 cursor-not-allowed')} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Số điện thoại</label>
+                            <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0912345678" className={fieldCls} />
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-semibold text-slate-700 mb-1.5">Số điện thoại</label>
-                        <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="0912345678" className={fieldCls} />
-                    </div>
-                </div>
 
-                <div className="flex justify-end">
-                    <button
-                        onClick={handleSave} disabled={saving}
-                        className={cn(
-                            'inline-flex items-center gap-1.5 text-white border-none rounded-xl px-6 py-2.5 text-sm font-bold transition-opacity',
-                            saving ? 'bg-green-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.25)] cursor-pointer hover:opacity-90'
-                        )}
-                    >
-                        {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
-                        {saving ? 'Đang lưu...' : 'Lưu'}
-                    </button>
-                </div>
+                    <div className="flex justify-end">
+                        <button
+                            type="submit" disabled={saving}
+                            className={cn(
+                                'inline-flex items-center gap-1.5 text-white border-none rounded-xl px-6 py-2.5 text-sm font-bold transition-opacity',
+                                saving ? 'bg-green-300 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-green-700 shadow-[0_4px_12px_rgba(0,177,79,0.25)] cursor-pointer hover:opacity-90'
+                            )}
+                        >
+                            {saving ? <Loader size={14} className="animate-spin" /> : <Save size={14} />}
+                            {saving ? 'Đang lưu...' : 'Lưu'}
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     );

@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, ChevronLeft, MessageSquare } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import useAuthStore from '@/stores/auth.store';
 import { chatgioService as chatService } from '@/services/chat.service';
 import ChatMessageArea, { Avatar, timeAgo } from '@/app/components/chat/ChatMessageArea';
@@ -152,14 +154,14 @@ export default function EmployerChatPage() {
             {(!isMobile || showSidebar) && (
                 <div className={cn('shrink-0 bg-white border-r border-slate-200 flex flex-col', isMobile ? 'w-full' : 'w-[300px]')}>
                     <div className="px-4 py-3.5 border-b border-slate-100">
-                        <div className="text-[15px] font-bold text-slate-900 mb-2.5">Tin nhắn</div>
+                        <div className="text-sm font-bold text-slate-900 mb-2.5">Tin nhắn</div>
                         <div className="relative mb-2.5">
-                            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
+                            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 z-10" />
+                            <Input
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
                                 placeholder="Tìm ứng viên..."
-                                className="w-full pl-7 pr-2.5 py-1.5 border border-slate-200 rounded-lg text-xs outline-none box-border focus:border-slate-300"
+                                className="pl-7 h-8 text-xs focus-visible:border-[#00b14f] focus-visible:ring-[#00b14f]/20"
                             />
                         </div>
                         <div className="flex gap-1.5">
@@ -178,9 +180,22 @@ export default function EmployerChatPage() {
 
                     <div className="flex-1 overflow-y-auto">
                         {loadingConvs ? (
-                            <div className="py-8 text-center text-slate-400 text-sm">Đang tải...</div>
+                            <div className="p-4 space-y-3">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="flex items-center gap-2.5">
+                                        <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+                                        <div className="flex-1 space-y-1.5">
+                                            <Skeleton className="h-3.5 w-28" />
+                                            <Skeleton className="h-3 w-40" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         ) : filtered.length === 0 ? (
-                            <div className="py-8 px-4 text-center text-slate-400 text-sm">Chưa có tin nhắn nào</div>
+                            <div className="py-12 px-4 text-center">
+                                <MessageSquare size={28} className="text-slate-200 mx-auto mb-2" />
+                                <p className="text-sm text-slate-400">Chưa có tin nhắn nào</p>
+                            </div>
                         ) : (
                             filtered.map(conv => {
                                 const cp = conv.candidate?.candidateProfile || {};

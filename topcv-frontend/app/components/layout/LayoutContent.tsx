@@ -21,6 +21,9 @@ const HIDDEN_ROUTES = [
     '/nha-tuyen-dung',
 ];
 
+// Toàn bộ /admin/* không dùng layout candidate
+const isAdminRoute = (pathname: string) => pathname.startsWith('/admin');
+
 const HIDDEN_SEO = ['/'];
 
 export default function LayoutContent({ children }: { children: React.ReactNode }) {
@@ -60,13 +63,17 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         }
     }, [hydrated, isAuthenticated, user, pathname]);
 
+    // Admin routes: render children only, no candidate chrome
+    if (isAdminRoute(pathname)) {
+        return <>{children}</>;
+    }
+
     return (
         <>
             {!hideHeader && <Header />}
             <div style={!hideHeader ? { paddingTop: '72px' } : undefined}>
                 {children}
                 {!HIDDEN_SEO.includes(pathname) && !hideHeader && !isChatPage && <SeoKeywords />}
-                {/* ✅ FIX: dùng hideFooter thay vì hideHeader */}
                 {!hideFooter && <Footer />}
             </div>
             {showOnboarding && <JobPreferencesModal onClose={() => setShowOnboarding(false)} />}

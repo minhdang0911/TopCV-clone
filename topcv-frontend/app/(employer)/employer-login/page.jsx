@@ -127,6 +127,7 @@ export default function EmployerLoginPage() {
 
                         {/* Google */}
                         <button
+                            type="button"
                             onClick={handleGoogleLogin}
                             style={{
                                 width: '100%',
@@ -157,6 +158,7 @@ export default function EmployerLoginPage() {
                             <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
                         </div>
 
+                        <form onSubmit={handleLogin}>
                         {/* Email */}
                         <div style={{ marginBottom: '16px' }}>
                             <label
@@ -276,7 +278,7 @@ export default function EmployerLoginPage() {
                         </div>
 
                         <button
-                            onClick={handleLogin}
+                            type="submit"
                             disabled={loading}
                             style={{
                                 width: '100%',
@@ -293,6 +295,7 @@ export default function EmployerLoginPage() {
                         >
                             {loading ? 'Đang đăng nhập...' : 'Đăng nhập'}
                         </button>
+                        </form>
 
                         <p style={{ textAlign: 'center', fontSize: '13px', color: '#6b7280', marginBottom: '24px' }}>
                             Chưa có tài khoản?{' '}

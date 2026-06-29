@@ -386,11 +386,15 @@ export class AuthService {
   }
   private async generateTokens(userId: string, email: string, role: string) {
     const payload = { sub: userId, email, role };
-    const accessToken = this.jwtService.sign(payload, { expiresIn: '1d' });
+    // Dùng JWT_EXPIRES_IN từ env (mặc định 15m), không hardcode
+    const accessToken = this.jwtService.sign(payload, {
+      expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+    });
 
     const refreshToken = uuidv4();
+    // Refresh token 60 ngày — sliding: mỗi lần refresh lại gia hạn thêm 60 ngày
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 30);
+    expiresAt.setDate(expiresAt.getDate() + 60);
 
     await this.prisma.refreshToken.create({
       data: { userId, token: refreshToken, expiresAt },

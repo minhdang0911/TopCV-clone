@@ -16,7 +16,47 @@ const processQueue = (error, token = null) => {
     failedQueue = [];
 };
 
-// ─── Helpers đọc/ghi token từ Zustand persist (key: 'auth-storage') ───
+// ─── Xác định trang login theo role / pathname hiện tại ───────────────────────
+const getLoginUrl = () => {
+    if (typeof window === 'undefined') return '/login';
+    const path = window.location.pathname;
+    if (path.startsWith('/admin')) return '/admin/login';
+    if (
+        path.startsWith('/nha-tuyen-dung') ||
+        path.startsWith('/employer-login') ||
+        path.startsWith('/employer-register') ||
+        path.startsWith('/employer-complete-profile')
+    )
+        return '/employer-login';
+    // fallback: đọc role từ storage
+    try {
+        const raw = localStorage.getItem('auth-storage');
+        const role = raw ? JSON.parse(raw)?.state?.role : null;
+        if (role === 'EMPLOYER') return '/employer-login';
+        if (role === 'ADMIN') return '/admin/login';
+    } catch {}
+    return '/login';
+};
+
+// ─── Decode JWT payload (không verify) ──────────────────────────────────────
+const decodeJwt = (token) => {
+    try {
+        return JSON.parse(atob(token.split('.')[1]));
+    } catch {
+        return null;
+    }
+};
+
+// ─── Kiểm tra AT còn dưới ngưỡng 2 phút không ──────────────────────────────
+const isAccessTokenExpiringSoon = (token) => {
+    if (!token) return false;
+    const payload = decodeJwt(token);
+    if (!payload?.exp) return false;
+    const msLeft = payload.exp * 1000 - Date.now();
+    return msLeft < 2 * 60 * 1000; // < 2 phút
+};
+
+// ─── Helpers đọc/ghi token từ Zustand persist (key: 'auth-storage') ─────────
 const getStoredToken = (key) => {
     try {
         const raw = localStorage.getItem('auth-storage');
@@ -45,24 +85,65 @@ const clearStoredAuth = () => {
     } catch {}
 };
 
-// ─── Request interceptor ───
+// ─── Hàm thực hiện refresh token (dùng chung cho cả proactive & reactive) ───
+const doRefresh = async () => {
+    const refreshToken = getStoredToken('refreshToken');
+    if (!refreshToken) throw new Error('NO_REFRESH_TOKEN');
+
+    const res = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api'}/auth/refresh`,
+        { refreshToken },
+    );
+
+    const { accessToken, refreshToken: newRefreshToken } = res.data.data;
+    setStoredTokens(accessToken, newRefreshToken);
+    api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
+    return accessToken;
+};
+
+// ─── Request interceptor — proactive refresh khi AT sắp hết hạn ─────────────
 api.interceptors.request.use(
-    (config) => {
+    async (config) => {
+        // Bỏ qua chính request /auth/refresh để tránh vòng lặp
+        if (config.url?.includes('/auth/refresh')) return config;
+
         const token = getStoredToken('accessToken');
-        if (token) config.headers.Authorization = `Bearer ${token}`;
+
+        if (token && isAccessTokenExpiringSoon(token) && !isRefreshing) {
+            // AT sắp hết hạn → chủ động refresh trước khi gửi request
+            isRefreshing = true;
+            try {
+                const newToken = await doRefresh();
+                config.headers.Authorization = `Bearer ${newToken}`;
+            } catch {
+                // Nếu refresh thất bại ở đây → để response interceptor xử lý
+                config.headers.Authorization = `Bearer ${token}`;
+            } finally {
+                isRefreshing = false;
+            }
+        } else if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+        }
+
         return config;
     },
     (error) => Promise.reject(error),
 );
 
-// ─── Response interceptor ───
+// ─── Response interceptor — reactive refresh khi nhận 401 ───────────────────
 api.interceptors.response.use(
     (response) => response,
     async (error) => {
         const originalRequest = error.config;
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Chỉ xử lý 401, không retry chính request refresh (tránh vòng lặp)
+        if (
+            error.response?.status === 401 &&
+            !originalRequest._retry &&
+            !originalRequest.url?.includes('/auth/refresh')
+        ) {
             if (isRefreshing) {
+                // Có refresh đang chạy → đợi rồi retry
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject });
                 })
@@ -81,26 +162,20 @@ api.interceptors.response.use(
             if (!refreshToken) {
                 isRefreshing = false;
                 clearStoredAuth();
-                window.location.href = '/login';
+                window.location.href = getLoginUrl();
                 return Promise.reject(error);
             }
 
             try {
-                const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, { refreshToken });
+                const newToken = await doRefresh();
 
-                const { accessToken, refreshToken: newRefreshToken } = res.data.data;
-
-                setStoredTokens(accessToken, newRefreshToken);
-
-                api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
-                originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-
-                processQueue(null, accessToken);
+                originalRequest.headers.Authorization = `Bearer ${newToken}`;
+                processQueue(null, newToken);
                 return api(originalRequest);
             } catch (refreshError) {
                 processQueue(refreshError, null);
                 clearStoredAuth();
-                window.location.href = '/login';
+                window.location.href = getLoginUrl();
                 return Promise.reject(refreshError);
             } finally {
                 isRefreshing = false;

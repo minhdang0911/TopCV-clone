@@ -63,6 +63,11 @@ export default function LayoutContent({ children }: { children: React.ReactNode 
         }
     }, [hydrated, isAuthenticated, user, pathname]);
 
+    // Cuộn lên đầu trang mỗi khi chuyển route hoặc tải lại trang
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [pathname]);
+
     // Admin routes: render children only, no candidate chrome
     if (isAdminRoute(pathname)) {
         return <>{children}</>;

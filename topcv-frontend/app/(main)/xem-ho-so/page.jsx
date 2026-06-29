@@ -13,6 +13,10 @@ import { connectService } from '@/services/connect.service';
 import { jobService } from '@/services/job.service';
 import { savedJobsService } from '@/services/applications.service';
 import useAuthStore from '@/stores/auth.store';
+import {
+    AreaChart, Area, XAxis, YAxis, CartesianGrid,
+    Tooltip, ResponsiveContainer,
+} from 'recharts';
 
 const GREEN = '#00b14f';
 
@@ -187,6 +191,9 @@ export default function XemHoSoPage() {
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
 
+    const [chartData, setChartData] = useState([]);
+    const [stats, setStats] = useState({ totalViews: 0, viewsToday: 0, growthPct: 0 });
+
     const [jobs, setJobs] = useState([]);
     const [savedIds, setSavedIds] = useState(new Set());
     const [jobsLoading, setJobsLoading] = useState(true);
@@ -210,6 +217,62 @@ export default function XemHoSoPage() {
             setLoading(false);
         }
     }, []);
+
+    // Fetch all viewers for charting
+    useEffect(() => {
+        if (!hydrated || !isAuthenticated || role !== 'CANDIDATE') return;
+
+        connectService.getProfileViewers({ page: 1, limit: 100 }).then((res) => {
+            const list = res.data?.data || [];
+            
+            // Build last 7 days chart array
+            const dates = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                dates.push({
+                    raw: d.toISOString().split('T')[0],
+                    label: d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+                    views: 0,
+                });
+            }
+
+            let todayCount = 0;
+            let yesterdayCount = 0;
+            const todayStr = new Date().toISOString().split('T')[0];
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+            list.forEach((item) => {
+                if (!item.viewedAt) return;
+                const viewDate = item.viewedAt.split('T')[0];
+                
+                // For chart
+                const match = dates.find(d => d.raw === viewDate);
+                if (match) match.views += 1;
+
+                // For stats
+                if (viewDate === todayStr) todayCount++;
+                if (viewDate === yesterdayStr) yesterdayCount++;
+            });
+
+            // Calculate growth compared to yesterday
+            let growth = 0;
+            if (yesterdayCount > 0) {
+                growth = Math.round(((todayCount - yesterdayCount) / yesterdayCount) * 100);
+            } else if (todayCount > 0) {
+                growth = 100; // 100% growth if yesterday was 0
+            }
+
+            setChartData(dates);
+            setStats({
+                totalViews: res.data?.meta?.total || list.length,
+                viewsToday: todayCount,
+                growthPct: growth,
+            });
+        }).catch(() => {});
+    }, [hydrated, isAuthenticated, role]);
 
     useEffect(() => {
         if (!hydrated || !isAuthenticated || role !== 'CANDIDATE') return;
@@ -259,14 +322,88 @@ export default function XemHoSoPage() {
                 </p>
             </div>
 
-            {/* Stats */}
+            {/* ─── Profile Views Analytics Panel ─── */}
+            <div style={{
+                background: 'white', border: '1px solid #e5e7eb', borderRadius: '16px',
+                padding: '24px', marginBottom: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+            }}>
+                <h2 style={{ fontSize: '15px', fontWeight: '700', color: '#1f2937', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={16} color={GREEN} /> Thống kê lượt xem hồ sơ
+                </h2>
+
+                {/* KPI stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+                    <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500', marginBottom: '4px' }}>TỔNG LƯỢT XEM</div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827' }}>{stats.totalViews}</div>
+                    </div>
+                    <div style={{ padding: '16px', background: '#f9fafb', borderRadius: '12px', border: '1px solid #f3f4f6' }}>
+                        <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: '500', marginBottom: '4px' }}>XEM HÔM NAY</div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#111827' }}>{stats.viewsToday}</div>
+                    </div>
+                    <div style={{ padding: '16px', background: '#f0fdf4', borderRadius: '12px', border: '1px solid #dcfce7' }}>
+                        <div style={{ fontSize: '12px', color: '#166534', fontWeight: '600', marginBottom: '4px' }}>TĂNG TRƯỞNG</div>
+                        <div style={{ fontSize: '24px', fontWeight: '800', color: '#15803d', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            {stats.growthPct >= 0 ? `+${stats.growthPct}%` : `${stats.growthPct}%`}
+                        </div>
+                    </div>
+                </div>
+
+                {/* AreaChart showing views in last 7 days */}
+                <div style={{ width: '100%', height: '180px' }}>
+                    {chartData && chartData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor={GREEN} stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor={GREEN} stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                <XAxis 
+                                    dataKey="label" 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#94a3b8', fontSize: 10 }} 
+                                />
+                                <YAxis 
+                                    axisLine={false} 
+                                    tickLine={false} 
+                                    tick={{ fill: '#94a3b8', fontSize: 10 }}
+                                    allowDecimals={false}
+                                />
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
+                                    labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
+                                />
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="views" 
+                                    name="Lượt xem"
+                                    stroke={GREEN} 
+                                    strokeWidth={2.5}
+                                    fillOpacity={1} 
+                                    fill="url(#colorViews)" 
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#9ca3af', fontSize: '13px' }}>
+                            Đang chuẩn bị dữ liệu biểu đồ...
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* List Header & Tab Info */}
             <div style={{
                 background: 'white', border: '1px solid #e5e7eb', borderRadius: '10px',
                 padding: '14px 20px', marginBottom: '20px',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
                 <span style={{ fontSize: '13px', color: '#6b7280' }}>
-                    <strong style={{ color: '#111827' }}>{meta.total}</strong> công ty đã xem hồ sơ của bạn
+                    Danh sách chi tiết: <strong style={{ color: '#111827' }}>{meta.total}</strong> công ty đã xem hồ sơ
                 </span>
                 {meta.totalPages > 1 && (
                     <span style={{ fontSize: '12px', color: '#9ca3af' }}>

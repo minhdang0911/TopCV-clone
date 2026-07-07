@@ -19,12 +19,20 @@ export default function SecurityPage() {
 
     const [twoFaModal, setTwoFaModal] = useState(null);
     const [twoFaLoading, setTwoFaLoading] = useState(false);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (hydrated && !isAuthenticated) {
             router.replace('/login');
         }
     }, [hydrated, isAuthenticated, router]);
+
+    useEffect(() => {
+        if (user?.candidateProfile) {
+            setReceiveJobAlerts(user.candidateProfile.isLookingForJob ?? false);
+            setAllowCvImprovement(user.candidateProfile.allowEmployerSearch ?? true);
+        }
+    }, [user]);
 
     if (!hydrated || !user) return null;
 
@@ -35,6 +43,22 @@ export default function SecurityPage() {
             const res = await userService.getMe();
             setUser(res.data);
         } catch {}
+    };
+
+    const handleSaveSettings = async () => {
+        setSaving(true);
+        try {
+            await userService.updateCandidateProfile({
+                isLookingForJob: receiveJobAlerts,
+                allowEmployerSearch: allowCvImprovement,
+            });
+            await refreshUser();
+            toast.success('Lưu cài đặt bảo mật và quyền riêng tư thành công!');
+        } catch (err) {
+            toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi lưu cài đặt');
+        } finally {
+            setSaving(false);
+        }
     };
 
     const handleToggle2FA = async () => {
@@ -144,19 +168,21 @@ export default function SecurityPage() {
                         </div>
 
                         <button
+                            onClick={handleSaveSettings}
+                            disabled={saving}
                             style={{
                                 padding: '10px 32px',
-                                background: '#00b14f',
+                                background: saving ? '#9ca3af' : '#00b14f',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
                                 fontSize: '14px',
                                 fontWeight: '600',
-                                cursor: 'pointer',
+                                cursor: saving ? 'not-allowed' : 'pointer',
                                 marginBottom: '24px',
                             }}
                         >
-                            Lưu
+                            {saving ? 'Đang lưu...' : 'Lưu'}
                         </button>
 
                         {/* 2FA section */}

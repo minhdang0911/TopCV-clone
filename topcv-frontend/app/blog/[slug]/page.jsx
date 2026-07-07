@@ -707,6 +707,5 @@ export default function BlogSlugPage() {
         </div>
     );
 
-    if (type === 'category') return <CategoryPage category={data} categories={categories} />;
-    return <PostDetail post={data} related={related} categories={categories} />;
+    s
 }

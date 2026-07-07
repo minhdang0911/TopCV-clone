@@ -471,6 +471,7 @@ function CategorySidebar({ industries = [] }) {
             justifyContent: 'space-between',
             boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
             flexShrink: 0,
+            boxSizing: 'border-box',
         }} className="hs-category-sidebar">
             {/* Header: Title only */}
             <div style={{ borderBottom: '1px solid #f3f4f6', paddingBottom: '10px' }}>
@@ -480,14 +481,14 @@ function CategorySidebar({ industries = [] }) {
             </div>
 
             {/* List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '6px 0', flex: 1, justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', margin: '4px 0', flex: 1, justifyContent: 'center' }}>
                 {visibleItems.map((item) => (
                     <button
                         key={item.id}
                         onClick={() => router.push(`/tim-viec-lam/${item.slug || ''}`)}
                         style={{
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                            padding: '6px 8px', background: 'none', border: 'none', borderRadius: '6px',
+                            padding: '5px 8px', background: 'none', border: 'none', borderRadius: '6px',
                             cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.2s',
                         }}
                         className="sidebar-category-link"
@@ -599,25 +600,7 @@ export default function HomeSearch() {
         api.get('/industries?limit=30')
             .then(res => {
                 const dbItems = res.data?.data || res.data || [];
-                const defaultItems = [
-                    { id: 101, name: 'Kinh doanh / Bán hàng', slug: 'kinh-doanh-ban-hang' },
-                    { id: 102, name: 'Marketing / PR / Quảng cáo', slug: 'marketing-pr-quang-cao' },
-                    { id: 103, name: 'Công nghệ thông tin', slug: 'cong-nghe-thong-tin' },
-                    { id: 104, name: 'Tài chính / Ngân hàng', slug: 'tai-chinh-ngan-hang' },
-                    { id: 105, name: 'Kế toán / Kiểm toán', slug: 'ke-toan-kiem-toan' },
-                    { id: 106, name: 'Hành chính / Nhân sự', slug: 'hanh-chinh-nhan-su' },
-                    { id: 107, name: 'Giáo dục / Đào tạo', slug: 'giao-duc-dao-tao' },
-                    { id: 108, name: 'Y tế / Dược phẩm', slug: 'y-te-duoc-pham' },
-                    { id: 109, name: 'Bán lẻ / Tiêu dùng', slug: 'ban-le-tieu-dung' },
-                    { id: 110, name: 'Xây dựng / Địa ốc', slug: 'xay-dung-dia-oc' },
-                ];
-                const merged = [...dbItems];
-                defaultItems.forEach(d => {
-                    if (!merged.some(m => m.slug === d.slug)) {
-                        merged.push(d);
-                    }
-                });
-                setSidebarIndustries(merged);
+                setSidebarIndustries(dbItems);
             })
             .catch(() => {});
     }, []);

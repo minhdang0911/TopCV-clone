@@ -224,7 +224,7 @@ export default function XemHoSoPage() {
 
         connectService.getProfileViewers({ page: 1, limit: 100 }).then((res) => {
             const list = res.data?.data || [];
-            
+
             // Build last 7 days chart array
             const dates = [];
             for (let i = 6; i >= 0; i--) {
@@ -247,7 +247,7 @@ export default function XemHoSoPage() {
             list.forEach((item) => {
                 if (!item.viewedAt) return;
                 const viewDate = item.viewedAt.split('T')[0];
-                
+
                 // For chart
                 const match = dates.find(d => d.raw === viewDate);
                 if (match) match.views += 1;
@@ -271,7 +271,7 @@ export default function XemHoSoPage() {
                 viewsToday: todayCount,
                 growthPct: growth,
             });
-        }).catch(() => {});
+        }).catch(() => { });
     }, [hydrated, isAuthenticated, role]);
 
     useEffect(() => {
@@ -287,7 +287,7 @@ export default function XemHoSoPage() {
         ]).then(([jobsRes, savedRes]) => {
             setJobs(jobsRes.data?.data || []);
             setSavedIds(new Set((savedRes.data?.data || []).map(i => i.jobId)));
-        }).catch(() => {}).finally(() => setJobsLoading(false));
+        }).catch(() => { }).finally(() => setJobsLoading(false));
     }, [isAuthenticated]);
 
     const handleToggleSave = async (jobId) => {
@@ -302,7 +302,7 @@ export default function XemHoSoPage() {
 
     const handleDismissJob = async (jobId) => {
         setJobs(prev => prev.filter(j => j.id !== jobId));
-        try { await jobService.dismissSuggestion(jobId); } catch {}
+        try { await jobService.dismissSuggestion(jobId); } catch { }
     };
 
     if (!hydrated || !isAuthenticated) return null;
@@ -356,35 +356,35 @@ export default function XemHoSoPage() {
                             <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -25, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor={GREEN} stopOpacity={0.3}/>
-                                        <stop offset="95%" stopColor={GREEN} stopOpacity={0}/>
+                                        <stop offset="5%" stopColor={GREEN} stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor={GREEN} stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis 
-                                    dataKey="label" 
-                                    axisLine={false} 
-                                    tickLine={false} 
-                                    tick={{ fill: '#94a3b8', fontSize: 10 }} 
+                                <XAxis
+                                    dataKey="label"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 10 }}
                                 />
-                                <YAxis 
-                                    axisLine={false} 
-                                    tickLine={false} 
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
                                     tick={{ fill: '#94a3b8', fontSize: 10 }}
                                     allowDecimals={false}
                                 />
-                                <Tooltip 
+                                <Tooltip
                                     contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '12px' }}
                                     labelStyle={{ fontWeight: 'bold', marginBottom: '4px' }}
                                 />
-                                <Area 
-                                    type="monotone" 
-                                    dataKey="views" 
+                                <Area
+                                    type="monotone"
+                                    dataKey="views"
                                     name="Lượt xem"
-                                    stroke={GREEN} 
+                                    stroke={GREEN}
                                     strokeWidth={2.5}
-                                    fillOpacity={1} 
-                                    fill="url(#colorViews)" 
+                                    fillOpacity={1}
+                                    fill="url(#colorViews)"
                                 />
                             </AreaChart>
                         </ResponsiveContainer>

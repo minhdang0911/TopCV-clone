@@ -29,6 +29,7 @@ import { RatingsModule } from './ratings/ratings.module';
 import { QuizModule } from './quiz/quiz.module';
 import { BlogModule } from './blog/blog.module';
 import { AdminModule } from './admin/admin.module';
+import { SavedSearchesModule } from './saved-searches/saved-searches.module';
 
 @Module({
   imports: [
@@ -62,6 +63,7 @@ import { AdminModule } from './admin/admin.module';
     QuizModule,
     BlogModule,
     AdminModule,
+    SavedSearchesModule,
   ],
 })
 export class AppModule {}

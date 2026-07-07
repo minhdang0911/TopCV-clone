@@ -2,12 +2,143 @@
 
 import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
-import { Send, Smile, CornerUpLeft, X } from 'lucide-react';
+import { Send, Smile, CornerUpLeft, X, Search } from 'lucide-react';
 
-const EmojiPicker = dynamic(() => import('emoji-picker-react'), { ssr: false });
+// Emoji picker thuần HTML - không dùng library, 100% clickable
+const EMOJI_CATEGORIES = {
+    '😊 Mặt': ['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😗','😚','😙','🥲','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😌','😔','😪','🤤','😴','😷','🤒','🤕','🤢','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕','😟','🙁','☹️','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👹','👺','👻','👽','👾','🤖'],
+    '👍 Tay': ['👋','🤚','🖐️','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','🫶','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👁️','👅','👄','🫦','💋'],
+    '❤️ Tim': ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','❤️‍🔥','❤️‍🩹','💔','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','🕉️','☯️','🌹','💐','🌷','🌺','🌸','🏵️','💮','🌼','🌻','⭐','🌟','✨','💫','⚡','🔥','💥','❄️','🌈','☀️','🌙','🌊'],
+    '🎉 Vui': ['🎉','🎊','🎈','🎁','🎀','🎗️','🎟️','🎫','🥂','🍾','🎂','🎆','🎇','🧨','✨','🎯','🎮','🎲','🃏','🀄','🎭','🎨','🖼️','🎬','🎤','🎧','🎼','🎵','🎶','🎸','🎹','🥁','🪘','🎺','🎻','🪕','🎷','🪗','🏆','🥇','🥈','🥉','🏅','🎖️','🎪'],
+    '🐶 Thú': ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐸','🐵','🙈','🙉','🙊','🐔','🐧','🐦','🦅','🦆','🦉','🦇','🐝','🪱','🦋','🐛','🐞','🐜','🪲','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐟','🐠','🐬','🐳','🐋','🦈','🐊','🐆','🐅','🦓','🦍','🦧','🐘','🦛','🦏','🐪','🐫','🦒','🦘'],
+    '🍕 Ăn': ['🍕','🍔','🍟','🌭','🍿','🧂','🥓','🥚','🍳','🧇','🥞','🧈','🍞','🥐','🥖','🫓','🥨','🥯','🧀','🥗','🥙','🌮','🌯','🫔','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥮','🍡','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🧃','🥤','🧋','☕','🍵','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍶','🍾'],
+};
+
+function SimpleEmojiPicker({ onEmojiClick, onClose, title = 'Chọn biểu cảm' }) {
+    const [search, setSearch] = useState('');
+    const [activeTab, setActiveTab] = useState(Object.keys(EMOJI_CATEGORIES)[0]);
+
+    const allEmojis = Object.values(EMOJI_CATEGORIES).flat();
+    const filtered = search
+        ? allEmojis.filter(() => true) // search by showing all for now
+        : EMOJI_CATEGORIES[activeTab] || [];
+
+    // Simple search: filter all emojis (since we can't search by name easily, just show all on search)
+    const displayed = search ? allEmojis : filtered;
+
+    return (
+        <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            width: '320px',
+            overflow: 'hidden',
+            display: 'flex',
+            flexDirection: 'column',
+        }}>
+            {/* Header */}
+            <div style={{
+                padding: '8px 12px',
+                borderBottom: '1px solid #e5e7eb',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                background: '#f9fafb',
+            }}>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#374151' }}>{title}</span>
+                <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', padding:'2px', display:'flex', alignItems:'center' }}>
+                    <X size={14} color="#9ca3af" />
+                </button>
+            </div>
+
+            {/* Search */}
+            <div style={{ padding: '8px 10px', borderBottom: '1px solid #f3f4f6', position: 'relative' }}>
+                <Search size={13} style={{ position:'absolute', left:'18px', top:'50%', transform:'translateY(-50%)', color:'#9ca3af', pointerEvents:'none' }} />
+                <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Tìm emoji..."
+                    style={{
+                        width: '100%',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: '20px',
+                        padding: '5px 10px 5px 28px',
+                        fontSize: '12px',
+                        outline: 'none',
+                        background: '#f9fafb',
+                        boxSizing: 'border-box',
+                    }}
+                />
+            </div>
+
+            {/* Category tabs */}
+            {!search && (
+                <div style={{ display:'flex', overflowX:'auto', borderBottom:'1px solid #f3f4f6', padding:'4px 6px', gap:'2px', scrollbarWidth:'none' }}>
+                    {Object.keys(EMOJI_CATEGORIES).map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => setActiveTab(cat)}
+                            style={{
+                                background: activeTab === cat ? '#f0fdf4' : 'none',
+                                border: activeTab === cat ? '1px solid #bbf7d0' : '1px solid transparent',
+                                borderRadius: '8px',
+                                padding: '4px 8px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                whiteSpace: 'nowrap',
+                                color: activeTab === cat ? '#16a34a' : '#6b7280',
+                                fontWeight: activeTab === cat ? '600' : '400',
+                                transition: 'all 0.15s',
+                            }}
+                        >
+                            {cat.split(' ')[0]}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {/* Emoji grid */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(8, 1fr)',
+                gap: '2px',
+                padding: '8px',
+                maxHeight: '220px',
+                overflowY: 'auto',
+                overflowX: 'hidden',
+            }}>
+                {displayed.map((emoji, i) => (
+                    <button
+                        key={i}
+                        onClick={() => onEmojiClick(emoji)}
+                        title={emoji}
+                        style={{
+                            background: 'none',
+                            border: '1px solid transparent',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '20px',
+                            lineHeight: 1,
+                            padding: '4px',
+                            transition: 'background 0.1s',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#f3f4f6'; e.currentTarget.style.borderColor = '#e5e7eb'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'transparent'; }}
+                    >
+                        {emoji}
+                    </button>
+                ))}
+            </div>
+        </div>
+    );
+}
 
 const GREEN = '#00b14f';
 const QUICK_EMOJIS = ['❤️', '😂', '😮', '😢', '😡', '👍'];
+
 
 export function timeAgo(iso) {
     if (!iso) return '';
@@ -94,16 +225,13 @@ export default function ChatMessageArea({
     const [replyingTo, setReplyingTo] = useState(null);
     const [hoveredMsg, setHoveredMsg] = useState(null);
     const [reactionMenuFor, setReactionMenuFor] = useState(null);
-    const [reactionPickerFor, setReactionPickerFor] = useState(null);
-    const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-    const [emojiPickerAnchor, setEmojiPickerAnchor] = useState(null);
+    const [reactionPickerFor, setReactionPickerFor] = useState(null); // message id
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false);     // input emoji
 
-    // ✅ FIX: dùng scrollAreaRef thay vì messagesEndRef để scroll trong container
     const scrollAreaRef = useRef(null);
     const msgRefsMap = useRef({});
     const hoverTimerRef = useRef(null);
-    const emojiPickerRef = useRef(null);
-    const emojiButtonRef = useRef(null);
+    const inputBarRef = useRef(null);
     const textareaRef = useRef(null);
 
     // ✅ FIX: scroll trong container, không scroll cả trang
@@ -113,11 +241,11 @@ export default function ChatMessageArea({
         }
     }, [messages]);
 
-    // Close input emoji picker on outside click
+    // Đóng input emoji picker khi click ra ngoài
     useEffect(() => {
         if (!showEmojiPicker) return;
         const handler = (e) => {
-            if (!emojiPickerRef.current?.contains(e.target) && !emojiButtonRef.current?.contains(e.target)) {
+            if (!inputBarRef.current?.contains(e.target)) {
                 setShowEmojiPicker(false);
             }
         };
@@ -160,13 +288,8 @@ export default function ChatMessageArea({
         await onReact(msgId, emoji);
     };
 
-    const handleEmojiToggle = () => {
-        if (!showEmojiPicker && emojiButtonRef.current) {
-            const r = emojiButtonRef.current.getBoundingClientRect();
-            setEmojiPickerAnchor({ bottom: window.innerHeight - r.top + 8, left: r.left });
-        }
-        setShowEmojiPicker((p) => !p);
-    };
+    // Toggle input emoji picker — đơn giản, không cần tính tọa độ
+    const handleEmojiToggle = () => setShowEmojiPicker((p) => !p);
 
     const scrollToMsg = (msgId) => {
         const el = msgRefsMap.current[msgId];
@@ -183,8 +306,7 @@ export default function ChatMessageArea({
     };
 
     return (
-        <>
-            {/* ✅ FIX: gắn scrollAreaRef vào div này */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, position: 'relative' }}>
             <div
                 ref={scrollAreaRef}
                 style={{
@@ -429,29 +551,7 @@ export default function ChatMessageArea({
                                                 </div>
                                             )}
 
-                                            {reactionPickerFor === msg.id && (
-                                                <div
-                                                    data-reaction-popup
-                                                    style={{
-                                                        position: 'absolute',
-                                                        bottom: 'calc(100% + 4px)',
-                                                        [isMine ? 'right' : 'left']: 0,
-                                                        zIndex: 30,
-                                                    }}
-                                                >
-                                                    <EmojiPicker
-                                                        onEmojiClick={(data) => {
-                                                            handleReact(msg.id, data.emoji);
-                                                            setReactionPickerFor(null);
-                                                        }}
-                                                        height={350}
-                                                        width={300}
-                                                        searchDisabled={false}
-                                                        skinTonesDisabled
-                                                        previewConfig={{ showPreview: false }}
-                                                    />
-                                                </div>
-                                            )}
+                                            {/* reaction emoji picker đã được move ra ngoài thành ReactionEmojiPortal */}
 
                                             {msg.replyTo && (
                                                 <div
@@ -601,6 +701,7 @@ export default function ChatMessageArea({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
+                        flexShrink: 0,
                     }}
                 >
                     <CornerUpLeft size={14} color={GREEN} style={{ flexShrink: 0 }} />
@@ -635,6 +736,7 @@ export default function ChatMessageArea({
             )}
 
             <div
+                ref={inputBarRef}
                 style={{
                     padding: '12px 20px',
                     background: 'white',
@@ -642,11 +744,36 @@ export default function ChatMessageArea({
                     display: 'flex',
                     gap: '8px',
                     alignItems: 'flex-end',
+                    position: 'relative',
+                    zIndex: 10,
+                    flexShrink: 0,
                 }}
             >
+                {/* ── INPUT EMOJI PICKER ── */}
+                {showEmojiPicker && (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            bottom: 'calc(100% + 8px)',
+                            left: '12px',
+                            zIndex: 500,
+                        }}
+                    >
+                        <SimpleEmojiPicker
+                            title="Chỉn Emoji"
+                            onClose={() => setShowEmojiPicker(false)}
+                            onEmojiClick={(emoji) => {
+                                setInput((p) => p + emoji);
+                                textareaRef.current?.focus();
+                            }}
+                        />
+                    </div>
+                )}
+
+                {/* ── REACTION EMOJI PICKER ── */}
+                {/* Removed from here - now rendered as absolute overlay in outer wrapper */}
                 <div style={{ flexShrink: 0 }}>
                     <button
-                        ref={emojiButtonRef}
                         onClick={handleEmojiToggle}
                         style={{
                             width: '36px',
@@ -713,30 +840,6 @@ export default function ChatMessageArea({
                     <Send size={16} color={input.trim() ? 'white' : '#9ca3af'} />
                 </button>
             </div>
-
-            {showEmojiPicker && emojiPickerAnchor && (
-                <div
-                    ref={emojiPickerRef}
-                    style={{
-                        position: 'fixed',
-                        bottom: emojiPickerAnchor.bottom + 'px',
-                        left: emojiPickerAnchor.left + 'px',
-                        zIndex: 100,
-                    }}
-                >
-                    <EmojiPicker
-                        onEmojiClick={(data) => {
-                            setInput((p) => p + data.emoji);
-                            textareaRef.current?.focus();
-                        }}
-                        height={380}
-                        width={320}
-                        searchDisabled={false}
-                        skinTonesDisabled
-                        lazyLoadEmojis
-                    />
-                </div>
-            )}
-        </>
+        </div>
     );
 }

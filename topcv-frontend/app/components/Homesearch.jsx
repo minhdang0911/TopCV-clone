@@ -14,12 +14,12 @@ const PROVINCE_API_V1 = 'https://provinces.open-api.vn/api/v1';
 const PROVINCE_API_V2 = 'https://provinces.open-api.vn/api/v2';
 
 const QUICK_CHIPS = [
-    'Nhân viên kinh doanh',
-    'Nhân viên kỹ thuật hàn điện tử',
-    'Nhân viên kỹ thuật hàn',
-    'Thực tập sinh software',
-    'Nhân viên livestream',
-    'Fullstack developer',
+    'Kinh doanh',
+    'Chăm sóc khách hàng',
+    'Frontend',
+    'NodeJS',
+    'Kế toán',
+    'Developer',
 ];
 
 /* ── Checkbox dùng chung ── */
@@ -343,6 +343,7 @@ function StatsBox() {
     const [stats, setStats] = useState(null);
     const [hovered, setHovered] = useState(false);
 
+
     useEffect(() => {
         api.get('/jobs/stats')
             .then(r => setStats(r.data))
@@ -350,6 +351,7 @@ function StatsBox() {
     }, []);
 
     const fmt = iso => {
+        if (!iso) return '';
         const d = new Date(iso);
         return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
     };
@@ -357,65 +359,204 @@ function StatsBox() {
     const TrendIcon = stats?.trend === 'up' ? TrendingUp : stats?.trend === 'down' ? TrendingDown : Minus;
 
     return (
-        <div
+        <a
+            href="/tim-viec-lam-moi-nhat"
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             style={{
-                background: 'rgba(0,35,18,0.6)',
-                border: '1px solid rgba(0,177,79,0.22)',
-                borderRadius: '10px',
-                padding: '10px 16px 10px 14px',
+                backgroundImage: 'url("https://static.topcv.vn/v4/image/welcome/section-header/work_market_background.png")',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                borderRadius: '8px',
+                padding: '12px 20px',
+                color: 'white',
                 display: 'flex',
                 alignItems: 'center',
-                marginTop: '16px',
-                backdropFilter: 'blur(10px)',
-                cursor: 'pointer',
-                minHeight: '52px',
-                gap: '0',
-                flexWrap: 'nowrap',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                textDecoration: 'none',
+                position: 'relative',
                 overflow: 'hidden',
+                height: '84px',
             }}
+            className="hs-statsbox-container"
         >
-            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: GREEN, flexShrink: 0, marginRight: '10px', boxShadow: `0 0 6px ${GREEN}` }} />
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', fontWeight: '500', whiteSpace: 'nowrap', marginRight: '6px' }}>
-                Thị trường việc làm hôm nay
-            </span>
-            {stats && (
-                <span style={{ fontSize: '13px', fontWeight: '700', color: '#4ade80', whiteSpace: 'nowrap', marginRight: '16px' }}>
-                    {fmt(stats.date)}
+            {/* Left side info */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                {/* Header row */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: GREEN, boxShadow: `0 0 6px ${GREEN}` }} />
+                    <span style={{ fontSize: '13.5px', fontWeight: '600', color: 'white' }}>
+                        Thị trường việc làm hôm nay
+                    </span>
+                    {stats && (
+                        <span style={{ fontSize: '13.5px', fontWeight: '700', color: '#57d991' }}>
+                            {fmt(stats.date)}
+                        </span>
+                    )}
+                </div>
+
+                {/* Counts row */}
+                <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.75)' }}>Việc làm đang tuyển</span>
+                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#4ade80' }}>
+                            {stats ? stats.totalActive.toLocaleString('vi-VN') : '---'}
+                        </span>
+                        <TrendIcon size={13} color="#4ade80" />
+                    </div>
+
+                    <div style={{ width: '1px', height: '14px', background: 'rgba(255,255,255,0.15)' }} />
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{ fontSize: '12.5px', color: 'rgba(255,255,255,0.75)' }}>Việc làm mới hôm nay</span>
+                        <span style={{ fontSize: '16px', fontWeight: '800', color: '#4ade80' }}>
+                            {stats ? stats.newToday.toLocaleString('vi-VN') : '---'}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Right side interactive actions */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                <span style={{
+                    fontSize: '12px', fontWeight: '600',
+                    color: hovered ? '#4ade80' : 'rgba(255,255,255,0.5)',
+                    whiteSpace: 'nowrap',
+                    transition: 'color 0.2s',
+                }}>
+                    Xem thêm
                 </span>
-            )}
-            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)', marginRight: '16px', flexShrink: 0 }} />
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', marginRight: '6px' }}>Việc làm đang tuyển</span>
-            <span style={{ fontSize: '15px', fontWeight: '800', color: 'white', marginRight: '4px' }}>
-                {stats ? stats.totalActive.toLocaleString('vi-VN') : '---'}
-            </span>
-            <TrendIcon size={14} color={GREEN} style={{ marginRight: '16px', flexShrink: 0 }} />
-            <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.15)', marginRight: '16px', flexShrink: 0 }} />
-            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', marginRight: '6px' }}>Việc làm mới hôm nay</span>
-            <span style={{ fontSize: '15px', fontWeight: '800', color: 'white' }}>
-                {stats ? stats.newToday.toLocaleString('vi-VN') : '---'}
-            </span>
-            <div style={{ flex: 1 }} />
-            <span style={{
-                fontSize: '12px', fontWeight: '600',
-                color: hovered ? '#4ade80' : 'rgba(255,255,255,0.4)',
-                whiteSpace: 'nowrap', marginRight: '12px',
-                transition: 'color 0.2s', flexShrink: 0,
-            }}>
-                Xem thêm →
-            </span>
-            <Image
-                src={robo} alt="robo" width={56} height={56}
-                style={{
-                    objectFit: 'contain', flexShrink: 0,
-                    transform: hovered ? 'scale(1.08) translateY(-3px)' : 'scale(1)',
-                    transition: 'transform 0.25s ease',
-                }}
-            />
+                <Image
+                    src={robo} alt="robo" width={52} height={52}
+                    style={{
+                        objectFit: 'contain',
+                        transform: hovered ? 'scale(1.08) translateY(-3px)' : 'scale(1)',
+                        transition: 'transform 0.25s ease',
+                    }}
+                />
+            </div>
+        </a>
+    );
+}
+
+/* ── Category Sidebar ── */
+function CategorySidebar({ industries = [] }) {
+    const router = useRouter();
+    const [page, setPage] = useState(1);
+    
+    // We want 6 items per page
+    const itemsPerPage = 6;
+    const totalPages = Math.ceil(industries.length / itemsPerPage) || 1;
+    const startIndex = (page - 1) * itemsPerPage;
+    const visibleItems = industries.slice(startIndex, startIndex + itemsPerPage);
+
+    const handleNext = () => {
+        setPage(p => (p < totalPages ? p + 1 : 1));
+    };
+
+    const handlePrev = () => {
+        setPage(p => (p > 1 ? p - 1 : totalPages));
+    };
+
+    return (
+        <div style={{
+            width: '328px',
+            background: 'white',
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb',
+            padding: '16px 18px',
+            height: '292px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+            flexShrink: 0,
+        }} className="hs-category-sidebar">
+            {/* Header: Title only */}
+            <div style={{ borderBottom: '1px solid #f3f4f6', paddingBottom: '10px' }}>
+                <span style={{ fontSize: '12px', fontWeight: '700', color: '#1e293b', letterSpacing: '0.3px' }}>
+                    DANH MỤC NGHỀ NGHIỆP
+                </span>
+            </div>
+
+            {/* List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', margin: '6px 0', flex: 1, justifyContent: 'center' }}>
+                {visibleItems.map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => router.push(`/tim-viec-lam/${item.slug || ''}`)}
+                        style={{
+                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                            padding: '6px 8px', background: 'none', border: 'none', borderRadius: '6px',
+                            cursor: 'pointer', textAlign: 'left', width: '100%', transition: 'all 0.2s',
+                        }}
+                        className="sidebar-category-link"
+                    >
+                        <span style={{ fontSize: '13px', color: '#475569', fontWeight: '500', transition: 'all 0.2s' }} className="cat-text">
+                            {item.name}
+                        </span>
+                        <svg width="8" height="8" viewBox="0 0 10 10" fill="none" style={{ transition: 'transform 0.2s' }} className="cat-arrow">
+                            <path d="M3.5 1.5L7 5L3.5 8.5" stroke="#94a3b8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                    </button>
+                ))}
+            </div>
+
+            {/* Footer: Pagination controls at bottom */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '12px', borderTop: '1px solid #f3f4f6', paddingTop: '10px' }}>
+                <button
+                    onClick={handlePrev}
+                    style={{
+                        width: '22px', height: '22px', borderRadius: '4px', border: '1px solid #e2e8f0',
+                        background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', outline: 'none', transition: 'background 0.15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                >
+                    <svg width="6" height="10" viewBox="0 0 6 10" fill="none">
+                        <path d="M5 9L1 5L5 1" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                </button>
+                <span style={{ fontSize: '11.5px', fontWeight: '600', color: '#64748b' }}>
+                    {page}/{totalPages}
+                </span>
+                <button
+                    onClick={handleNext}
+                    style={{
+                        width: '22px', height: '22px', borderRadius: '4px', border: '1px solid #e2e8f0',
+                        background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', outline: 'none', transition: 'background 0.15s'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                >
+                    <svg width="6" height="10" viewBox="0 0 6 10" fill="none">
+                        <path d="M1 9L5 5L1 1" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <style>{`
+                .sidebar-category-link:hover {
+                    background: #f0fdf4 !important;
+                }
+                .sidebar-category-link:hover .cat-text {
+                    color: ${GREEN} !important;
+                    transform: translateX(3px);
+                    font-weight: 600 !important;
+                }
+                .sidebar-category-link:hover .cat-arrow {
+                    transform: translateX(2px);
+                }
+                .sidebar-category-link:hover .cat-arrow path {
+                    stroke: ${GREEN} !important;
+                }
+            `}</style>
         </div>
     );
 }
+
 
 function buildProvinceLabel(selectedProvinces) {
     const keys = Object.keys(selectedProvinces);
@@ -426,9 +567,7 @@ function buildProvinceLabel(selectedProvinces) {
     return label;
 }
 
-/* ════════════════════════════════════════
-   MAIN EXPORT
-════════════════════════════════════════ */
+/* ── MAIN EXPORT ── */
 export default function HomeSearch() {
     const router = useRouter();
 
@@ -436,6 +575,7 @@ export default function HomeSearch() {
     const [selectedProvinces, setSelectedProvinces] = useState({});
     const [showProvince, setShowProvince] = useState(false);
     const [provinceRect, setProvinceRect] = useState(null);
+    const [sidebarIndustries, setSidebarIndustries] = useState([]);
 
     const provinceBtnRef = useRef(null);
     const provinceDropRef = useRef(null);
@@ -452,6 +592,34 @@ export default function HomeSearch() {
         };
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    // Load industries for sidebar list
+    useEffect(() => {
+        api.get('/industries?limit=30')
+            .then(res => {
+                const dbItems = res.data?.data || res.data || [];
+                const defaultItems = [
+                    { id: 101, name: 'Kinh doanh / Bán hàng', slug: 'kinh-doanh-ban-hang' },
+                    { id: 102, name: 'Marketing / PR / Quảng cáo', slug: 'marketing-pr-quang-cao' },
+                    { id: 103, name: 'Công nghệ thông tin', slug: 'cong-nghe-thong-tin' },
+                    { id: 104, name: 'Tài chính / Ngân hàng', slug: 'tai-chinh-ngan-hang' },
+                    { id: 105, name: 'Kế toán / Kiểm toán', slug: 'ke-toan-kiem-toan' },
+                    { id: 106, name: 'Hành chính / Nhân sự', slug: 'hanh-chinh-nhan-su' },
+                    { id: 107, name: 'Giáo dục / Đào tạo', slug: 'giao-duc-dao-tao' },
+                    { id: 108, name: 'Y tế / Dược phẩm', slug: 'y-te-duoc-pham' },
+                    { id: 109, name: 'Bán lẻ / Tiêu dùng', slug: 'ban-le-tieu-dung' },
+                    { id: 110, name: 'Xây dựng / Địa ốc', slug: 'xay-dung-dia-oc' },
+                ];
+                const merged = [...dbItems];
+                defaultItems.forEach(d => {
+                    if (!merged.some(m => m.slug === d.slug)) {
+                        merged.push(d);
+                    }
+                });
+                setSidebarIndustries(merged);
+            })
+            .catch(() => {});
     }, []);
 
     const openProvince = () => {
@@ -496,7 +664,7 @@ export default function HomeSearch() {
             {/* ── Hero Section ── */}
             <section style={{
                 position: 'relative',
-                padding: '32px 20px 28px',
+                padding: '36px 0 40px',
                 fontFamily: 'Inter, -apple-system, sans-serif',
                 background: `
                     linear-gradient(180deg, rgba(0,28,20,0.5) 0%, rgba(0,28,20,0) 100%),
@@ -525,149 +693,189 @@ export default function HomeSearch() {
                     backgroundPosition: '100% top',
                 }} />
 
-                <div style={{ maxWidth: '780px', margin: '0 auto', position: 'relative', zIndex: 2, textAlign: 'center' }}>
-                    {/* Title */}
-                    <h1 className="hs-title" style={{
-                        color: '#00b14f', fontSize: '27px', fontWeight: '700',
-                        lineHeight: '1.35', margin: '0 auto 10px',
-                    }}>
-                        Tìm việc làm nhanh 24h, việc làm mới nhất trên toàn quốc
-                    </h1>
-                    <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.88)', margin: '0 0 20px', fontWeight: '400' }}>
-                        Tiếp cận <strong style={{ color: 'white', fontWeight: '700' }}>60.000+</strong> tin tuyển dụng
-                        việc làm mỗi ngày từ hàng nghìn doanh nghiệp uy tín tại Việt Nam
-                    </p>
+                {/* Main Hero Container */}
+                <div style={{ maxWidth: '1150px', margin: '0 auto', padding: '0 16px', position: 'relative', zIndex: 2 }}>
+                    {/* Top Search Area */}
+                    <div style={{ maxWidth: '1120px', margin: '0 auto 24px', textAlign: 'center' }}>
+                        {/* Title */}
+                        <h1 className="hs-title" style={{
+                            color: 'white', fontSize: '28px', fontWeight: '800',
+                            lineHeight: '1.35', margin: '0 auto 12px', textShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                            TopCV - Tạo CV, Tìm việc làm, Tuyển dụng hiệu quả quả
+                        </h1>
+                        <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.92)', margin: '0 0 24px', fontWeight: '400' }}>
+                            Tiếp cận <strong style={{ color: '#57d991', fontWeight: '700' }}>60.000+</strong> tin tuyển dụng
+                            việc làm mỗi ngày từ hàng nghìn doanh nghiệp uy tín tại Việt Nam
+                        </p>
 
-                    {/* Search bar */}
-                    <div className="hs-searchbar" style={{
-                        display: 'flex', background: 'white', borderRadius: '8px',
-                        boxShadow: '0 4px 24px rgba(0,0,0,0.22)', height: '52px',
-                        overflow: 'hidden',
-                    }}>
-                        {/* Keyword */}
-                        <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 14px', gap: '8px', minWidth: 0 }}>
-                            <input
-                                type="text"
-                                placeholder="Vị trí tuyển dụng, tên công ty"
-                                value={keyword}
-                                onChange={e => setKeyword(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                style={{
-                                    flex: 1, border: 'none', outline: 'none',
-                                    fontSize: '14px', color: '#111827', background: 'transparent', minWidth: 0,
-                                }}
-                            />
-                            {keyword && (
-                                <button
-                                    onClick={() => setKeyword('')}
-                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px', flexShrink: 0 }}
-                                >
-                                    <X size={14} />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Divider */}
-                        <div className="hs-location-divider" style={{ width: '1px', background: '#e5e7eb', alignSelf: 'center', height: '28px', flexShrink: 0 }} />
-
-                        {/* Location button */}
-                        <button
-                            ref={provinceBtnRef}
-                            onClick={openProvince}
-                            className="hs-location-btn"
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '6px',
-                                padding: '0 14px', height: '52px',
-                                background: 'none', border: 'none',
-                                cursor: 'pointer', fontSize: '13.5px',
-                                color: hasProvince ? '#111827' : '#9ca3af',
-                                whiteSpace: 'nowrap', minWidth: '155px', maxWidth: '220px', flexShrink: 0,
-                            }}
-                        >
-                            <MapPin size={14} color={hasProvince ? GREEN : '#9ca3af'} style={{ flexShrink: 0 }} />
-                            <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left', fontSize: '14px' }}>
-                                {provinceLabel}
-                            </span>
-                            {hasProvince ? (
-                                <span
-                                    onClick={e => { e.stopPropagation(); setSelectedProvinces({}); }}
-                                    style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
-                                >
-                                    <X size={13} color="#9ca3af" />
-                                </span>
-                            ) : (
-                                <ChevronDown
-                                    size={13} color="#9ca3af"
-                                    style={{ transform: showProvince ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}
+                        {/* Search bar */}
+                        <div className="hs-searchbar" style={{
+                            display: 'flex', background: 'white', borderRadius: '8px',
+                            boxShadow: '0 4px 24px rgba(0,0,0,0.22)', height: '52px',
+                            overflow: 'hidden',
+                        }}>
+                            {/* Keyword */}
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', padding: '0 14px', gap: '8px', minWidth: 0 }}>
+                                <input
+                                    type="text"
+                                    placeholder="Vị trí tuyển dụng, tên công ty"
+                                    value={keyword}
+                                    onChange={e => setKeyword(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                                    style={{
+                                        flex: 1, border: 'none', outline: 'none',
+                                        fontSize: '14px', color: '#111827', background: 'transparent', minWidth: 0,
+                                    }}
                                 />
-                            )}
-                        </button>
+                                {keyword && (
+                                    <button
+                                        onClick={() => setKeyword('')}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: '2px', flexShrink: 0 }}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                )}
+                            </div>
 
-                        {/* Search button */}
-                        <button
-                            onClick={handleSearch}
-                            style={{
-                                background: GREEN, color: 'white', border: 'none',
-                                padding: '0 26px', fontSize: '14px', fontWeight: '700',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                gap: '7px', height: '52px', flexShrink: 0, whiteSpace: 'nowrap',
-                                transition: 'background 0.15s',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#009940'}
-                            onMouseLeave={e => e.currentTarget.style.background = GREEN}
-                        >
-                            <Search size={15} />
-                            Tìm kiếm
-                        </button>
-                    </div>
+                            {/* Divider */}
+                            <div className="hs-location-divider" style={{ width: '1px', background: '#e5e7eb', alignSelf: 'center', height: '28px', flexShrink: 0 }} />
 
-                    {/* Quick chips */}
-                    <div style={{
-                        display: 'flex', flexWrap: 'wrap', gap: '8px',
-                        marginTop: '14px', alignItems: 'center', justifyContent: 'center',
-                    }}>
-                        <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap', fontWeight: '500' }}>
-                            Gợi ý:
-                        </span>
-                        {QUICK_CHIPS.map(chip => (
+                            {/* Location button */}
                             <button
-                                key={chip}
-                                onClick={() => router.push(`/tim-viec-lam-moi-nhat?search=${encodeURIComponent(chip)}&page=1`)}
+                                ref={provinceBtnRef}
+                                onClick={openProvince}
+                                className="hs-location-btn"
                                 style={{
-                                    padding: '5px 13px', borderRadius: '20px',
-                                    border: '1px solid rgba(255,255,255,0.35)',
-                                    background: 'rgba(255,255,255,0.12)',
-                                    color: 'rgba(255,255,255,0.95)',
-                                    fontSize: '12.5px', cursor: 'pointer',
-                                    whiteSpace: 'nowrap', backdropFilter: 'blur(4px)',
-                                    transition: 'all 0.15s', fontFamily: 'inherit', fontWeight: '400',
-                                }}
-                                onMouseEnter={e => {
-                                    e.currentTarget.style.background = 'rgba(255,255,255,0.22)';
-                                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)';
-                                }}
-                                onMouseLeave={e => {
-                                    e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)';
+                                    display: 'flex', alignItems: 'center', gap: '6px',
+                                    padding: '0 14px', height: '52px',
+                                    background: 'none', border: 'none',
+                                    cursor: 'pointer', fontSize: '13.5px',
+                                    color: hasProvince ? '#111827' : '#9ca3af',
+                                    whiteSpace: 'nowrap', minWidth: '155px', maxWidth: '220px', flexShrink: 0,
                                 }}
                             >
-                                {chip}
+                                <MapPin size={14} color={hasProvince ? GREEN : '#9ca3af'} style={{ flexShrink: 0 }} />
+                                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', textAlign: 'left', fontSize: '14px' }}>
+                                    {provinceLabel}
+                                </span>
+                                {hasProvince ? (
+                                    <span
+                                        onClick={e => { e.stopPropagation(); setSelectedProvinces({}); }}
+                                        style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', flexShrink: 0 }}
+                                    >
+                                        <X size={13} color="#9ca3af" />
+                                    </span>
+                                ) : (
+                                    <ChevronDown
+                                        size={13} color="#9ca3af"
+                                        style={{ transform: showProvince ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', flexShrink: 0 }}
+                                    />
+                                )}
                             </button>
-                        ))}
+
+                            {/* Search button */}
+                            <button
+                                onClick={handleSearch}
+                                style={{
+                                    background: GREEN, color: 'white', border: 'none',
+                                    padding: '0 26px', fontSize: '14px', fontWeight: '700',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                    gap: '7px', height: '52px', flexShrink: 0, whiteSpace: 'nowrap',
+                                    transition: 'background 0.15s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#009940'}
+                                onMouseLeave={e => e.currentTarget.style.background = GREEN}
+                            >
+                                <Search size={15} />
+                                Tìm kiếm
+                            </button>
+                        </div>
+
+                        {/* Quick chips */}
+                        <div style={{
+                            display: 'flex', flexWrap: 'wrap', gap: '8px',
+                            marginTop: '14px', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                            <span style={{ fontSize: '13px', color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap', fontWeight: '500' }}>
+                                Gợi ý:
+                            </span>
+                            {QUICK_CHIPS.map(chip => (
+                                <button
+                                    key={chip}
+                                    onClick={() => router.push(`/tim-viec-lam-moi-nhat?search=${encodeURIComponent(chip)}&page=1`)}
+                                    style={{
+                                        padding: '5px 13px', borderRadius: '20px',
+                                        border: '1px solid rgba(255,255,255,0.35)',
+                                        background: 'rgba(255,255,255,0.12)',
+                                        color: 'rgba(255,255,255,0.95)',
+                                        fontSize: '12.5px', cursor: 'pointer',
+                                        whiteSpace: 'nowrap', backdropFilter: 'blur(4px)',
+                                        transition: 'all 0.15s', fontFamily: 'inherit', fontWeight: '400',
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.22)';
+                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
+                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)';
+                                    }}
+                                >
+                                    {chip}
+                                </button>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="hs-statsbox">
-                        <StatsBox />
+                    {/* Bottom Main Content Grid (Two-Column Layout) */}
+                    <div style={{ display: 'flex', gap: '20px', marginTop: '24px', alignItems: 'stretch' }} className="hs-main-grid">
+                        {/* Left: Category Sidebar */}
+                        <CategorySidebar industries={sidebarIndustries} />
+
+                        {/* Right: Banner and Counter */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', minWidth: 0 }} className="hs-main-right">
+                            {/* Banner Link */}
+                            <a
+                                href="/tim-viec-lam-moi-nhat"
+                                style={{
+                                    width: '100%',
+                                    height: '180px',
+                                    borderRadius: '8px',
+                                    overflow: 'hidden',
+                                    boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+                                    display: 'block',
+                                    flexShrink: 0,
+                                }}
+                            >
+                                <img
+                                    src="https://static.topcv.vn/v4/image/welcome/section-header/header-banner.png"
+                                    alt="Welcome Banner"
+                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                />
+                            </a>
+
+                            {/* Market Stats Box */}
+                            <StatsBox />
+                        </div>
                     </div>
                 </div>
             </section>
             <style>{`
+                @media(max-width:992px){
+                    .hs-main-grid {
+                        flex-direction: column !important;
+                    }
+                    .hs-category-sidebar {
+                        width: 100% !important;
+                        height: auto !important;
+                    }
+                }
                 @media(max-width:768px){
                     .hs-deco{display:none!important;}
-                    .hs-title{font-size:20px!important;}
+                    .hs-title{font-size:22px!important;}
                     .hs-location-btn{display:none!important;}
                     .hs-location-divider{display:none!important;}
-                    .hs-statsbox{overflow-x:auto;-webkit-overflow-scrolling:touch;}
                 }
                 @media(max-width:480px){
                     .hs-title{font-size:18px!important;}

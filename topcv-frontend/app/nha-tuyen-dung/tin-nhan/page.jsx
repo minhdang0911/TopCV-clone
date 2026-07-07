@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, ChevronLeft, MessageSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +19,7 @@ function getWsUrl() {
 
 export default function EmployerChatPage() {
     const { accessToken, isAuthenticated, user } = useAuthStore();
+    const router = useRouter();
     const searchParams = useSearchParams();
     const initConvId = searchParams.get('conv');
 
@@ -59,11 +60,19 @@ export default function EmployerChatPage() {
     }, [isAuthenticated, fetchConvs]);
 
     useEffect(() => {
-        if (initConvId && conversations.length > 0) {
-            const found = conversations.find(c => c.id === initConvId);
-            if (found) setActiveConvId(initConvId);
+        if (conversations.length > 0) {
+            if (initConvId) {
+                const found = conversations.find(c => c.id === initConvId);
+                if (found) setActiveConvId(initConvId);
+            } else if (!activeConvId) {
+                const firstConvId = conversations[0].id;
+                setActiveConvId(firstConvId);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('conv', firstConvId);
+                router.replace(`/nha-tuyen-dung/tin-nhan?${params.toString()}`);
+            }
         }
-    }, [initConvId, conversations]);
+    }, [initConvId, conversations, activeConvId, searchParams, router]);
 
     useEffect(() => {
         if (!activeConvId) return;
@@ -115,6 +124,9 @@ export default function EmployerChatPage() {
     const handleSelectConv = (convId) => {
         setActiveConvId(convId);
         if (isMobile) setShowSidebar(false);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('conv', convId);
+        router.replace(`/nha-tuyen-dung/tin-nhan?${params.toString()}`);
     };
 
     const handleSend = async (text, replyTo) => {

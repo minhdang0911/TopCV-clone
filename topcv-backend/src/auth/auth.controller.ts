@@ -135,6 +135,12 @@ export class AuthController {
     );
   }
 
+  @Post('google-one-tap')
+  async googleOneTap(@Body('token') token: string, @Req() req: any) {
+    const ip = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip;
+    return this.authService.loginGoogleOneTap(token, ip);
+  }
+
   // ─── FACEBOOK ─────────────────────────────────────
   @Get('facebook')
   @UseGuards(FacebookGuard)

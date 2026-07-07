@@ -124,7 +124,7 @@ function CategoryPage({ category, categories }) {
                                     <div className="h-4 w-2/3 bg-slate-100 rounded animate-pulse" />
                                 </div>
                             ))}
-                          </div>
+                        </div>
                         : <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                             {posts.map(p => <PostCardGrid key={p.id} post={p} />)}
                         </div>
@@ -230,7 +230,7 @@ function PostDetail({ post, related, categories }) {
     // Fetch provinces
     useEffect(() => {
         import('@/services/province.service').then(m => {
-            m.provinceService.getAll().then(data => setProvinces(data || [])).catch(() => {});
+            m.provinceService.getAll().then(data => setProvinces(data || [])).catch(() => { });
         });
     }, []);
 
@@ -417,6 +417,60 @@ function PostDetail({ post, related, categories }) {
                             </div>
                         )}
 
+                        {/* In-article green CTA banner */}
+                        <div style={{
+                            margin: '32px 0 20px',
+                            padding: '20px 24px',
+                            borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #00b14f 0%, #059669 100%)',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '20px',
+                            boxShadow: '0 8px 30px rgba(0, 177, 79, 0.12)'
+                        }} className="blog-cta-banner">
+                            <div>
+                                <h4 style={{ margin: 0, fontSize: '15px', fontWeight: '700', color: 'white' }}>Tìm Kiếm Cơ Hội Việc Làm Mới Nhất</h4>
+                                <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'rgba(255,255,255,0.9)' }}>
+                                    Hơn 60.000+ tin tuyển dụng chất lượng cao đang chờ đón bạn ứng tuyển hôm nay.
+                                </p>
+                            </div>
+                            <Link href="/tim-viec-lam-moi-nhat">
+                                <button style={{
+                                    background: 'white',
+                                    color: '#00b14f',
+                                    fontWeight: '700',
+                                    fontSize: '12.5px',
+                                    padding: '8px 16px',
+                                    borderRadius: '6px',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                                    transition: 'transform 0.15s'
+                                }}
+                                    onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+                                    onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                >
+                                    Khám phá ngay
+                                </button>
+                            </Link>
+                        </div>
+
+                        {/* DMCA copyright notice */}
+                        <div className="flex justify-between items-center bg-slate-50 rounded-xl p-3.5 border border-slate-200 mt-6 text-[12px] text-slate-500">
+                            <div className="flex items-center gap-2">
+                                <span className="font-bold text-[#00b14f]">TopCV Copyright</span>
+                                <span>&copy; {new Date().getFullYear()} Bản quyền thuộc về TopCV Clone. Bảo lưu mọi quyền.</span>
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                                <a href="https://www.dmca.com" target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1 text-[11px] font-bold text-slate-400">
+                                    🛡️ DMCA Protected
+                                </a>
+                            </div>
+                        </div>
+
                         {/* Related */}
                         {related.length > 0 && (
                             <section className="mt-10 pt-8 border-t border-slate-100">
@@ -467,7 +521,7 @@ function PostDetail({ post, related, categories }) {
                         </div>
 
                         {/* Tài liệu hỗ trợ */}
-                        <div className="rounded-xl border border-slate-100 p-4 bg-white shadow-sm">
+                        {/* <div className="rounded-xl border border-slate-100 p-4 bg-white shadow-sm">
                             <p className="text-[13px] font-bold text-slate-700 mb-3">Tài liệu hỗ trợ tìm việc</p>
                             <ul className="space-y-2.5">
                                 {SUPPORT_LINKS.map(link => (
@@ -480,7 +534,7 @@ function PostDetail({ post, related, categories }) {
                                     </li>
                                 ))}
                             </ul>
-                        </div>
+                        </div> */}
 
                         {/* CTA */}
                         <div className="rounded-xl bg-gradient-to-br from-green-600 to-emerald-500 p-4 text-white">
@@ -489,6 +543,18 @@ function PostDetail({ post, related, categories }) {
                             <Link href="/tao-cv">
                                 <button className="w-full bg-white text-green-700 text-[12px] font-bold py-1.5 rounded-lg hover:bg-green-50 transition-colors">
                                     Tạo CV ngay
+                                </button>
+                            </Link>
+                        </div>
+
+                        {/* Gross-Net Tool Banner */}
+                        <div className="rounded-xl border border-slate-100 p-4 bg-gradient-to-br from-slate-50 to-slate-100 shadow-sm flex flex-col gap-2">
+                            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Công cụ tiện ích</span>
+                            <p className="text-[13px] font-bold text-slate-800 mb-0.5">Tính lương Gross &harr; Net</p>
+                            <p className="text-[11.5px] text-slate-500 leading-relaxed">Công cụ quy đổi mức lương Gross sang Net nhanh chóng và chuẩn xác nhất.</p>
+                            <Link href="/cong-cu/tinh-luong-gross-net">
+                                <button className="w-full mt-1 border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 text-[12px] font-bold py-1.5 rounded-lg transition-colors">
+                                    Tính lương ngay
                                 </button>
                             </Link>
                         </div>

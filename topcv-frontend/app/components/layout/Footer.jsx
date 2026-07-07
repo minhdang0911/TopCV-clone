@@ -492,9 +492,14 @@ export default function Footer() {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    overflow: 'hidden',
                                 }}
                             >
-                                <QRPattern />
+                                <img
+                                    src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://www.topcv.vn"
+                                    alt="TopCV QR Code"
+                                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                />
                             </div>
                             <div style={{ fontSize: '11px', color: GREEN, marginTop: '6px', fontWeight: '600' }}>
                                 topcv.com.vn

@@ -16,7 +16,7 @@ import { Roles } from '../auth/decorator/roles.decorator';
 
 @Controller('users')
 export class UsersController {
-  constructor(private usersService: UsersService) {}
+  constructor(private usersService: UsersService) { }
 
   @Get('me')
   @UseGuards(JwtAuthGuard)

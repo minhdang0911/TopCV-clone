@@ -13,6 +13,8 @@ import api from '@/lib/axios';
 import { toast } from 'sonner';
 import ShareSocial from '@/components/ShareSocial';
 import ViewApplicantButton from '@/components/ViewApplicantButton';
+import LoginModal from '@/components/LoginModal';
+import { RelatedJobCardWithPopup } from '@/components/JobHoverPopup';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -790,6 +792,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
     const [savingToggle, setSavingToggle] = useState(false);
     const [applied, setApplied] = useState(false);
     const [applyOpen, setApplyOpen] = useState(false);
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
 
     useEffect(() => {
         if (searchParams.get('apply') === '1') setApplyOpen(true);
@@ -826,7 +829,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
 
     const handleApply = () => {
         if (!isAuthenticated) {
-            router.push('/dang-nhap?redirect=' + encodeURIComponent(window.location.pathname));
+            setLoginModalOpen(true);
             return;
         }
         if (role !== 'CANDIDATE') return;
@@ -835,7 +838,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
 
     const handleSaveToggle = async () => {
         if (!isAuthenticated) {
-            router.push('/dang-nhap?redirect=' + encodeURIComponent(window.location.pathname));
+            setLoginModalOpen(true);
             return;
         }
         if (role !== 'CANDIDATE' || savingToggle) return;
@@ -992,6 +995,13 @@ export default function JobDetailPage({ params: paramsPromise }) {
                     onSuccess={() => { setApplyOpen(false); setApplied(true); }}
                 />
             )}
+
+            <LoginModal
+                open={loginModalOpen}
+                onClose={() => setLoginModalOpen(false)}
+                redirectTo={typeof window !== 'undefined' ? window.location.pathname : ''}
+                message="Đăng nhập để ứng tuyển vị trí này"
+            />
 
             <ShareSocial
                 url={typeof window !== 'undefined' ? `${window.location.origin}/viec-lam/${slug}` : ''}
@@ -1210,7 +1220,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
                         <div style={cardStyle}>
                             <h2 style={sectionTitleStyle}>Việc làm liên quan</h2>
                             {related.map((rj) => (
-                                <RelatedJobCard key={rj.id} job={rj} />
+                                <RelatedJobCardWithPopup key={rj.id} job={rj} />
                             ))}
                         </div>
                     )}
@@ -1315,7 +1325,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
                                 Gợi ý việc làm phù hợp
                             </h3>
                             {related.slice(0, 3).map((rj) => (
-                                <RelatedJobCard key={rj.id} job={rj} />
+                                <RelatedJobCardWithPopup key={rj.id} job={rj} />
                             ))}
                         </div>
                     )}

@@ -57,14 +57,15 @@ const EXPERIENCE_OPTIONS = [
     { value: '5 năm', label: '5 năm' },
     { value: 'Trên 5 năm', label: 'Trên 5 năm' },
 ];
-
 interface Industry {
     id: number;
     name: string;
+    slug?: string;
 }
 interface JobPosition {
     id: number;
     name: string;
+    slug?: string;
 }
 
 interface JobFilterProps {
@@ -245,12 +246,40 @@ export default function JobFilter({ industries, jobPositions, activeIndustryId, 
 
     // Handlers
     const handleIndustry = (id: string) => {
+        if (pathname.startsWith('/tim-viec-lam/')) {
+            if (activeIndustryId === id) {
+                router.push('/tim-viec-lam-moi-nhat');
+                return;
+            }
+            const ind = industries.find((i) => String(i.id) === id);
+            if (ind && ind.slug) {
+                router.push(`/tim-viec-lam/${ind.slug}`);
+            } else {
+                router.push('/tim-viec-lam-moi-nhat');
+            }
+            return;
+        }
+
         const next = toggle(industryIds, id);
         setIndustryIds(next);
         buildAndPush({ industryId: next.join(',') || undefined });
     };
 
     const handleJobPosition = (id: string) => {
+        if (pathname.startsWith('/tim-viec-lam/')) {
+            if (activeJobPositionId === id) {
+                router.push('/tim-viec-lam-moi-nhat');
+                return;
+            }
+            const pos = jobPositions.find((p) => String(p.id) === id);
+            if (pos && pos.slug) {
+                router.push(`/tim-viec-lam/${pos.slug}`);
+            } else {
+                router.push('/tim-viec-lam-moi-nhat');
+            }
+            return;
+        }
+
         const next = toggle(jobPositionIds, id);
         setJobPositionIds(next);
         buildAndPush({ jobPositionId: next.join(',') || undefined });

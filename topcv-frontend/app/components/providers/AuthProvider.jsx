@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import useAuthStore from '@/stores/auth.store';
 import { useFCM } from '@/hooks/useFCM';
 import NotificationToast from '@/app/components/NotificationToast';
+import GoogleOneTap from '@/components/GoogleOneTap';
 
 function FCMProvider() {
     const { isAuthenticated, role } = useAuthStore();
@@ -33,6 +34,7 @@ export default function AuthProvider({ children }) {
         <>
             {children}
             <FCMProvider />
+            <GoogleOneTap />
         </>
     );
 }

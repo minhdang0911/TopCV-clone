@@ -1,3 +1,4 @@
+
 import {
   BadRequestException,
   Injectable,
@@ -14,6 +15,7 @@ import { AuditLogsService } from '../audit-logs/audit-logs.service';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -196,6 +198,9 @@ export class AuthService {
 
   // ─── LOGOUT ──────────────────────────────────────────
   async logout(token: string, ip?: string) {
+    // Guard: nếu không có refreshToken thì bỏ qua (tránh Prisma crash)
+    if (!token) return { message: 'Đăng xuất thành công' };
+
     const rt = await this.prisma.refreshToken.findUnique({ where: { token }, select: { userId: true } });
     await this.prisma.refreshToken.deleteMany({ where: { token } });
     if (rt?.userId) {
@@ -310,6 +315,29 @@ export class AuthService {
     return this.generateTokens(user.id, user.email, user.role);
   }
 
+  async loginGoogleOneTap(token: string, ip?: string) {
+    try {
+      const response = await axios.get(`https://oauth2.googleapis.com/tokeninfo?id_token=${token}`);
+      const payload = response.data;
+
+      // Verify audience matches Google Client ID
+      if (payload.aud !== process.env.GOOGLE_CLIENT_ID) {
+        throw new UnauthorizedException('Invalid Google client ID');
+      }
+
+      const socialUser = {
+        email: payload.email,
+        fullName: payload.name || payload.given_name || 'Google User',
+        avatar: payload.picture,
+        provider: 'google',
+      };
+
+      return this.loginSocial(socialUser, ip);
+    } catch (e) {
+      throw new UnauthorizedException('Xác thực tài khoản Google thất bại');
+    }
+  }
+
   async verifyResetToken(token: string) {
     const userId = await this.redis.get<string>(`reset:${token}`);
     if (!userId)
@@ -388,7 +416,7 @@ export class AuthService {
     const payload = { sub: userId, email, role };
     // Dùng JWT_EXPIRES_IN từ env (mặc định 15m), không hardcode
     const accessToken = this.jwtService.sign(payload, {
-      expiresIn: process.env.JWT_EXPIRES_IN ?? '15m',
+      expiresIn: (process.env.JWT_EXPIRES_IN ?? '15m') as any,
     });
 
     const refreshToken = uuidv4();

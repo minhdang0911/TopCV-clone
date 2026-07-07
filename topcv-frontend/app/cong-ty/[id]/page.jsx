@@ -7,6 +7,9 @@ import Link from 'next/link';
 import Lottie from 'lottie-react';
 import { Building2, Users, Hash, MapPin, Globe, Heart, Search, Copy, Check, Briefcase, Star, ThumbsUp, ThumbsDown, ChevronDown, ChevronUp, PenLine } from 'lucide-react';
 import api from '@/lib/axios';
+import useAuthStore from '@/stores/auth.store';
+import LoginModal from '@/components/LoginModal';
+import { toast } from 'sonner';
 
 import veryBadAnim from '../../../public/verry_bad.json';
 import badAnim from '../../../public/bad.json';
@@ -1151,6 +1154,9 @@ export default function CompanyDetailPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
 
+    const { isAuthenticated, hydrated } = useAuthStore();
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
+
     const tab = searchParams.get('tab') || 'home';
 
     const [company, setCompany] = useState(null);
@@ -1186,12 +1192,18 @@ export default function CompanyDetailPage() {
 
         api.get(`/employers/${id}/reviews`).then((r) => setReviews(r.data));
 
-        api.get(`/employers/${id}/follow-status`)
-            .then((r) => setFollowed(r.data.followed))
-            .catch(() => {});
-    }, [id, router, searchParams]);
+        if (isAuthenticated) {
+            api.get(`/employers/${id}/follow-status`)
+                .then((r) => setFollowed(r.data.followed))
+                .catch(() => {});
+        }
+    }, [id, router, searchParams, isAuthenticated]);
 
     const handleFollow = async () => {
+        if (!isAuthenticated) {
+            setLoginModalOpen(true);
+            return;
+        }
         setFollowLoading(true);
         try {
             if (followed) {
@@ -1204,7 +1216,7 @@ export default function CompanyDetailPage() {
                 setFollowerCount(c => c + 1);
             }
         } catch {
-            router.push('/login');
+            toast.error('Có lỗi xảy ra, vui lòng thử lại');
         } finally {
             setFollowLoading(false);
         }
@@ -1294,6 +1306,13 @@ export default function CompanyDetailPage() {
                     </div>
                 </div>
             </div>
+
+            <LoginModal
+                open={loginModalOpen}
+                onClose={() => setLoginModalOpen(false)}
+                redirectTo={typeof window !== 'undefined' ? window.location.pathname : ''}
+                message="Đăng nhập để theo dõi công ty"
+            />
 
             <style>{`
                 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }

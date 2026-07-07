@@ -21,6 +21,8 @@ import { provinceService } from '@/services/province.service';
 import useAuthStore from '@/stores/auth.store';
 import api from '@/lib/axios';
 import { toast } from 'sonner';
+import SavedSearchButton from '@/components/SavedSearchButton';
+import LoginModal from '@/components/LoginModal';
 
 type Job = {
     id: string;
@@ -939,6 +941,7 @@ export default function BestJobsSection({
     });
 
     const { isAuthenticated } = useAuthStore();
+    const [loginModalOpen, setLoginModalOpen] = useState(false);
     // Separate from savedJobIds so we can derive an empty set when logged out
     // without calling setState inside an effect.
     const [loadedSavedIds, setLoadedSavedIds] = useState<Set<string>>(new Set());
@@ -960,7 +963,10 @@ export default function BestJobsSection({
     }, [isAuthenticated]);
 
     async function handleToggleSave(jobId: string) {
-        if (!isAuthenticated) return;
+        if (!isAuthenticated) {
+            setLoginModalOpen(true);
+            return;
+        }
         const willSave = !loadedSavedIds.has(jobId);
         setLoadedSavedIds(prev => {
             const next = new Set(prev);
@@ -1052,6 +1058,11 @@ export default function BestJobsSection({
 
     return (
         <>
+            <LoginModal
+                open={loginModalOpen}
+                onClose={() => setLoginModalOpen(false)}
+                message="Đăng nhập để lưu việc làm yêu thích"
+            />
             {/* Filter bar — sticky hoặc inline tuỳ prop */}
             {stickyFilter ? (
                 <div
@@ -1160,6 +1171,35 @@ export default function BestJobsSection({
                                 Tìm thấy <strong style={{ color: '#111827' }}>{meta.total.toLocaleString()}</strong>{' '}
                                 việc làm
                             </span>
+                        )}
+                        {stickyFilter && (
+                            <SavedSearchButton
+                                currentFilters={{
+                                    provinceCode: filters.provinceCode || undefined,
+                                    districtCode: filters.districtCode || undefined,
+                                    salary: filters.salary || undefined,
+                                    experience: filters.experience || undefined,
+                                    industryId: filters.industryId || undefined,
+                                }}
+                                label={
+                                    [filters.provinceName, filters.salary, filters.experience]
+                                        .filter(Boolean).join(' · ') || undefined
+                                }
+                                onApply={(saved: any) => {
+                                    setFilters(f => ({
+                                        ...f,
+                                        provinceCode: saved.provinceCode ?? '',
+                                        districtCode: saved.districtCode ?? '',
+                                        salary: saved.salary ?? '',
+                                        salaryMin: undefined,
+                                        salaryMax: undefined,
+                                        salaryType: '',
+                                        experience: saved.experience ?? '',
+                                        industryId: saved.industryId ?? '',
+                                    }));
+                                    setPage(1);
+                                }}
+                            />
                         )}
                         <Link
                             href="/viec-lam-tot-nhat"

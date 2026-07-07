@@ -64,11 +64,20 @@ export default function CandidateChatPage() {
     }, [isAuthenticated, fetchConvs]);
 
     useEffect(() => {
-        if (initConvId && conversations.length > 0) {
-            const found = conversations.find((c) => c.id === initConvId);
-            if (found) setActiveConvId(initConvId);
+        if (conversations.length > 0) {
+            if (initConvId) {
+                const found = conversations.find((c) => c.id === initConvId);
+                if (found) setActiveConvId(initConvId);
+            } else if (!activeConvId) {
+                // Auto-select the first conversation if URL query is empty
+                const firstConvId = conversations[0].id;
+                setActiveConvId(firstConvId);
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('conv', firstConvId);
+                router.replace(`/tin-nhan?${params.toString()}`);
+            }
         }
-    }, [initConvId, conversations]);
+    }, [initConvId, conversations, activeConvId, searchParams, router]);
 
     useEffect(() => {
         if (!isAuthenticated) return;
@@ -144,6 +153,9 @@ export default function CandidateChatPage() {
     const handleSelectConv = (convId) => {
         setActiveConvId(convId);
         if (isMobile) setShowSidebar(false);
+        const params = new URLSearchParams(searchParams.toString());
+        params.set('conv', convId);
+        router.replace(`/tin-nhan?${params.toString()}`);
     };
 
     const handleSend = async (text, replyTo) => {
@@ -500,7 +512,7 @@ export default function CandidateChatPage() {
                                             const exists = prev.find((c) => c.id === conv.id);
                                             return exists ? prev : [conv, ...prev];
                                         });
-                                        setActiveConvId(conv.id);
+                                        handleSelectConv(conv.id);
                                     } catch {}
                                 };
                                 return (

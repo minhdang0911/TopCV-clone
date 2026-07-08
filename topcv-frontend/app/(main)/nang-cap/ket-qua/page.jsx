@@ -12,6 +12,7 @@ function KetQuaContent() {
     const searchParams = useSearchParams();
     const [status, setStatus] = useState('PENDING'); // PENDING | SUCCESS | FAILED | INVALID
     const [plan, setPlan] = useState('');
+    const [countdown, setCountdown] = useState(5);
     const intervalRef = useRef(null);
     const pollCount = useRef(0);
 
@@ -84,6 +85,28 @@ function KetQuaContent() {
         return () => clearInterval(intervalRef.current);
     }, []);
 
+    useEffect(() => {
+        if (status !== 'SUCCESS') return;
+
+        const isViewApplicants = plan?.startsWith('VIEW_APPLICANTS:');
+        if (!isViewApplicants) return;
+
+        const jobId = plan.replace('VIEW_APPLICANTS:', '');
+
+        const timer = setInterval(() => {
+            setCountdown(prev => {
+                if (prev <= 1) {
+                    clearInterval(timer);
+                    router.push(`/viec-lam/${jobId}`);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [status, plan, router]);
+
     if (status === 'PENDING') return (
         <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px', background: '#f5f5f5' }}>
             <div style={{ width: '48px', height: '48px', border: '4px solid #e5e7eb', borderTopColor: '#00b14f', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
@@ -103,16 +126,26 @@ function KetQuaContent() {
                 <div style={{ fontSize: '22px', fontWeight: '800', color: '#00b14f' }}>
                     {isViewApplicants ? 'Thanh toán thành công!' : 'Nâng cấp thành công!'}
                 </div>
-                <div style={{ fontSize: '14px', color: '#555', textAlign: 'center' }}>
-                    {isViewApplicants
-                        ? 'Bạn có thể đóng tab này và quay lại trang việc làm để xem số người ứng tuyển.'
-                        : <>Tài khoản của bạn đã được nâng lên gói <strong>{plan}</strong>.</>
-                    }
+                <div style={{ fontSize: '14px', color: '#555', textAlign: 'center', maxWidth: '400px', lineHeight: '1.5' }}>
+                    {isViewApplicants ? (
+                        <>
+                            Giao dịch hoàn tất. Hệ thống sẽ tự động đưa bạn trở lại trang chi tiết việc làm trong{' '}
+                            <strong style={{ color: '#00b14f', fontSize: '16px' }}>{countdown}</strong> giây...
+                        </>
+                    ) : (
+                        <>Tài khoản của bạn đã được nâng lên gói <strong>{plan}</strong>.</>
+                    )}
                 </div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                     {isViewApplicants ? (
-                        <button onClick={() => window.close()} style={{ background: '#00b14f', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}>
-                            Đóng tab này
+                        <button 
+                            onClick={() => {
+                                const jobId = plan.replace('VIEW_APPLICANTS:', '');
+                                router.push(`/viec-lam/${jobId}`);
+                            }} 
+                            style={{ background: '#00b14f', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '14px', fontWeight: '700', cursor: 'pointer' }}
+                        >
+                            Quay lại trang việc làm ngay
                         </button>
                     ) : (
                         <>

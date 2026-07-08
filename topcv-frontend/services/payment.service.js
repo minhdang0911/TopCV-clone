@@ -11,6 +11,10 @@ export const paymentService = {
 
     getMyPlan: () => api.get('/payments/my-plan'),
     getMyHistory: (params) => api.get('/payments/my-history', { params }),
+
+    // Candidate view job applicant count
+    createViewJob: (jobId, gateway) => api.post('/payments/create-view-job', { jobId, gateway }),
+    getJobApplicantCount: (jobId) => api.get(`/payments/job-applicant-count/${jobId}`),
 };
 
 export const PLAN_LIMITS = {

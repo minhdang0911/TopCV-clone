@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Users, X, ChevronRight, Clock, UserCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, X, ChevronRight, Clock, UserCircle, Lock, Eye } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { applicationsService } from '@/services/applications.service';
+import { paymentService } from '@/services/payment.service';
+import useAuthStore from '@/stores/auth.store';
+import PaymentModal from '@/components/PaymentModal';
+import { toast } from 'sonner';
 
 const GREEN = '#00b14f';
 
@@ -136,59 +140,137 @@ function ApplicantModal({ jobId, onClose }) {
 }
 
 // variant: 'compact' (table/card in quan-ly-tin) | 'inline' (job detail page)
-export default function ViewApplicantButton({ jobId, variant = 'compact' }) {
+export default function ViewApplicantButton({ jobId, employerId, variant = 'compact' }) {
+    const { isAuthenticated, role, user } = useAuthStore();
+    const isJobOwner = role === 'EMPLOYER' && (!employerId || user?.employerProfile?.id === employerId);
+
     const [count, setCount] = useState(null);
     const [loading, setLoading] = useState(false);
     const [modalOpen, setModalOpen] = useState(false);
 
+    // Candidate flow states
+    const [purchased, setPurchased] = useState(false);
+    const [checkingPayment, setCheckingPayment] = useState(false);
+    const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+
     const isInline = variant === 'inline';
 
-    const handleClick = async () => {
-        // If count already fetched, just open modal
-        if (count !== null) { setModalOpen(true); return; }
+    useEffect(() => {
+        if (!isAuthenticated || !jobId) return;
+        if (isJobOwner) return;
 
-        setLoading(true);
-        try {
-            const res = await applicationsService.getByJob(jobId, { limit: 1 });
-            const total = res.data?.meta?.total ?? res.data?.total ?? (res.data?.data?.length ?? 0);
-            setCount(total);
-            setModalOpen(true);
-        } catch {
-            // Fallback: open modal anyway, let it fetch inside
-            setCount(0);
-            setModalOpen(true);
-        } finally {
-            setLoading(false);
+        setCheckingPayment(true);
+        paymentService.getJobApplicantCount(jobId)
+            .then(res => {
+                setCount(res.data?.count ?? 0);
+                setPurchased(true);
+            })
+            .catch(() => {
+                setPurchased(false);
+            })
+            .finally(() => {
+                setCheckingPayment(false);
+            });
+    }, [jobId, isAuthenticated, role, user, employerId, isJobOwner]);
+
+    const handleClick = async () => {
+        if (isJobOwner) {
+            // Employer/Owner flow: open candidate list modal
+            if (count !== null) { setModalOpen(true); return; }
+
+            setLoading(true);
+            try {
+                const res = await applicationsService.getByJob(jobId, { limit: 1 });
+                const total = res.data?.meta?.total ?? res.data?.total ?? (res.data?.data?.length ?? 0);
+                setCount(total);
+                setModalOpen(true);
+            } catch {
+                setCount(0);
+                setModalOpen(true);
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            // Candidate flow
+            if (purchased) {
+                toast.info(`Có ${count} ứng viên đã nộp hồ sơ vào việc làm này.`);
+            } else {
+                setPaymentModalOpen(true);
+            }
         }
     };
+
+    const displayLoading = loading || checkingPayment;
 
     return (
         <>
             <button
                 onClick={handleClick}
-                disabled={loading}
+                disabled={displayLoading}
                 className={cn(
-                    'inline-flex items-center border border-solid cursor-pointer font-semibold whitespace-nowrap transition-colors',
+                    'inline-flex items-center border border-solid cursor-pointer whitespace-nowrap transition-colors',
                     isInline
-                        ? 'gap-1.5 px-3.5 py-1.75 rounded-md text-[13px]'
-                        : 'gap-1 px-2.5 py-1.5 rounded-lg text-xs',
-                    count !== null
-                        ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
-                    loading && 'opacity-60 cursor-not-allowed'
+                        ? 'rounded-full bg-[#f2fbf6] border-[#d3f4e3] hover:bg-[#e3f7ec] hover:border-[#b2ebd0] text-[#00b14f] px-3.5 py-1.25 text-[13px] font-medium'
+                        : 'gap-1 px-2.5 py-1.5 rounded-lg text-xs bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
+                    displayLoading && 'opacity-60 cursor-not-allowed'
                 )}
+                style={isInline ? { outline: 'none' } : {}}
             >
-                <Users size={isInline ? 15 : 12} />
-                {loading
-                    ? '...'
-                    : count !== null
-                        ? `${count} ứng viên`
-                        : 'Xem ứng viên'
+                {displayLoading ? (
+                    <span className="w-3.5 h-3.5 border-[2px] border-[#00b14f]/20 border-t-[#00b14f] rounded-full animate-spin mr-1.5" />
+                ) : (
+                    <Eye size={isInline ? 15 : 12} className="text-[#00b14f] mr-1.5" />
+                )}
+                {displayLoading
+                    ? 'Đang tải...'
+                    : isJobOwner
+                        ? (count !== null ? `Xem số người đã ứng tuyển (${count})` : 'Xem số người đã ứng tuyển')
+                        : purchased
+                            ? `Đã có ${count} người ứng tuyển`
+                            : 'Xem số người đã ứng tuyển'
                 }
+                {isInline && !isJobOwner && !purchased && !displayLoading && (
+                    <span style={{
+                        fontSize: '9px',
+                        fontWeight: '700',
+                        color: 'white',
+                        background: '#ff7d3f',
+                        padding: '1px 5px',
+                        borderRadius: '4px',
+                        marginLeft: '6px',
+                        textTransform: 'uppercase',
+                        lineHeight: '1',
+                        display: 'inline-block',
+                    }}>
+                        new
+                    </span>
+                )}
             </button>
 
             {modalOpen && (
                 <ApplicantModal jobId={jobId} onClose={() => setModalOpen(false)} />
+            )}
+
+            {paymentModalOpen && (
+                <PaymentModal
+                    open={paymentModalOpen}
+                    onClose={() => setPaymentModalOpen(false)}
+                    title="Xem số lượng ứng viên"
+                    description="Thanh toán 10.000 ₫ để xem số người đã ứng tuyển việc làm này."
+                    amount={10000}
+                    createPayment={async (gateway) => {
+                        const res = await paymentService.createViewJob(jobId, gateway);
+                        return res.data;
+                    }}
+                    onSuccess={() => {
+                        paymentService.getJobApplicantCount(jobId)
+                            .then(res => {
+                                setCount(res.data?.count ?? 0);
+                                setPurchased(true);
+                            })
+                            .catch(() => {});
+                    }}
+                />
             )}
         </>
     );

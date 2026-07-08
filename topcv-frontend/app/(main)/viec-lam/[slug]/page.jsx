@@ -783,7 +783,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
     const router = useRouter();
     const searchParams = useSearchParams();
 
-    const { isAuthenticated, role, hydrated } = useAuthStore();
+    const { isAuthenticated, role, user, hydrated } = useAuthStore();
 
     const [job, setJob] = useState(null);
     const [related, setRelated] = useState([]);
@@ -1051,7 +1051,7 @@ export default function JobDetailPage({ params: paramsPromise }) {
 
                         {hydrated && isAuthenticated && job?.id && (
                             <div style={{ marginBottom: '14px' }}>
-                                <ViewApplicantButton jobId={job.id} variant="inline" />
+                                <ViewApplicantButton jobId={job.id} employerId={job.employerId} variant="inline" />
                             </div>
                         )}
 

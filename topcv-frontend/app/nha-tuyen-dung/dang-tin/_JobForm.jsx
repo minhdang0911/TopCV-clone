@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Save, Bold, Italic, Strikethrough, List, ListOrdered, Quote, Code, Eye, AlignLeft, PlusCircle, X } from 'lucide-react';
+import { Save, Bold, Italic, Strikethrough, List, ListOrdered, Quote, Code, Eye, AlignLeft, PlusCircle, X, ArrowLeft, Send, MapPin, DollarSign, Briefcase, Calendar, Users, Tag, Building2, CheckCircle } from 'lucide-react';
 import { employerDashboardService } from '@/services/employer-dashboard.service';
 import { provinceService } from '@/services/province.service';
 import { cn } from '@/lib/utils';
@@ -273,6 +273,180 @@ function Section({ title, children }) {
     );
 }
 
+// ─── Salary format helper ─────────────────────────────────────────────────────
+function fmtSalary(form) {
+    if (form.salaryType === 'negotiable') return 'Thỏa thuận';
+    const fmt = (v) => v ? `${(v / 1_000_000).toLocaleString('vi-VN')} triệu` : null;
+    const min = fmt(form.salaryMin), max = fmt(form.salaryMax);
+    if (min && max) return `${min} – ${max}`;
+    return min || max || 'Thỏa thuận';
+}
+
+const JOB_TYPE_LABEL = {
+    'full-time': 'Toàn thời gian', 'part-time': 'Bán thời gian',
+    remote: 'Remote', internship: 'Thực tập', contract: 'Hợp đồng',
+};
+const LEVEL_LABEL = {
+    NHAN_VIEN: 'Nhân viên', TRUONG_NHOM: 'Trưởng nhóm',
+    TRUONG_PHO_PHONG: 'Trưởng/Phó phòng', QUAN_LY_GIAM_SAT: 'Quản lý/Giám sát',
+    GIAM_DOC: 'Giám đốc', PHO_GIAM_DOC: 'Phó giám đốc',
+    TRUONG_CHI_NHANH: 'Trưởng chi nhánh', THUC_TAP_SINH: 'Thực tập sinh',
+};
+const WORKING_DAYS_LABEL = {
+    MON_FRI: 'Thứ 2 – Thứ 6', MON_SAT: 'Thứ 2 – Thứ 7',
+    MON_SUN: 'Thứ 2 – Chủ nhật', FLEXIBLE: 'Linh hoạt', CUSTOM: 'Tùy chỉnh',
+};
+const WORKING_TYPE_LABEL = {
+    TOAN_THOI_GIAN: 'Tại văn phòng', BAN_THOI_GIAN: 'Bán thời gian',
+    REMOTE: 'Remote', FREELANCE: 'Freelance', THUC_TAP: 'Thực tập',
+};
+
+// ─── Job Preview Modal ────────────────────────────────────────────────────────
+function JobPreviewModal({ form, industries, jobPositions, onClose, onSubmit, saving }) {
+    const industryName = industries.find(i => String(i.id) === String(form.industryId))?.name;
+    const positionName = jobPositions.find(p => String(p.id) === String(form.jobPositionId))?.name;
+    const locationStr = form.locations
+        .filter(l => l.provinceName)
+        .map(l => [l.districtName, l.provinceName].filter(Boolean).join(', '))
+        .join(' • ');
+
+    const Chip = ({ icon: Icon, children, color = '#475569' }) => (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+            {Icon && <Icon size={11} />}
+            {children}
+        </span>
+    );
+
+    return (
+        <div
+            className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="bg-white rounded-2xl w-full max-w-[760px] max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+                {/* Modal header */}
+                <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50">
+                    <div className="flex items-center gap-2">
+                        <Eye size={16} className="text-[#00b14f]" />
+                        <span className="font-bold text-sm text-slate-900">Xem trước tin tuyển dụng</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400 bg-amber-50 border border-amber-200 text-amber-600 px-2.5 py-1 rounded-full font-medium">
+                            Đây là bản xem trước — chưa được đăng
+                        </span>
+                        <button
+                            onClick={onClose}
+                            className="w-8 h-8 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors"
+                        >
+                            <X size={14} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Preview content */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* Hero */}
+                    <div className="px-8 py-6 border-b border-slate-100">
+                        <div className="flex items-start gap-4">
+                            <div className="w-16 h-16 rounded-xl bg-emerald-50 border-2 border-emerald-100 flex items-center justify-center shrink-0">
+                                <Briefcase size={26} className="text-emerald-600" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <h1 className="text-xl font-bold text-slate-900 mb-1 leading-snug">
+                                    {form.title || <span className="text-slate-300 italic">Chưa có tiêu đề...</span>}
+                                </h1>
+                                <div className="flex items-center gap-1.5 text-sm text-slate-500">
+                                    <Building2 size={13} />
+                                    <span>Tên công ty của bạn</span>
+                                </div>
+                                {positionName && (
+                                    <div className="mt-1 inline-flex items-center gap-1 text-xs text-[#00b14f] font-medium">
+                                        <Tag size={11} /> {positionName}
+                                    </div>
+                                )}
+                            </div>
+                            {!form.isActive && (
+                                <span className="text-xs bg-slate-100 text-slate-500 border border-slate-200 px-2.5 py-1 rounded-full font-medium shrink-0">
+                                    Bản nháp
+                                </span>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Quick info chips */}
+                    <div className="px-8 py-4 border-b border-slate-100 flex flex-wrap gap-2">
+                        <Chip icon={DollarSign}>{fmtSalary(form)}</Chip>
+                        {locationStr && <Chip icon={MapPin}>{locationStr}</Chip>}
+                        {form.jobType && <Chip>{JOB_TYPE_LABEL[form.jobType] || form.jobType}</Chip>}
+                        {form.workingType && <Chip icon={Briefcase}>{WORKING_TYPE_LABEL[form.workingType] || form.workingType}</Chip>}
+                        {form.workingDays && <Chip icon={Calendar}>{WORKING_DAYS_LABEL[form.workingDays] || form.workingDays}</Chip>}
+                        {form.level && <Chip>{LEVEL_LABEL[form.level] || form.level}</Chip>}
+                        {form.quantity && <Chip icon={Users}>{form.quantity} vị trí</Chip>}
+                        {industryName && <Chip icon={Tag}>{industryName}</Chip>}
+                        {form.deadline && (
+                            <Chip icon={Calendar}>
+                                Hạn: {new Date(form.deadline).toLocaleDateString('vi-VN')}
+                            </Chip>
+                        )}
+                    </div>
+
+                    {/* Description */}
+                    <div className="px-8 py-6">
+                        {form.description ? (
+                            <div
+                                className="jd-preview-modal text-sm text-slate-700 leading-relaxed"
+                                dangerouslySetInnerHTML={{ __html: renderMarkdown(form.description) }}
+                            />
+                        ) : (
+                            <div className="text-center py-12 text-slate-300 italic text-sm">
+                                Chưa có nội dung mô tả công việc...
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Footer */}
+                <div className="px-6 py-4 border-t border-slate-100 flex gap-3 shrink-0">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                        <ArrowLeft size={14} /> Quay lại chỉnh sửa
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onSubmit}
+                        disabled={saving}
+                        className="flex-[2] flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-white transition-opacity disabled:opacity-60"
+                        style={{ background: saving ? '#86efac' : GREEN }}
+                    >
+                        {saving
+                            ? <><Send size={14} /> Đang đăng...</>
+                            : <><CheckCircle size={14} /> Xác nhận & Đăng tin</>
+                        }
+                    </button>
+                </div>
+
+                <style>{`
+                    .jd-preview-modal h1 { font-size: 18px; font-weight: 800; margin: 14px 0 6px; color: #111827; }
+                    .jd-preview-modal h2 { font-size: 16px; font-weight: 700; margin: 12px 0 5px; color: #111827; border-bottom: 1px solid #f3f4f6; padding-bottom: 4px; }
+                    .jd-preview-modal h3 { font-size: 14px; font-weight: 700; margin: 10px 0 4px; color: #374151; }
+                    .jd-preview-modal p { margin: 6px 0; }
+                    .jd-preview-modal ul { padding-left: 22px; margin: 6px 0; list-style: disc; }
+                    .jd-preview-modal li { margin: 3px 0; }
+                    .jd-preview-modal strong { font-weight: 700; }
+                    .jd-preview-modal em { font-style: italic; }
+                    .jd-preview-modal del { text-decoration: line-through; color: #9ca3af; }
+                    .jd-preview-modal blockquote { border-left: 3px solid #d1d5db; padding: 2px 12px; color: #6b7280; margin: 8px 0; font-style: italic; }
+                    .jd-preview-modal code { background: #f3f4f6; padding: 2px 5px; border-radius: 4px; font-size: 12px; font-family: monospace; }
+                    .jd-preview-modal pre { background: #f3f4f6; padding: 10px 14px; border-radius: 8px; overflow-x: auto; margin: 10px 0; }
+                    .jd-preview-modal pre code { background: none; padding: 0; }
+                `}</style>
+            </div>
+        </div>
+    );
+}
+
 export default function JobForm({ jobId, initialData }) {
     const router = useRouter();
     const [form, setForm] = useState(() => {
@@ -290,6 +464,7 @@ export default function JobForm({ jobId, initialData }) {
     const [provinces, setProvinces] = useState([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -316,12 +491,20 @@ export default function JobForm({ jobId, initialData }) {
     const addLocation = () => setForm(f => ({ ...f, locations: [...f.locations, { ...EMPTY_LOC }] }));
     const removeLocation = (index) => setForm(f => ({ ...f, locations: f.locations.filter((_, i) => i !== index) }));
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    const validate = () => {
+        if (!form.title.trim()) { setError('Tiêu đề không được để trống'); return false; }
+        if (!form.description.trim()) { setError('Mô tả không được để trống'); return false; }
         setError('');
-        if (!form.title.trim()) { setError('Tiêu đề không được để trống'); return; }
-        if (!form.description.trim()) { setError('Mô tả không được để trống'); return; }
+        return true;
+    };
 
+    const handlePreview = (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+        setShowPreview(true);
+    };
+
+    const doSubmit = async () => {
         setSaving(true);
         try {
             const payload = {
@@ -342,10 +525,17 @@ export default function JobForm({ jobId, initialData }) {
             }
             router.push('/nha-tuyen-dung/quan-ly-tin');
         } catch (err) {
+            setShowPreview(false);
             setError(err?.response?.data?.message || 'Có lỗi xảy ra, vui lòng thử lại');
         } finally {
             setSaving(false);
         }
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!validate()) return;
+        doSubmit();
     };
 
     const salaryInMillion = (val) => val ? val / 1_000_000 : '';
@@ -481,6 +671,17 @@ export default function JobForm({ jobId, initialData }) {
                         </div>
                     )}
 
+                    {/* Nút Xem trước (chỉ hiện khi tạo mới) */}
+                    {!jobId && (
+                        <button
+                            type="button"
+                            onClick={handlePreview}
+                            className="w-full border border-slate-200 rounded-lg py-[11px] text-sm font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors text-slate-700 hover:bg-slate-50 mb-2"
+                        >
+                            <Eye size={15} />
+                            Xem trước tin
+                        </button>
+                    )}
                     <button
                         type="submit"
                         disabled={saving}
@@ -510,5 +711,17 @@ export default function JobForm({ jobId, initialData }) {
                 </div>
             </div>
         </form>
+
+        {/* Preview Modal */}
+        {showPreview && (
+            <JobPreviewModal
+                form={form}
+                industries={industries}
+                jobPositions={jobPositions}
+                onClose={() => setShowPreview(false)}
+                onSubmit={doSubmit}
+                saving={saving}
+            />
+        )}
     );
 }

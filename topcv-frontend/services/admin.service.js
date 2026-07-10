@@ -1,4 +1,4 @@
-﻿import api from '@/lib/axios';
+import api from '@/lib/axios';
 
 export const adminService = {
   // ─── Dashboard ───────────────────────────────────────────────────────────
@@ -19,6 +19,7 @@ export const adminService = {
 
   // ─── Jobs ────────────────────────────────────────────────────────────────
   getJobs: (params) => api.get('/jobs/admin/all', { params }),
+  getJob: (id) => api.get(`/jobs/${id}`),
   toggleJobActive: (id) => api.patch(`/jobs/admin/${id}/toggle-active`),
 
   // ─── Employers ───────────────────────────────────────────────────────────
